@@ -451,6 +451,94 @@
             transition: background .1s;
         }
         .autocomplete-item:hover { background: var(--surface2); color: var(--blue); }
+
+        /* ── AUTHORIZATION MODAL ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(10,20,60,.6); z-index: 300;
+            backdrop-filter: blur(4px);
+            align-items: center; justify-content: center; padding: 16px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: var(--surface); border-radius: 24px;
+            width: 100%; max-width: 500px; max-height: 90vh;
+            overflow-y: auto; box-shadow: 0 8px 40px rgba(0,0,0,.2);
+        }
+        .modal-header {
+            background: var(--blue); color: white;
+            padding: 18px 20px; border-radius: 24px 24px 0 0;
+        }
+        .modal-header h2 {
+            font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem;
+            letter-spacing: 1px; margin-bottom: 2px;
+        }
+        .modal-header p { font-size: .75rem; opacity: .8; }
+        .modal-body { padding: 20px; }
+        .legal-text {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 14px; padding: 14px; font-size: .78rem;
+            line-height: 1.6; color: var(--text); margin-bottom: 16px;
+            max-height: 200px; overflow-y: auto;
+        }
+        .legal-text strong { color: var(--blue); }
+        .signature-area { margin-bottom: 16px; }
+        .signature-area label {
+            display: block; font-weight: 700; font-size: .75rem;
+            color: var(--muted); margin-bottom: 8px; text-transform: uppercase;
+        }
+        .signature-name-input {
+            width: 100%; padding: 11px 14px; border-radius: 14px;
+            border: 1.5px solid var(--border); background: var(--surface2);
+            font-family: inherit; font-size: .9rem; margin-bottom: 12px;
+            outline: none;
+        }
+        .signature-name-input:focus { border-color: var(--blue-mid); }
+        .canvas-wrap {
+            border: 2px dashed var(--border); border-radius: 14px;
+            background: #FAFBFF; position: relative; overflow: hidden;
+        }
+        .canvas-wrap canvas {
+            display: block; width: 100%; touch-action: none;
+            cursor: crosshair;
+        }
+        .canvas-hint {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            font-size: .8rem; color: var(--muted); pointer-events: none;
+            text-align: center; transition: opacity .2s;
+        }
+        .btn-clear-sig {
+            background: none; border: 1.5px solid var(--border); color: var(--muted);
+            padding: 6px 14px; border-radius: 30px; font-size: .78rem;
+            cursor: pointer; margin-top: 8px;
+        }
+        .auth-status {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 14px; border-radius: 12px; font-size: .82rem;
+            font-weight: 600; margin-bottom: 12px;
+        }
+        .auth-status.ok { background: #E6F4ED; color: var(--success); }
+        .auth-status.pending { background: #FFF8E6; color: #92620A; }
+        .modal-btns { display: flex; gap: 10px; }
+        .btn-auth-save {
+            flex: 1; background: var(--blue); color: white; border: none;
+            padding: 13px; border-radius: var(--radius-btn);
+            font-family: 'Bebas Neue', sans-serif; font-size: 1.05rem;
+            letter-spacing: 1px; cursor: pointer;
+        }
+        .btn-auth-cancel {
+            background: var(--surface2); border: 1.5px solid var(--border);
+            padding: 13px 18px; border-radius: var(--radius-btn);
+            font-weight: 700; font-size: .85rem; cursor: pointer;
+        }
+        .auth-badge {
+            background: #E6F4ED; color: var(--success);
+            border-radius: 20px; padding: 2px 8px; font-size: .65rem;
+            font-weight: 700; border: 1px solid #A8D5BA;
+        }
+        .auth-badge.pending {
+            background: #FFF8E6; color: #92620A; border-color: #F5D98A;
+        }
     </style>
 </head>
 <body>
@@ -594,6 +682,38 @@
 
         <div class="doble">
             <div class="campo">
+                <label>📱 Teléfono contacto</label>
+                <input type="tel" id="playerPhone" placeholder="600 000 000">
+            </div>
+            <div class="campo">
+                <label>🔢 Prioridad captación</label>
+                <select id="playerPriority">
+                    <option value="">— Sin asignar —</option>
+                    <option value="1">1 · Máxima urgencia</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5 · Media</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10 · Seguimiento largo plazo</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="campo">
+            <label>📋 Autorización fotografía</label>
+            <button type="button" id="openAuthBtn" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);padding:12px 16px;border-radius:14px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;gap:10px;">
+                <span>🖊️</span>
+                <span id="authBtnLabel">Registrar autorización de imágenes</span>
+                <span id="authBtnBadge" style="margin-left:auto;"></span>
+            </button>
+        </div>
+
+        <div class="doble">
+            <div class="campo">
                 <label>📍 Partido / Evento</label>
                 <input type="text" id="playerEvent" placeholder="Torneo, liga, amistoso...">
             </div>
@@ -662,6 +782,49 @@
     <div class="sheet-body" id="detailBody"></div>
 </div>
 
+<!-- ── AUTHORIZATION MODAL ── -->
+<div class="modal-overlay" id="authModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2>📋 AUTORIZACIÓN DE IMÁGENES</h2>
+            <p>Cesión de derechos de imagen · Uso interno deportivo</p>
+        </div>
+        <div class="modal-body">
+            <div id="authStatusBar"></div>
+            <div class="legal-text">
+                <strong>AUTORIZACIÓN DE CAPTACIÓN Y USO DE IMÁGENES DE MENORES</strong><br><br>
+                En cumplimiento de lo establecido en el <strong>Reglamento (UE) 2016/679 (RGPD)</strong>, la <strong>Ley Orgánica 3/2018 de Protección de Datos Personales (LOPDGDD)</strong> y la <strong>Ley Orgánica 1/1982 sobre el derecho al honor, a la intimidad personal y a la propia imagen</strong>, el/la firmante, en calidad de padre/madre o tutor/a legal del menor identificado en este registro, <strong>AUTORIZA</strong> expresamente a <strong>Gelves CF</strong> a:<br><br>
+                • Tomar fotografías del menor con fines exclusivamente deportivos y de seguimiento interno de captación.<br>
+                • Almacenar dichas imágenes en sistemas de información de acceso restringido al personal técnico autorizado del club.<br>
+                • Utilizar las imágenes únicamente para identificación interna del jugador dentro del proceso de captación y seguimiento deportivo.<br><br>
+                <strong>Queda expresamente PROHIBIDO:</strong><br>
+                • La publicación o difusión de las imágenes en redes sociales, medios de comunicación o cualquier plataforma pública sin autorización expresa adicional.<br>
+                • La cesión de las imágenes a terceros ajenos al club.<br><br>
+                El firmante declara ser mayor de edad y tener capacidad legal para otorgar esta autorización. Las imágenes serán conservadas durante el período de seguimiento deportivo del menor y podrán ser suprimidas en cualquier momento a petición del titular o su representante legal, dirigiéndose a <strong>Gelves CF</strong>.
+            </div>
+
+            <div class="signature-area">
+                <label>Nombre del padre/madre/tutor legal</label>
+                <input type="text" class="signature-name-input" id="authSignerName" placeholder="Nombre y apellidos completos">
+            </div>
+
+            <div class="signature-area">
+                <label>Firma (dibuja con el dedo)</label>
+                <div class="canvas-wrap">
+                    <canvas id="signatureCanvas" height="160"></canvas>
+                    <div class="canvas-hint" id="canvasHint">✍️ Firma aquí con el dedo</div>
+                </div>
+                <button class="btn-clear-sig" id="clearSigBtn">🗑️ Borrar firma</button>
+            </div>
+
+            <div class="modal-btns">
+                <button class="btn-auth-save" id="saveAuthBtn">✅ GUARDAR AUTORIZACIÓN</button>
+                <button class="btn-auth-cancel" id="cancelAuthBtn">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script type="module">
     // ============================================================
     // 🔥 PEGA AQUÍ TU CONFIGURACIÓN DE FIREBASE
@@ -694,6 +857,9 @@
     let activeFilter = "";
     let activeFootFilter = "";
     let sortByRating = true;
+    let currentAuthSig = null;      // base64 firma
+    let currentAuthName = "";       // nombre firmante
+    let currentAuthDate = "";       // fecha firma
 
     // ── TOAST ──
     function toast(msg, type = "success") {
@@ -887,6 +1053,117 @@
     teamInput.addEventListener("blur", () => setTimeout(() => acList.style.display = "none", 150));
     teamInput.addEventListener("focus", () => teamInput.dispatchEvent(new Event("input")));
 
+    // ── AUTH BUTTON LABEL ──
+    function updateAuthBtn() {
+        const label = document.getElementById("authBtnLabel");
+        const badge = document.getElementById("authBtnBadge");
+        if (currentAuthSig && currentAuthName) {
+            label.textContent = `Autorizado · ${currentAuthName}`;
+            badge.innerHTML = `<span class="auth-badge">✅ Firmado</span>`;
+            document.getElementById("openAuthBtn").style.borderColor = "var(--success)";
+        } else {
+            label.textContent = "Registrar autorización de imágenes";
+            badge.innerHTML = `<span class="auth-badge pending">⚠️ Pendiente</span>`;
+            document.getElementById("openAuthBtn").style.borderColor = "var(--border)";
+        }
+    }
+
+    // ── AUTHORIZATION MODAL ──
+    const authModal = document.getElementById("authModal");
+    let sigCanvas, sigCtx, sigDrawing = false, sigHasMark = false;
+
+    function initCanvas() {
+        sigCanvas = document.getElementById("signatureCanvas");
+        sigCtx = sigCanvas.getContext("2d");
+        // Set actual pixel width
+        sigCanvas.width = sigCanvas.offsetWidth * window.devicePixelRatio;
+        sigCanvas.height = 160 * window.devicePixelRatio;
+        sigCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        sigCtx.strokeStyle = "#0D1B3E";
+        sigCtx.lineWidth = 2.5;
+        sigCtx.lineCap = "round";
+        sigCtx.lineJoin = "round";
+    }
+
+    function getPos(e) {
+        const rect = sigCanvas.getBoundingClientRect();
+        const touch = e.touches ? e.touches[0] : e;
+        return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+    }
+
+    document.getElementById("openAuthBtn").addEventListener("click", () => {
+        // Prefill if existing
+        document.getElementById("authSignerName").value = currentAuthName || "";
+        document.getElementById("authStatusBar").innerHTML = (currentAuthSig && currentAuthName)
+            ? `<div class="auth-status ok">✅ Autorización registrada el ${currentAuthDate} · ${currentAuthName}</div>`
+            : `<div class="auth-status pending">⚠️ Autorización pendiente de firma</div>`;
+        authModal.classList.add("open");
+        // Init canvas after modal opens (needs layout)
+        setTimeout(() => {
+            initCanvas();
+            if (currentAuthSig) {
+                const img = new Image();
+                img.onload = () => sigCtx.drawImage(img, 0, 0, sigCanvas.offsetWidth, sigCanvas.offsetHeight);
+                img.src = currentAuthSig;
+                sigHasMark = true;
+                document.getElementById("canvasHint").style.opacity = "0";
+            } else {
+                sigHasMark = false;
+                document.getElementById("canvasHint").style.opacity = "1";
+            }
+        }, 50);
+    });
+
+    document.getElementById("cancelAuthBtn").addEventListener("click", () => authModal.classList.remove("open"));
+    authModal.addEventListener("click", e => { if (e.target === authModal) authModal.classList.remove("open"); });
+
+    document.getElementById("clearSigBtn").addEventListener("click", () => {
+        if (!sigCanvas) return;
+        sigCtx.clearRect(0, 0, sigCanvas.offsetWidth * window.devicePixelRatio, sigCanvas.offsetHeight * window.devicePixelRatio);
+        sigHasMark = false;
+        document.getElementById("canvasHint").style.opacity = "1";
+    });
+
+    // Canvas drawing events
+    document.getElementById("signatureCanvas").addEventListener("mousedown", e => {
+        sigDrawing = true;
+        const p = getPos(e);
+        sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y);
+    });
+    document.getElementById("signatureCanvas").addEventListener("mousemove", e => {
+        if (!sigDrawing) return;
+        const p = getPos(e);
+        sigCtx.lineTo(p.x, p.y); sigCtx.stroke();
+        sigHasMark = true;
+        document.getElementById("canvasHint").style.opacity = "0";
+    });
+    document.getElementById("signatureCanvas").addEventListener("mouseup", () => sigDrawing = false);
+    document.getElementById("signatureCanvas").addEventListener("touchstart", e => {
+        e.preventDefault(); sigDrawing = true;
+        const p = getPos(e);
+        sigCtx.beginPath(); sigCtx.moveTo(p.x, p.y);
+    }, { passive: false });
+    document.getElementById("signatureCanvas").addEventListener("touchmove", e => {
+        e.preventDefault(); if (!sigDrawing) return;
+        const p = getPos(e);
+        sigCtx.lineTo(p.x, p.y); sigCtx.stroke();
+        sigHasMark = true;
+        document.getElementById("canvasHint").style.opacity = "0";
+    }, { passive: false });
+    document.getElementById("signatureCanvas").addEventListener("touchend", () => sigDrawing = false);
+
+    document.getElementById("saveAuthBtn").addEventListener("click", () => {
+        const name = document.getElementById("authSignerName").value.trim();
+        if (!name) { toast("⚠️ Escribe el nombre del firmante", "error"); return; }
+        if (!sigHasMark) { toast("⚠️ Dibuja la firma antes de guardar", "error"); return; }
+        currentAuthName = name;
+        currentAuthDate = new Date().toLocaleDateString("es-ES");
+        currentAuthSig = sigCanvas.toDataURL("image/png");
+        authModal.classList.remove("open");
+        updateAuthBtn();
+        toast("✅ Autorización registrada");
+    });
+
     // ── EXPORT HTML REPORT ──
     document.getElementById("exportHtmlBtn").addEventListener("click", () => {
         const sorted = [...allPlayers].sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -894,18 +1171,24 @@
             const foto = p.photoB64
                 ? `<img src="${p.photoB64}" style="width:60px;height:60px;border-radius:10px;object-fit:cover;">`
                 : `<div style="width:60px;height:60px;border-radius:10px;background:#EEF2FA;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">👤</div>`;
+            const authCell = p.authName
+                ? `<span style="color:#1A8A4A;font-weight:bold;">✅ ${p.authName}</span>`
+                : `<span style="color:#92620A;">⚠️ Pendiente</span>`;
             return `<tr>
                 <td style="text-align:center;">${foto}</td>
                 <td><strong>${p.name || ""}</strong></td>
                 <td>${p.category || ""}</td>
                 <td>${p.birthYear || ""}</td>
                 <td>${p.team || ""}</td>
+                <td>${p.phone || ""}</td>
                 <td>${(p.positions || []).join(", ")}</td>
                 <td>${p.foot || ""}</td>
                 <td>${p.shoot || ""}</td>
                 <td style="text-align:center;"><span style="background:#F5B800;color:#1A3A8F;font-weight:bold;padding:3px 10px;border-radius:20px;">${p.rating || "—"}</span></td>
+                <td>${p.priority || ""}</td>
                 <td>${p.event || ""}</td>
                 <td>${p.date || ""}</td>
+                <td>${authCell}</td>
                 <td style="font-style:italic;font-size:.8rem;color:#666;">${p.observations || ""}</td>
             </tr>`;
         }).join("");
@@ -931,9 +1214,9 @@
 <p>Generado el ${new Date().toLocaleDateString("es-ES")} · ${sorted.length} jugadores</p>
 <table>
   <thead><tr>
-    <th>Foto</th><th>Nombre</th><th>Categoría</th><th>Año</th><th>Equipo</th>
-    <th>Posiciones</th><th>Pierna</th><th>Golpeo</th><th>Val.</th>
-    <th>Evento</th><th>Fecha</th><th>Observaciones</th>
+    <th>Foto</th><th>Nombre</th><th>Categoría</th><th>Año</th><th>Equipo</th><th>Teléfono</th>
+    <th>Posiciones</th><th>Pierna</th><th>Golpeo</th><th>Val.</th><th>Prior.</th>
+    <th>Evento</th><th>Fecha</th><th>Autorización</th><th>Observaciones</th>
   </tr></thead>
   <tbody>${rows}</tbody>
 </table>
@@ -970,12 +1253,15 @@
             "Año nac.": p.birthYear || "",
             "Categoría": p.category || "",
             "Equipo": p.team || "",
+            "Teléfono": p.phone || "",
+            "Prioridad": p.priority || "",
             "Posiciones": p.positions?.join(", ") || "",
             "Pierna": p.foot || "",
             "Golpeo": p.shoot || "",
             "Valoración": p.rating || "",
             "Partido/Evento": p.event || "",
             "Fecha visto": p.date || "",
+            "Autorización foto": p.authName ? `Sí · ${p.authName} · ${p.authDate}` : "Pendiente",
             "Observaciones": p.observations || ""
         }));
         const ws = XLSX.utils.json_to_sheet(data);
@@ -998,8 +1284,15 @@
             document.getElementById("playerBirthYear").value = p.birthYear || "2008";
             document.getElementById("playerCategory").value = p.category || "Cadete";
             document.getElementById("playerTeam").value = p.team || "";
+            document.getElementById("playerPhone").value = p.phone || "";
+            document.getElementById("playerPriority").value = p.priority || "";
             document.getElementById("playerEvent").value = p.event || "";
             document.getElementById("playerDate").value = p.date || "";
+            // Auth
+            currentAuthSig = p.authSig || null;
+            currentAuthName = p.authName || "";
+            currentAuthDate = p.authDate || "";
+            updateAuthBtn();
             document.querySelectorAll("#posChips .chip").forEach(ch => {
                 ch.classList.toggle("selected", p.positions?.includes(ch.textContent) || false);
             });
@@ -1024,8 +1317,12 @@
             document.getElementById("playerBirthYear").value = "2008";
             document.getElementById("playerCategory").value = "Cadete";
             document.getElementById("playerTeam").value = "";
+            document.getElementById("playerPhone").value = "";
+            document.getElementById("playerPriority").value = "";
             document.getElementById("playerEvent").value = "";
             document.getElementById("playerDate").value = "";
+            currentAuthSig = null; currentAuthName = ""; currentAuthDate = "";
+            updateAuthBtn();
             document.querySelectorAll("#posChips .chip").forEach(ch => ch.classList.remove("selected"));
             document.querySelector('input[name="foot"][value="diestro"]').checked = true;
             document.querySelector('input[name="shoot"][value="regular"]').checked = true;
@@ -1102,6 +1399,8 @@
             birthYear: document.getElementById("playerBirthYear").value,
             category: document.getElementById("playerCategory").value,
             team: document.getElementById("playerTeam").value.trim(),
+            phone: document.getElementById("playerPhone").value.trim(),
+            priority: document.getElementById("playerPriority").value,
             event: document.getElementById("playerEvent").value.trim(),
             date: document.getElementById("playerDate").value,
             positions,
@@ -1110,6 +1409,9 @@
             rating: parseFloat(document.getElementById("playerRating").value),
             observations: document.getElementById("playerObservations").value.trim(),
             photoB64: currentPhotoB64 || null,
+            authSig: currentAuthSig || null,
+            authName: currentAuthName || null,
+            authDate: currentAuthDate || null,
             updatedAt: new Date(),
             createdBy: currentUser.uid
         };
@@ -1167,6 +1469,14 @@
                 <div class="detail-section-label">🗓️ Observado en</div>
                 <div class="detail-obs">${[p.event, p.date].filter(Boolean).join(" — ")}</div>
             </div>` : ""}
+            ${p.phone || p.priority ? `
+            <div class="detail-section">
+                <div class="detail-section-label">📋 Contacto y prioridad</div>
+                <div class="player-tags">
+                    ${p.phone ? `<span class="tag">📱 ${p.phone}</span>` : ""}
+                    ${p.priority ? `<span class="tag pos">🔢 Prioridad ${p.priority}</span>` : ""}
+                </div>
+            </div>` : ""}
             <div class="detail-section">
                 <div class="detail-section-label">🏟️ Posiciones</div>
                 <div class="player-tags">${posTags || '<span class="tag">Sin especificar</span>'}</div>
@@ -1183,6 +1493,13 @@
                 <div class="detail-section-label">📝 Observaciones</div>
                 <div class="detail-obs">${p.observations}</div>
             </div>` : ""}
+            <div class="detail-section">
+                <div class="detail-section-label">📋 Autorización fotografía</div>
+                ${p.authSig && p.authName
+                    ? `<div class="auth-status ok" style="border-radius:12px;">✅ Firmado por ${p.authName} · ${p.authDate || ""}<br><img src="${p.authSig}" style="margin-top:8px;max-width:180px;border:1px solid #ccc;border-radius:8px;"></div>`
+                    : `<div class="auth-status pending" style="border-radius:12px;">⚠️ Autorización pendiente</div>`
+                }
+            </div>
             <div class="detail-btns">
                 <button class="btn-edit-full" id="detailEditBtn">✏️ EDITAR</button>
                 <button class="btn-del-full" id="detailDelBtn">🗑️</button>
@@ -1218,7 +1535,7 @@
     }
     sel.value = "2008";
 
-    console.log("✅ Gelves Scout v3 · Listo");
+    console.log("✅ Gelves Scout v4 · Listo");
 </script>
 </body>
 </html>
