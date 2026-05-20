@@ -864,7 +864,7 @@
     // ============================================================
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, orderBy, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, query, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const app = initializeApp(firebaseConfig);
@@ -940,8 +940,14 @@
 
     // ── LOAD PLAYERS ──
     async function loadPlayers() {
-        const snap = await getDocs(query(playersCol, orderBy("createdAt", "desc")));
+        const snap = await getDocs(playersCol);
         allPlayers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Ordenar en memoria por fecha descendente
+        allPlayers.sort((a, b) => {
+            const ta = a.createdAt?.toMillis?.() || a.createdAt?.seconds || 0;
+            const tb = b.createdAt?.toMillis?.() || b.createdAt?.seconds || 0;
+            return tb - ta;
+        });
         renderPlayers();
     }
 
