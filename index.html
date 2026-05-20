@@ -686,19 +686,14 @@
                 <input type="tel" id="playerPhone" placeholder="600 000 000">
             </div>
             <div class="campo">
-                <label>🔢 Prioridad captación</label>
+                <label>🔢 Nº de captaciones</label>
                 <select id="playerPriority">
                     <option value="">— Sin asignar —</option>
-                    <option value="1">1 · Máxima urgencia</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5 · Media</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
-                    <option value="10">10 · Seguimiento largo plazo</option>
+                    <option value="1">1</option><option value="2">2</option>
+                    <option value="3">3</option><option value="4">4</option>
+                    <option value="5">5</option><option value="6">6</option>
+                    <option value="7">7</option><option value="8">8</option>
+                    <option value="9">9</option><option value="10">10</option>
                 </select>
             </div>
         </div>
@@ -714,13 +709,42 @@
 
         <div class="doble">
             <div class="campo">
-                <label>📍 Partido / Evento</label>
-                <input type="text" id="playerEvent" placeholder="Torneo, liga, amistoso...">
+                <label>🧠 Táctica</label>
+                <select id="playerTactica">
+                    <option value="">—</option>
+                    <option value="1">1</option><option value="2">2</option>
+                    <option value="3">3</option><option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
             </div>
             <div class="campo">
-                <label>📆 Fecha visto</label>
-                <input type="date" id="playerDate">
+                <label>⚽ Técnica</label>
+                <select id="playerTecnica">
+                    <option value="">—</option>
+                    <option value="1">1</option><option value="2">2</option>
+                    <option value="3">3</option><option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
             </div>
+            <div class="campo">
+                <label>💪 Físico</label>
+                <select id="playerFisico">
+                    <option value="">—</option>
+                    <option value="1">1</option><option value="2">2</option>
+                    <option value="3">3</option><option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="campo">
+            <label>🏆 Valoración final</label>
+            <select id="playerValFinal">
+                <option value="">— Sin asignar —</option>
+                <option value="Cadete A">Cadete A</option>
+                <option value="Cadete B">Cadete B</option>
+                <option value="Cadete C">Cadete C</option>
+            </select>
         </div>
 
         <div class="campo">
@@ -965,6 +989,7 @@
 
             const posTags = (player.positions || []).slice(0, 3).map(p => `<span class="tag pos">${p}</span>`).join("");
             const extraTags = [footLabel, shootLabel, player.category].filter(Boolean).map(t => `<span class="tag">${t}</span>`).join("");
+            const valFinalTag = player.valFinal ? `<span class="tag" style="background:var(--gold);color:var(--blue);border-color:var(--gold-dark);">🏆 ${player.valFinal}</span>` : "";
 
             const card = document.createElement("div");
             card.className = "player-card";
@@ -978,7 +1003,7 @@
                     </div>
                     <div class="player-meta">${player.team || "Sin equipo"} · ${player.birthYear || ""} ${player.event ? `· ${player.event}` : ""}</div>
                     ${player.observations ? `<div class="player-obs">${player.observations.substring(0, 90)}${player.observations.length > 90 ? "…" : ""}</div>` : ""}
-                    <div class="player-tags">${posTags}${extraTags}</div>
+                    <div class="player-tags">${posTags}${extraTags}${valFinalTag}</div>
                 </div>
                 <div class="player-actions-col">
                     <button class="act-btn edit-btn" data-id="${player.id}" title="Editar">✏️</button>
@@ -1174,6 +1199,8 @@
             const authCell = p.authName
                 ? `<span style="color:#1A8A4A;font-weight:bold;">✅ ${p.authName}</span>`
                 : `<span style="color:#92620A;">⚠️ Pendiente</span>`;
+            const valFinalCell = p.valFinal
+                ? `<strong style="color:#1A3A8F;">${p.valFinal}</strong>` : "—";
             return `<tr>
                 <td style="text-align:center;">${foto}</td>
                 <td><strong>${p.name || ""}</strong></td>
@@ -1181,13 +1208,15 @@
                 <td>${p.birthYear || ""}</td>
                 <td>${p.team || ""}</td>
                 <td>${p.phone || ""}</td>
+                <td>${p.numCaptaciones || ""}</td>
                 <td>${(p.positions || []).join(", ")}</td>
                 <td>${p.foot || ""}</td>
                 <td>${p.shoot || ""}</td>
+                <td style="text-align:center;">${p.tactica || "—"}</td>
+                <td style="text-align:center;">${p.tecnica || "—"}</td>
+                <td style="text-align:center;">${p.fisico || "—"}</td>
                 <td style="text-align:center;"><span style="background:#F5B800;color:#1A3A8F;font-weight:bold;padding:3px 10px;border-radius:20px;">${p.rating || "—"}</span></td>
-                <td>${p.priority || ""}</td>
-                <td>${p.event || ""}</td>
-                <td>${p.date || ""}</td>
+                <td style="text-align:center;">${valFinalCell}</td>
                 <td>${authCell}</td>
                 <td style="font-style:italic;font-size:.8rem;color:#666;">${p.observations || ""}</td>
             </tr>`;
@@ -1214,9 +1243,10 @@
 <p>Generado el ${new Date().toLocaleDateString("es-ES")} · ${sorted.length} jugadores</p>
 <table>
   <thead><tr>
-    <th>Foto</th><th>Nombre</th><th>Categoría</th><th>Año</th><th>Equipo</th><th>Teléfono</th>
-    <th>Posiciones</th><th>Pierna</th><th>Golpeo</th><th>Val.</th><th>Prior.</th>
-    <th>Evento</th><th>Fecha</th><th>Autorización</th><th>Observaciones</th>
+    <th>Foto</th><th>Nombre</th><th>Categoría</th><th>Año</th><th>Equipo</th><th>Teléfono</th><th>Nº Cap.</th>
+    <th>Posiciones</th><th>Pierna</th><th>Golpeo</th>
+    <th>Táctica</th><th>Técnica</th><th>Físico</th>
+    <th>Val. Global</th><th>Val. Final</th><th>Autorización</th><th>Observaciones</th>
   </tr></thead>
   <tbody>${rows}</tbody>
 </table>
@@ -1254,13 +1284,15 @@
             "Categoría": p.category || "",
             "Equipo": p.team || "",
             "Teléfono": p.phone || "",
-            "Prioridad": p.priority || "",
+            "Nº Captaciones": p.numCaptaciones || "",
             "Posiciones": p.positions?.join(", ") || "",
             "Pierna": p.foot || "",
             "Golpeo": p.shoot || "",
-            "Valoración": p.rating || "",
-            "Partido/Evento": p.event || "",
-            "Fecha visto": p.date || "",
+            "Táctica (1-5)": p.tactica || "",
+            "Técnica (1-5)": p.tecnica || "",
+            "Físico (1-5)": p.fisico || "",
+            "Valoración global": p.rating || "",
+            "Valoración final": p.valFinal || "",
             "Autorización foto": p.authName ? `Sí · ${p.authName} · ${p.authDate}` : "Pendiente",
             "Observaciones": p.observations || ""
         }));
@@ -1285,9 +1317,11 @@
             document.getElementById("playerCategory").value = p.category || "Cadete";
             document.getElementById("playerTeam").value = p.team || "";
             document.getElementById("playerPhone").value = p.phone || "";
-            document.getElementById("playerPriority").value = p.priority || "";
-            document.getElementById("playerEvent").value = p.event || "";
-            document.getElementById("playerDate").value = p.date || "";
+            document.getElementById("playerPriority").value = p.numCaptaciones || "";
+            document.getElementById("playerTactica").value = p.tactica || "";
+            document.getElementById("playerTecnica").value = p.tecnica || "";
+            document.getElementById("playerFisico").value = p.fisico || "";
+            document.getElementById("playerValFinal").value = p.valFinal || "";
             // Auth
             currentAuthSig = p.authSig || null;
             currentAuthName = p.authName || "";
@@ -1319,8 +1353,10 @@
             document.getElementById("playerTeam").value = "";
             document.getElementById("playerPhone").value = "";
             document.getElementById("playerPriority").value = "";
-            document.getElementById("playerEvent").value = "";
-            document.getElementById("playerDate").value = "";
+            document.getElementById("playerTactica").value = "";
+            document.getElementById("playerTecnica").value = "";
+            document.getElementById("playerFisico").value = "";
+            document.getElementById("playerValFinal").value = "";
             currentAuthSig = null; currentAuthName = ""; currentAuthDate = "";
             updateAuthBtn();
             document.querySelectorAll("#posChips .chip").forEach(ch => ch.classList.remove("selected"));
@@ -1400,12 +1436,14 @@
             category: document.getElementById("playerCategory").value,
             team: document.getElementById("playerTeam").value.trim(),
             phone: document.getElementById("playerPhone").value.trim(),
-            priority: document.getElementById("playerPriority").value,
-            event: document.getElementById("playerEvent").value.trim(),
-            date: document.getElementById("playerDate").value,
+            numCaptaciones: document.getElementById("playerPriority").value,
             positions,
             foot,
             shoot,
+            tactica: document.getElementById("playerTactica").value,
+            tecnica: document.getElementById("playerTecnica").value,
+            fisico: document.getElementById("playerFisico").value,
+            valFinal: document.getElementById("playerValFinal").value,
             rating: parseFloat(document.getElementById("playerRating").value),
             observations: document.getElementById("playerObservations").value.trim(),
             photoB64: currentPhotoB64 || null,
@@ -1464,17 +1502,28 @@
                     ${ratingBlock}
                 </div>
             </div>
-            ${p.event || p.date ? `
+            ${p.phone || p.numCaptaciones ? `
             <div class="detail-section">
-                <div class="detail-section-label">🗓️ Observado en</div>
-                <div class="detail-obs">${[p.event, p.date].filter(Boolean).join(" — ")}</div>
-            </div>` : ""}
-            ${p.phone || p.priority ? `
-            <div class="detail-section">
-                <div class="detail-section-label">📋 Contacto y prioridad</div>
+                <div class="detail-section-label">📋 Contacto y seguimiento</div>
                 <div class="player-tags">
                     ${p.phone ? `<span class="tag">📱 ${p.phone}</span>` : ""}
-                    ${p.priority ? `<span class="tag pos">🔢 Prioridad ${p.priority}</span>` : ""}
+                    ${p.numCaptaciones ? `<span class="tag pos">🔢 Captación nº ${p.numCaptaciones}</span>` : ""}
+                </div>
+            </div>` : ""}
+            ${p.tactica || p.tecnica || p.fisico ? `
+            <div class="detail-section">
+                <div class="detail-section-label">📊 Valoración técnica</div>
+                <div class="player-tags">
+                    ${p.tactica ? `<span class="tag pos">🧠 Táctica: ${p.tactica}/5</span>` : ""}
+                    ${p.tecnica ? `<span class="tag pos">⚽ Técnica: ${p.tecnica}/5</span>` : ""}
+                    ${p.fisico ? `<span class="tag pos">💪 Físico: ${p.fisico}/5</span>` : ""}
+                </div>
+            </div>` : ""}
+            ${p.valFinal ? `
+            <div class="detail-section">
+                <div class="detail-section-label">🏆 Valoración final</div>
+                <div class="player-tags">
+                    <span class="tag" style="background:var(--gold);color:var(--blue);border-color:var(--gold-dark);font-size:.8rem;padding:4px 14px;">🏆 ${p.valFinal}</span>
                 </div>
             </div>` : ""}
             <div class="detail-section">
@@ -1535,7 +1584,7 @@
     }
     sel.value = "2008";
 
-    console.log("✅ Gelves Scout v4 · Listo");
+    console.log("✅ Gelves Scout v5 · Listo");
 </script>
 </body>
 </html>
