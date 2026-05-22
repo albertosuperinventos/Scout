@@ -677,9 +677,9 @@
         allPlayers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         // filter by club/cat for non-admins
         if (!isAdmin) {
-            const uc = currentUserProfile?.club || "", ucat = currentUserProfile?.categoria || "";
+            const uc = currentUserProfile?.club || "";
             if (!uc) { document.getElementById("playersList").innerHTML = `<div class="empty"><div class="icon">⏳</div><p>Tu cuenta no tiene club asignado. Contacta con el administrador.</p></div>`; return; }
-            allPlayers = allPlayers.filter(p => p.club === uc && p.category === ucat);
+            allPlayers = allPlayers.filter(p => p.club === uc);
         }
         // sort in memory
         allPlayers.sort((a, b) => { const ta = a.createdAt?.seconds || 0, tb = b.createdAt?.seconds || 0; return tb - ta; });
