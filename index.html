@@ -825,6 +825,9 @@
         document.getElementById("playerValFinal").value = "Nuevo";
         toast("⭐ Marcado como Nuevo");
     });
+
+    // ADMIN PANEL TOGGLE
+    document.getElementById("adminToggle").addEventListener("click", () => {
         const body = document.getElementById("adminBody"), arrow = document.getElementById("adminArrow");
         body.classList.toggle("open"); arrow.textContent = body.classList.contains("open") ? "▲" : "▼";
     });
