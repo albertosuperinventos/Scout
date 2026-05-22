@@ -185,6 +185,9 @@
         .btn-auth-cancel{background:var(--surface2);border:1.5px solid var(--border);padding:13px 18px;border-radius:var(--rbtn);font-weight:700;font-size:.85rem;cursor:pointer;}
         .auth-badge{background:#E6F4ED;color:var(--success);border-radius:20px;padding:2px 8px;font-size:.65rem;font-weight:700;border:1px solid #A8D5BA;}
         .auth-badge.pending{background:#FFF8E6;color:#92620A;border-color:#F5D98A;}
+        /* CAP BOXES */
+        .cap-box{width:36px;height:36px;border-radius:10px;border:2px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .15s;color:var(--muted);}
+        .cap-box.active{background:var(--blue);color:#fff;border-color:var(--blue);}
         /* FAB */
         .fab{position:fixed;bottom:22px;right:22px;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--blue);border:none;font-size:1.8rem;font-weight:bold;cursor:pointer;box-shadow:0 4px 18px rgba(245,184,0,.45);display:flex;align-items:center;justify-content:center;transition:transform .15s;}
         .fab:hover{transform:scale(1.07);}
@@ -246,6 +249,8 @@
             <button class="fchip" data-cat="Cadete">Cadete</button>
             <button class="fchip" data-cat="Cadete A">Cadete A</button>
             <button class="fchip" data-cat="Cadete B">Cadete B</button>
+            <button class="fchip" data-cat="Cadete C">Cadete C</button>
+            <button class="fchip" data-cat="Cadete D">Cadete D</button>
             <button class="fchip" data-cat="Juvenil">Juvenil</button>
             <button class="fchip" data-cat="Senior">Senior</button>
         </div>
@@ -255,6 +260,15 @@
             <button class="fchip" data-foot="diestro">Diestro</button>
             <button class="fchip" data-foot="zurdo">Zurdo</button>
             <button class="fchip" data-foot="ambidiestro">Ambidiestro</button>
+        </div>
+        <!-- Filtro etiqueta / valFinal -->
+        <div class="filter-chips" id="valChips">
+            <button class="fchip active" data-val="">🏷️ Todas</button>
+            <button class="fchip" data-val="Nuevo">⭐ Nuevo</button>
+            <button class="fchip" data-val="Cadete A">Cadete A</button>
+            <button class="fchip" data-val="Cadete B">Cadete B</button>
+            <button class="fchip" data-val="Cadete C">Cadete C</button>
+            <button class="fchip" data-val="Cadete D">Cadete D</button>
         </div>
         <!-- Filtro club (solo admin) -->
         <div class="filter-chips" id="clubChips" style="display:none;"></div>
@@ -282,8 +296,29 @@
                 </div>
                 <div class="admin-section">
                     <div class="admin-section-title">👥 Usuarios</div>
+                    <!-- Formulario añadir usuario -->
+                    <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;">
+                        <div style="font-weight:700;font-size:.78rem;color:var(--blue);margin-bottom:10px;">➕ Añadir usuario</div>
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            <input type="text" id="newUserName" placeholder="Nombre" style="padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.82rem;">
+                            <input type="email" id="newUserEmail" placeholder="Correo electrónico" style="padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.82rem;">
+                            <input type="password" id="newUserPass" placeholder="Contraseña (mín. 6 caracteres)" style="padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.82rem;">
+                            <div style="display:flex;gap:8px;">
+                                <select id="newUserClub" style="flex:1;padding:8px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.82rem;">
+                                    <option value="">— Club —</option>
+                                </select>
+                                <select id="newUserCat" style="flex:1;padding:8px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.82rem;">
+                                    <option value="">— Categoría —</option>
+                                    <option>Pre-benjamín</option><option>Benjamín</option><option>Alevín</option>
+                                    <option>Infantil</option><option>Cadete</option><option>Cadete A</option>
+                                    <option>Cadete B</option><option>Cadete C</option><option>Cadete D</option>
+                                    <option>Juvenil</option><option>Senior</option>
+                                </select>
+                            </div>
+                            <button id="createUserBtn" style="background:var(--blue);color:#fff;border:none;padding:9px;border-radius:10px;font-weight:700;font-size:.82rem;cursor:pointer;">Crear usuario</button>
+                        </div>
+                    </div>
                     <div id="usersList"></div>
-                    <p style="font-size:.75rem;color:var(--muted);margin-top:8px;">💡 Crea usuarios en Firebase Console → Authentication → Add user, luego asígnalos aquí.</p>
                 </div>
             </div>
         </div>
@@ -339,7 +374,7 @@
                 <select id="playerCategory">
                     <option>Pre-benjamín</option><option>Benjamín</option><option>Alevín</option>
                     <option>Infantil</option><option selected>Cadete</option>
-                    <option>Cadete A</option><option>Cadete B</option>
+                    <option>Cadete A</option><option>Cadete B</option><option>Cadete C</option><option>Cadete D</option>
                     <option>Juvenil</option><option>Senior</option>
                 </select>
             </div>
@@ -361,11 +396,9 @@
         <!-- Nº captaciones -->
         <div class="campo">
             <label>🔢 Nº de captaciones</label>
-            <select id="playerNumCap">
-                <option value="">— Sin asignar —</option>
-                <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-                <option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
-            </select>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;" id="capBoxes">
+                <input type="hidden" id="playerNumCap" value="">
+            </div>
         </div>
         <!-- Posiciones -->
         <div class="campo">
@@ -388,15 +421,6 @@
                 <label><input type="radio" name="foot" value="ambidiestro"> Ambidiestro</label>
             </div>
         </div>
-        <!-- Golpeo -->
-        <div class="campo">
-            <label>💥 Golpeo</label>
-            <div class="radio-row">
-                <label><input type="radio" name="shoot" value="bueno"> Bueno</label>
-                <label><input type="radio" name="shoot" value="regular" checked> Regular</label>
-                <label><input type="radio" name="shoot" value="malo"> Malo</label>
-            </div>
-        </div>
         <!-- Valoración global + técnica + final - OCULTO POR DEFECTO -->
         <div style="margin-bottom:18px;">
             <button type="button" id="toggleValBtn" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);padding:11px 16px;border-radius:14px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;">
@@ -405,6 +429,15 @@
             </button>
         </div>
         <div id="valBlock" style="display:none;">
+        <!-- Golpeo (oculto con valoraciones) -->
+        <div class="campo">
+            <label>💥 Golpeo</label>
+            <div class="radio-row">
+                <label><input type="radio" name="shoot" value="bueno"> Bueno</label>
+                <label><input type="radio" name="shoot" value="regular" checked> Regular</label>
+                <label><input type="radio" name="shoot" value="malo"> Malo</label>
+            </div>
+        </div>
         <!-- Táctica / Técnica / Físico -->
         <div class="triple">
             <div class="campo">
@@ -442,10 +475,13 @@
         <!-- Valoración final -->
         <div class="campo">
             <label>🏆 Valoración final</label>
-            <select id="playerValFinal">
-                <option value="">— Sin asignar —</option>
-                <option>Cadete A</option><option>Cadete B</option><option>Nuevo</option>
-            </select>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <select id="playerValFinal" style="flex:1;padding:11px 14px;border-radius:14px;border:1.5px solid var(--border);background:var(--surface2);font-family:inherit;font-size:.9rem;color:var(--text);">
+                    <option value="">— Sin asignar —</option>
+                    <option>Cadete A</option><option>Cadete B</option><option>Cadete C</option><option>Cadete D</option><option>Nuevo</option>
+                </select>
+                <button type="button" id="quickNuevoBtn" style="background:var(--gold);color:var(--blue);border:none;padding:11px 14px;border-radius:14px;font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap;">⭐ Nuevo</button>
+            </div>
         </div>
         </div><!-- fin valBlock -->
         <!-- Autorización -->
@@ -535,7 +571,7 @@
     let allPlayers = [], allClubs = [], allUserProfiles = [];
     let ratingsVisible = false; // oculto por defecto
     let currentEditId = null, currentPhotoB64 = null;
-    let activeFilter = "", activeFootFilter = "", activeClubFilter = "";
+    let activeFilter = "", activeFootFilter = "", activeClubFilter = "", activeValFilter = "";
     let sortByRating = true;
     let currentAuthSig = null, currentAuthName = "", currentAuthDate = "";
 
@@ -608,8 +644,10 @@
     }
 
     function renderClubSelect() {
-        const sel = document.getElementById("playerClub");
-        sel.innerHTML = `<option value="">— Club —</option>` + allClubs.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join("");
+        const opts = `<option value="">— Club —</option>` + allClubs.map(c => `<option value="${c.nombre}">${c.nombre}</option>`).join("");
+        document.getElementById("playerClub").innerHTML = opts;
+        const newUserClubSel = document.getElementById("newUserClub");
+        if (newUserClubSel) newUserClubSel.innerHTML = opts;
     }
 
     // LOAD ADMIN DATA
@@ -621,30 +659,21 @@
 
     function renderUsersList() {
         const container = document.getElementById("usersList");
-        const CATS = ["Pre-benjamín","Benjamín","Alevín","Infantil","Cadete","Cadete A","Cadete B","Juvenil","Senior"];
         const nonAdmins = allUserProfiles.filter(u => !u.admin);
         if (!nonAdmins.length) { container.innerHTML = `<p style="font-size:.8rem;color:var(--muted);">No hay usuarios todavía.</p>`; return; }
         container.innerHTML = nonAdmins.map(u => `
             <div class="user-row">
                 <div class="user-row-info">
-                    <div class="user-row-email">${u.email || u.id}</div>
-                    <div class="user-row-meta">${u.club ? `🏟️ ${u.club}` : "Sin club"} · ${u.categoria || "Sin cat."}</div>
+                    <div class="user-row-email">${u.nombre || u.email || u.id}</div>
+                    <div class="user-row-meta">${u.email || ""} · ${u.club ? `🏟️ ${u.club}` : "Sin club"} · ${u.categoria || "Sin cat."}</div>
                 </div>
-                <select class="user-club-sel" data-uid="${u.id}">
-                    <option value="">— Club —</option>
-                    ${allClubs.map(c => `<option value="${c.nombre}" ${u.club === c.nombre ? 'selected' : ''}>${c.nombre}</option>`).join("")}
-                </select>
-                <select class="user-cat-sel" data-uid="${u.id}">
-                    <option value="">— Cat. —</option>
-                    ${CATS.map(cat => `<option value="${cat}" ${u.categoria === cat ? 'selected' : ''}>${cat}</option>`).join("")}
-                </select>
-                <button class="btn-assign" data-uid="${u.id}">Asignar</button>
+                <button class="btn-assign" style="background:#FFF0EE;color:var(--danger);border:1.5px solid var(--danger);" data-uid="${u.id}" data-action="delete">🗑️</button>
             </div>`).join("");
-        container.querySelectorAll(".btn-assign").forEach(btn => {
+        container.querySelectorAll(".btn-assign[data-action='delete']").forEach(btn => {
             btn.addEventListener("click", async () => {
-                const row = btn.closest(".user-row");
-                await updateDoc(doc(db, "usuarios", btn.dataset.uid), { club: row.querySelector(".user-club-sel").value, categoria: row.querySelector(".user-cat-sel").value });
-                toast("✅ Usuario actualizado"); loadAdminData();
+                if (!confirm(`¿Eliminar usuario del panel? (No se borra de Authentication)`)) return;
+                await deleteDoc(doc(db, "usuarios", btn.dataset.uid));
+                toast("🗑️ Usuario eliminado del panel"); loadAdminData();
             });
         });
     }
@@ -672,7 +701,8 @@
             const mc = !activeFilter || p.category === activeFilter;
             const mf = !activeFootFilter || p.foot === activeFootFilter;
             const mcl = !activeClubFilter || p.club === activeClubFilter;
-            return ms && mc && mf && mcl;
+            const mv = !activeValFilter || p.valFinal === activeValFilter;
+            return ms && mc && mf && mcl && mv;
         });
         if (sortByRating) list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         document.getElementById("totalCount").textContent = allPlayers.length;
@@ -719,6 +749,9 @@
     document.querySelectorAll("#footChips .fchip").forEach(chip => {
         chip.addEventListener("click", () => { document.querySelectorAll("#footChips .fchip").forEach(c => c.classList.remove("active")); chip.classList.add("active"); activeFootFilter = chip.dataset.foot; renderPlayers(); });
     });
+    document.querySelectorAll("#valChips .fchip").forEach(chip => {
+        chip.addEventListener("click", () => { document.querySelectorAll("#valChips .fchip").forEach(c => c.classList.remove("active")); chip.classList.add("active"); activeValFilter = chip.dataset.val; renderPlayers(); });
+    });
 
     // TOGGLE RATINGS (oculto por defecto)
     document.getElementById("toggleRatings").addEventListener("click", () => {
@@ -735,8 +768,63 @@
         renderPlayers();
     });
 
-    // ADMIN PANEL
-    document.getElementById("adminToggle").addEventListener("click", () => {
+    // CREATE USER FROM ADMIN
+    document.getElementById("createUserBtn").addEventListener("click", async () => {
+        const nombre = document.getElementById("newUserName").value.trim();
+        const email = document.getElementById("newUserEmail").value.trim();
+        const pass = document.getElementById("newUserPass").value.trim();
+        const club = document.getElementById("newUserClub").value;
+        const cat = document.getElementById("newUserCat").value;
+        if (!email || !pass) { toast("⚠️ Email y contraseña obligatorios", "error"); return; }
+        if (pass.length < 6) { toast("⚠️ Contraseña mínimo 6 caracteres", "error"); return; }
+        try {
+            // Llamamos a la API REST de Firebase Admin para crear usuario
+            const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=AIzaSyCoK9OFm9Y9kzqP2vUfmruJtBPdad8CbCo`, {
+                method: "POST", headers: {"Content-Type":"application/json"},
+                body: JSON.stringify({ email, password: pass, returnSecureToken: true })
+            });
+            const data = await res.json();
+            if (data.error) { toast("❌ " + data.error.message, "error"); return; }
+            const uid = data.localId;
+            await setDoc(doc(db, "usuarios", uid), { email, nombre: nombre || email.split("@")[0], club: club || "", categoria: cat || "", admin: false });
+            toast(`✅ Usuario ${email} creado`);
+            document.getElementById("newUserName").value = "";
+            document.getElementById("newUserEmail").value = "";
+            document.getElementById("newUserPass").value = "";
+            document.getElementById("newUserClub").value = "";
+            document.getElementById("newUserCat").value = "";
+            loadAdminData();
+        } catch(e) { toast("❌ " + e.message, "error"); }
+    });
+
+    // CAP BOXES INIT
+    function initCapBoxes() {
+        const wrap = document.getElementById("capBoxes");
+        const hidden = document.getElementById("playerNumCap");
+        wrap.querySelectorAll(".cap-box").forEach(b => b.remove());
+        for (let i = 1; i <= 10; i++) {
+            const box = document.createElement("div");
+            box.className = "cap-box"; box.textContent = i; box.dataset.val = i;
+            const cur = parseInt(hidden.value) || 0;
+            if (i <= cur) box.classList.add("active");
+            box.addEventListener("click", () => {
+                const val = parseInt(box.dataset.val);
+                const cur2 = parseInt(hidden.value) || 0;
+                const newVal = val === cur2 ? 0 : val;
+                hidden.value = newVal || "";
+                wrap.querySelectorAll(".cap-box").forEach(b2 => {
+                    b2.classList.toggle("active", parseInt(b2.dataset.val) <= newVal);
+                });
+            });
+            wrap.appendChild(box);
+        }
+    }
+
+    // QUICK NUEVO BTN
+    document.getElementById("quickNuevoBtn").addEventListener("click", () => {
+        document.getElementById("playerValFinal").value = "Nuevo";
+        toast("⭐ Marcado como Nuevo");
+    });
         const body = document.getElementById("adminBody"), arrow = document.getElementById("adminArrow");
         body.classList.toggle("open"); arrow.textContent = body.classList.contains("open") ? "▲" : "▼";
     });
@@ -774,7 +862,8 @@
             const mc = !activeFilter || p.category === activeFilter;
             const mf = !activeFootFilter || p.foot === activeFootFilter;
             const mcl = !activeClubFilter || p.club === activeClubFilter;
-            return mc && mf && mcl;
+            const mv = !activeValFilter || p.valFinal === activeValFilter;
+            return mc && mf && mcl && mv;
         }).sort((a,b) => (b.rating||0) - (a.rating||0));
     }
 
@@ -836,6 +925,7 @@
         document.getElementById("toggleValArrow").textContent = "▼";
         document.getElementById("toggleValBtn").querySelector("span").textContent = "⭐ Ver valoraciones";
         document.getElementById("formOverlay").classList.add("open"); document.getElementById("formSheet").classList.add("open");
+        initCapBoxes();
     }
 
     function closeForm() { document.getElementById("formOverlay").classList.remove("open"); document.getElementById("formSheet").classList.remove("open"); }
