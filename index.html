@@ -240,29 +240,22 @@
             </div>
         </div>
         <!-- Filtro categoría -->
-        <div class="filter-chips" id="catChips">
+        <div class="filter-chips" id="catChips" style="flex-wrap:wrap;">
             <button class="fchip active" data-cat="">Todos</button>
-            <button class="fchip" data-cat="Pre-benjamín">Pre-benjamín</button>
-            <button class="fchip" data-cat="Benjamín">Benjamín</button>
-            <button class="fchip" data-cat="Alevín">Alevín</button>
-            <button class="fchip" data-cat="Infantil">Infantil</button>
-            <button class="fchip" data-cat="Cadete">Cadete</button>
             <button class="fchip" data-cat="Cadete A">Cadete A</button>
             <button class="fchip" data-cat="Cadete B">Cadete B</button>
             <button class="fchip" data-cat="Cadete C">Cadete C</button>
             <button class="fchip" data-cat="Cadete D">Cadete D</button>
-            <button class="fchip" data-cat="Juvenil">Juvenil</button>
-            <button class="fchip" data-cat="Senior">Senior</button>
         </div>
         <!-- Filtro pierna -->
-        <div class="filter-chips" id="footChips">
+        <div class="filter-chips" id="footChips" style="flex-wrap:wrap;">
             <button class="fchip active" data-foot="">🦵 Todos</button>
             <button class="fchip" data-foot="diestro">Diestro</button>
             <button class="fchip" data-foot="zurdo">Zurdo</button>
             <button class="fchip" data-foot="ambidiestro">Ambidiestro</button>
         </div>
         <!-- Filtro etiqueta / valFinal -->
-        <div class="filter-chips" id="valChips">
+        <div class="filter-chips" id="valChips" style="flex-wrap:wrap;">
             <button class="fchip active" data-val="">🏷️ Todas</button>
             <button class="fchip" data-val="Nuevo">⭐ Nuevo</button>
             <button class="fchip" data-val="Cadete A">Cadete A</button>
@@ -421,6 +414,17 @@
                 <label><input type="radio" name="foot" value="ambidiestro"> Ambidiestro</label>
             </div>
         </div>
+        <!-- Etiqueta rápida Nuevo -->
+        <div class="campo">
+            <label>🏷️ Etiqueta</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <select id="playerValFinal" style="flex:1;padding:11px 14px;border-radius:14px;border:1.5px solid var(--border);background:var(--surface2);font-family:inherit;font-size:.9rem;color:var(--text);">
+                    <option value="">— Sin asignar —</option>
+                    <option>Cadete A</option><option>Cadete B</option><option>Cadete C</option><option>Cadete D</option><option>Nuevo</option>
+                </select>
+                <button type="button" id="quickNuevoBtn" style="background:var(--gold);color:var(--blue);border:none;padding:11px 14px;border-radius:14px;font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap;">⭐ Nuevo</button>
+            </div>
+        </div>
         <!-- Valoración global + técnica + final - OCULTO POR DEFECTO -->
         <div style="margin-bottom:18px;">
             <button type="button" id="toggleValBtn" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);padding:11px 16px;border-radius:14px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;">
@@ -471,17 +475,6 @@
         <div class="campo">
             <label>📝 Observaciones</label>
             <textarea id="playerObservations" rows="4" placeholder="Velocidad, técnica, actitud, físico..."></textarea>
-        </div>
-        <!-- Valoración final -->
-        <div class="campo">
-            <label>🏆 Valoración final</label>
-            <div style="display:flex;gap:8px;align-items:center;">
-                <select id="playerValFinal" style="flex:1;padding:11px 14px;border-radius:14px;border:1.5px solid var(--border);background:var(--surface2);font-family:inherit;font-size:.9rem;color:var(--text);">
-                    <option value="">— Sin asignar —</option>
-                    <option>Cadete A</option><option>Cadete B</option><option>Cadete C</option><option>Cadete D</option><option>Nuevo</option>
-                </select>
-                <button type="button" id="quickNuevoBtn" style="background:var(--gold);color:var(--blue);border:none;padding:11px 14px;border-radius:14px;font-weight:700;font-size:.82rem;cursor:pointer;white-space:nowrap;">⭐ Nuevo</button>
-            </div>
         </div>
         </div><!-- fin valBlock -->
         <!-- Autorización -->
