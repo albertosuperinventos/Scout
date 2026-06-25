@@ -195,6 +195,57 @@
         .empty{text-align:center;padding:40px 20px;color:var(--muted);}
         .empty .icon{font-size:2.5rem;margin-bottom:8px;}
         .empty p{font-size:.85rem;}
+
+        /* ===== MODAL ASISTENCIA ===== */
+        #asistenciaModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;align-items:flex-end;justify-content:center;}
+        #asistenciaModal.open{display:flex;}
+        .asist-sheet{background:var(--surface);border-radius:28px 28px 0 0;width:100%;max-width:680px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;}
+        .asist-header{background:var(--blue);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+        .asist-header h2{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:1px;flex:1;}
+        .asist-tabs{display:flex;gap:4px;background:rgba(255,255,255,.15);border-radius:20px;padding:3px;}
+        .asist-tab{padding:5px 14px;border-radius:16px;font-size:.78rem;font-weight:600;cursor:pointer;color:rgba(255,255,255,.7);border:none;background:none;}
+        .asist-tab.active{background:#fff;color:var(--blue);}
+        .asist-close{background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;padding:0 4px;}
+        .asist-body{flex:1;overflow-y:auto;padding:16px;}
+        /* Tab registro */
+        .asist-day-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+        .day-chip{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);font-size:.8rem;font-weight:600;cursor:pointer;color:var(--muted);}
+        .day-chip.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+        .asist-search{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rbtn);padding:8px 14px;margin-bottom:12px;}
+        .asist-search input{border:none;background:none;flex:1;font-family:inherit;font-size:.9rem;outline:none;color:var(--text);}
+        .absent-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+        .absent-row{background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+        .absent-name{font-weight:600;font-size:.9rem;flex:1;min-width:120px;}
+        .absent-type{display:flex;gap:6px;}
+        .atype-btn{padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;cursor:pointer;color:var(--muted);}
+        .atype-btn.sel-falta{background:#FECACA;border-color:#EF4444;color:#B91C1C;}
+        .atype-btn.sel-retraso{background:#FEF3C7;border-color:#F59E0B;color:#92400E;}
+        .absent-motivo{width:100%;margin-top:4px;}
+        .absent-motivo select{padding:6px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.8rem;color:var(--text);width:auto;}
+        .absent-motivo input{padding:6px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.8rem;width:100%;margin-top:4px;}
+        .absent-remove{background:none;border:none;color:var(--danger);font-size:1.1rem;cursor:pointer;padding:2px;}
+        .search-results{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+        .search-result-row{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+        .search-result-row:hover{border-color:var(--blue-mid);}
+        .search-result-row span{font-size:.85rem;}
+        .search-result-row button{background:var(--blue);color:#fff;border:none;border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:600;cursor:pointer;}
+        .asist-footer{padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0;display:flex;gap:8px;}
+        .btn-save-asist{flex:1;background:var(--blue);color:#fff;border:none;border-radius:var(--rbtn);padding:13px;font-family:'Bebas Neue',sans-serif;font-size:1rem;letter-spacing:1px;cursor:pointer;}
+        .btn-cancel-asist{background:var(--surface2);color:var(--muted);border:1.5px solid var(--border);border-radius:var(--rbtn);padding:13px 18px;font-weight:600;font-size:.85rem;cursor:pointer;}
+        /* Tab historial */
+        .hist-filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+        .hist-filters input[type=date]{padding:7px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);font-family:inherit;font-size:.82rem;color:var(--text);}
+        .btn-hist-export{background:var(--gold);color:var(--blue);border:none;border-radius:var(--rbtn);padding:8px 16px;font-weight:700;font-size:.82rem;cursor:pointer;}
+        .hist-table-wrap{overflow-x:auto;}
+        .hist-table{width:100%;border-collapse:collapse;font-size:.78rem;}
+        .hist-table th{background:var(--blue);color:#fff;padding:7px 10px;text-align:left;white-space:nowrap;}
+        .hist-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+        .hist-table tr:nth-child(even) td{background:var(--surface2);}
+        .htag{padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:600;}
+        .htag-p{background:#D1FAE5;color:#065F46;}
+        .htag-f{background:#FEE2E2;color:#991B1B;}
+        .htag-r{background:#FEF3C7;color:#92400E;}
+        .empty-hist{text-align:center;padding:40px 20px;color:var(--muted);}
     </style>
 </head>
 <body>
@@ -222,6 +273,7 @@
             <div class="header-row">
                 <div class="header-logo">⚽ SCOUT <span>CF</span></div>
                 <div class="header-btns">
+                    <button class="hbtn" id="asistenciaBtn">📋 Asistencia</button>
                     <button class="hbtn" id="exportBtn">📊 Excel</button>
                     <button class="hbtn" id="exportHtmlBtn">🖨️ Informe</button>
                     <button class="hbtn danger" id="logoutBtn">Salir</button>
@@ -537,6 +589,43 @@
     </div>
 </div>
 
+<!-- MODAL ASISTENCIA -->
+<div id="asistenciaModal">
+    <div class="asist-sheet">
+        <div class="asist-header">
+            <h2>📋 ASISTENCIA</h2>
+            <div class="asist-tabs">
+                <button class="asist-tab active" data-atab="registro">Registrar</button>
+                <button class="asist-tab" data-atab="historial">Historial</button>
+            </div>
+            <button class="asist-close" id="asistCloseBtn">✕</button>
+        </div>
+        <div id="asistTabRegistro" class="asist-body">
+            <div class="asist-day-bar" id="dayChips"></div>
+            <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;">Solo añade los jugadores que <strong>faltan o llegan tarde</strong>. El resto se marca como presente.</p>
+            <div class="asist-search">
+                <span>🔍</span>
+                <input type="text" id="asistSearchInput" placeholder="Buscar jugador por nombre...">
+            </div>
+            <div class="search-results" id="asistSearchResults"></div>
+            <div class="absent-list" id="absentList"></div>
+        </div>
+        <div id="asistTabHistorial" class="asist-body" style="display:none;">
+            <div class="hist-filters">
+                <input type="date" id="histDesde">
+                <span style="font-size:.85rem;color:var(--muted);">→</span>
+                <input type="date" id="histHasta">
+                <button class="btn-hist-export" id="histExportBtn">📊 Exportar Excel</button>
+            </div>
+            <div id="histContent"><div class="empty-hist">Selecciona un rango de fechas.</div></div>
+        </div>
+        <div class="asist-footer" id="asistFooter">
+            <button class="btn-cancel-asist" id="asistCancelBtn">Cancelar</button>
+            <button class="btn-save-asist" id="asistSaveBtn">💾 GUARDAR SESIÓN</button>
+        </div>
+    </div>
+</div>
+
 <script type="module">
     const firebaseConfig = {
         apiKey: "AIzaSyCoK9OFm9Y9kzqP2vUfmruJtBPdad8CbCo",
@@ -557,6 +646,7 @@
     const playersCol = collection(db, "jugadores");
     const usuariosCol = collection(db, "usuarios");
     const clubesCol = collection(db, "clubes");
+    const asistenciaCol = collection(db, "asistencia");
     const ADMIN_EMAIL = "albertosuperinventos@gmail.com";
 
     // STATE
@@ -679,7 +769,7 @@
         if (!isAdmin) {
             const uc = currentUserProfile?.club || "";
             if (!uc) { document.getElementById("playersList").innerHTML = `<div class="empty"><div class="icon">⏳</div><p>Tu cuenta no tiene club asignado. Contacta con el administrador.</p></div>`; return; }
-            allPlayers = allPlayers.filter(p => p.club === uc);
+            allPlayers = allPlayers.filter(p => (p.club || "").trim().toLowerCase() === uc.trim().toLowerCase());
         }
         // sort in memory
         allPlayers.sort((a, b) => { const ta = a.createdAt?.seconds || 0, tb = b.createdAt?.seconds || 0; return tb - ta; });
@@ -1094,7 +1184,249 @@
     for (let y = 2018; y >= 1990; y--) { const o = document.createElement("option"); o.value = y; o.textContent = y; sel.appendChild(o); }
     sel.value = "2008";
 
-    console.log("✅ Scout CF v6 Final · Listo");
+
+    // ===== MÓDULO ASISTENCIA =====
+    let asistActiveTab = "registro";
+    let asistSelectedDay = null;
+    let absentPlayers = {}; // { uid: { tipo: 'falta'|'retraso', motivo, motivoCustom } }
+
+    const MOTIVOS = ["Enfermedad", "Castigo", "Viaje", "Estudios", "Varios"];
+    const DIAS_ENTRENO = [2, 4, 5]; // martes=2, jueves=4, viernes=5
+
+    function getNextTrainDays() {
+        const today = new Date();
+        const result = [];
+        for (let i = -7; i <= 7; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() + i);
+            if (DIAS_ENTRENO.includes(d.getDay())) {
+                result.push(new Date(d.setHours(0,0,0,0)));
+            }
+        }
+        result.sort((a,b) => a-b);
+        const unique = [];
+        const seen = new Set();
+        result.forEach(d => { const k = d.toISOString().slice(0,10); if (!seen.has(k)){ seen.add(k); unique.push(d); }});
+        return unique.slice(-5).concat(unique.slice(0,5).filter(d => !unique.slice(-5).includes(d)));
+    }
+
+    function formatDayLabel(d) {
+        const dias = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+        return `${dias[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;
+    }
+
+    function renderDayChips() {
+        const container = document.getElementById("dayChips");
+        container.innerHTML = "";
+        const days = getNextTrainDays();
+        const today = new Date(); today.setHours(0,0,0,0);
+        if (!asistSelectedDay) {
+            const closest = days.reduce((prev, curr) => Math.abs(curr - today) < Math.abs(prev - today) ? curr : prev, days[0]);
+            asistSelectedDay = closest.toISOString().slice(0,10);
+        }
+        days.forEach(d => {
+            const key = d.toISOString().slice(0,10);
+            const btn = document.createElement("button");
+            btn.className = "day-chip" + (key === asistSelectedDay ? " active" : "");
+            btn.textContent = formatDayLabel(d);
+            btn.onclick = () => { asistSelectedDay = key; absentPlayers = {}; renderDayChips(); renderAbsentList(); loadExistingSession(); };
+            container.appendChild(btn);
+        });
+    }
+
+    async function loadExistingSession() {
+        absentPlayers = {};
+        const key = `${asistSelectedDay}_${currentUserProfile?.club || currentUser.uid}`;
+        try {
+            const snap = await getDoc(doc(db, "asistencia", key));
+            if (snap.exists()) {
+                const data = snap.data();
+                (data.ausentes || []).forEach(a => { absentPlayers[a.id] = { tipo: a.tipo, motivo: a.motivo, motivoCustom: a.motivoCustom || "" }; });
+            }
+        } catch(e) {}
+        renderAbsentList();
+    }
+
+    function renderAbsentList() {
+        const list = document.getElementById("absentList");
+        list.innerHTML = "";
+        const ids = Object.keys(absentPlayers);
+        if (!ids.length) {
+            list.innerHTML = `<p style="font-size:.8rem;color:var(--muted);text-align:center;padding:12px;">Sin ausencias registradas para este día.</p>`;
+            return;
+        }
+        ids.forEach(id => {
+            const player = allPlayers.find(p => p.id === id);
+            if (!player) return;
+            const entry = absentPlayers[id];
+            const row = document.createElement("div");
+            row.className = "absent-row";
+            row.innerHTML = `
+                <span class="absent-name">${player.name}</span>
+                <div class="absent-type">
+                    <button class="atype-btn ${entry.tipo === 'falta' ? 'sel-falta' : ''}" data-id="${id}" data-tipo="falta">❌ Falta</button>
+                    <button class="atype-btn ${entry.tipo === 'retraso' ? 'sel-retraso' : ''}" data-id="${id}" data-tipo="retraso">⏱️ Retraso</button>
+                </div>
+                <div class="absent-motivo">
+                    <select data-motivo="${id}">
+                        ${MOTIVOS.map(m => `<option value="${m}" ${entry.motivo === m ? 'selected' : ''}>${m}</option>`).join('')}
+                        <option value="Otro" ${entry.motivo === 'Otro' ? 'selected' : ''}>Otro (editable)</option>
+                    </select>
+                    ${entry.motivo === 'Otro' ? `<input type="text" data-custom="${id}" placeholder="Especifica el motivo..." value="${entry.motivoCustom || ''}">` : ''}
+                </div>
+                <button class="absent-remove" data-remove="${id}">✕</button>
+            `;
+            list.appendChild(row);
+        });
+
+        list.querySelectorAll(".atype-btn").forEach(btn => {
+            btn.onclick = () => { absentPlayers[btn.dataset.id].tipo = btn.dataset.tipo; renderAbsentList(); };
+        });
+        list.querySelectorAll("[data-motivo]").forEach(sel => {
+            sel.onchange = () => { absentPlayers[sel.dataset.motivo].motivo = sel.value; renderAbsentList(); };
+        });
+        list.querySelectorAll("[data-custom]").forEach(inp => {
+            inp.oninput = () => { absentPlayers[inp.dataset.custom].motivoCustom = inp.value; };
+        });
+        list.querySelectorAll("[data-remove]").forEach(btn => {
+            btn.onclick = () => { delete absentPlayers[btn.dataset.remove]; renderAbsentList(); };
+        });
+    }
+
+    function renderAsistSearch(term) {
+        const container = document.getElementById("asistSearchResults");
+        if (!term || term.length < 2) { container.innerHTML = ""; return; }
+        const results = allPlayers.filter(p => p.name?.toLowerCase().includes(term.toLowerCase()) && !absentPlayers[p.id]).slice(0, 6);
+        if (!results.length) { container.innerHTML = `<p style="font-size:.8rem;color:var(--muted);padding:6px 12px;">Sin resultados.</p>`; return; }
+        container.innerHTML = "";
+        results.forEach(p => {
+            const row = document.createElement("div");
+            row.className = "search-result-row";
+            row.innerHTML = `<span>${p.name} <span style="color:var(--muted);font-size:.75rem;">${p.category || ""}</span></span><button>+ Añadir</button>`;
+            row.querySelector("button").onclick = () => {
+                absentPlayers[p.id] = { tipo: "falta", motivo: "Varios", motivoCustom: "" };
+                document.getElementById("asistSearchInput").value = "";
+                container.innerHTML = "";
+                renderAbsentList();
+            };
+            container.appendChild(row);
+        });
+    }
+
+    async function saveAsistSession() {
+        if (!asistSelectedDay) { toast("Selecciona un día", "error"); return; }
+        const ausentes = Object.entries(absentPlayers).map(([id, v]) => ({
+            id, tipo: v.tipo, motivo: v.motivo === "Otro" ? (v.motivoCustom || "Otros") : v.motivo, motivoCustom: v.motivoCustom || ""
+        }));
+        const clubKey = (currentUserProfile?.club || currentUser.uid).trim();
+        const key = `${asistSelectedDay}_${clubKey}`;
+        const presenteIds = allPlayers.filter(p => !absentPlayers[p.id]).map(p => p.id);
+        await setDoc(doc(db, "asistencia", key), {
+            fecha: asistSelectedDay, club: clubKey,
+            registradoPor: currentUser.uid,
+            registradoEn: new Date(),
+            ausentes, presenteCount: presenteIds.length, totalCount: allPlayers.length
+        });
+        toast("✅ Sesión guardada");
+        document.getElementById("asistenciaModal").classList.remove("open");
+    }
+
+    // HISTORIAL
+    async function loadHistorial() {
+        const desde = document.getElementById("histDesde").value;
+        const hasta = document.getElementById("histHasta").value;
+        const container = document.getElementById("histContent");
+        if (!desde || !hasta) { container.innerHTML = `<div class="empty-hist">Selecciona un rango de fechas.</div>`; return; }
+        const clubKey = (currentUserProfile?.club || "").trim();
+        const snap = await getDocs(asistenciaCol);
+        const sesiones = [];
+        snap.forEach(d => {
+            const data = d.data();
+            const mismoClub = isAdmin || data.club?.trim().toLowerCase() === clubKey.toLowerCase();
+            if (mismoClub && data.fecha >= desde && data.fecha <= hasta) sesiones.push(data);
+        });
+        sesiones.sort((a,b) => a.fecha.localeCompare(b.fecha));
+        if (!sesiones.length) { container.innerHTML = `<div class="empty-hist">Sin sesiones en ese rango.</div>`; return; }
+
+        const allPlayerIds = [...new Set(sesiones.flatMap(s => (s.ausentes||[]).map(a => a.id)))];
+        const jugMap = {};
+        allPlayers.forEach(p => { jugMap[p.id] = p.name; });
+
+        let html = `<div class="hist-table-wrap"><table class="hist-table"><thead><tr><th>Jugador</th>`;
+        sesiones.forEach(s => { html += `<th>${s.fecha}</th>`; });
+        html += `</tr></thead><tbody>`;
+
+        const allIds = [...new Set(allPlayers.map(p => p.id))];
+        allIds.forEach(pid => {
+            const name = jugMap[pid] || pid;
+            html += `<tr><td><strong>${name}</strong></td>`;
+            sesiones.forEach(s => {
+                const ausente = (s.ausentes||[]).find(a => a.id === pid);
+                if (ausente) {
+                    const label = ausente.tipo === 'retraso' ? 'R' : 'F';
+                    const cls = ausente.tipo === 'retraso' ? 'htag-r' : 'htag-f';
+                    html += `<td><span class="htag ${cls}" title="${ausente.motivo}">${label}</span></td>`;
+                } else {
+                    html += `<td><span class="htag htag-p">P</span></td>`;
+                }
+            });
+            html += `</tr>`;
+        });
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    }
+
+    function exportHistorialExcel() {
+        const desde = document.getElementById("histDesde").value;
+        const hasta = document.getElementById("histHasta").value;
+        const table = document.querySelector("#histContent .hist-table");
+        if (!table) { toast("No hay datos para exportar", "error"); return; }
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.table_to_sheet(table);
+        XLSX.utils.book_append_sheet(wb, ws, "Asistencia");
+        XLSX.writeFile(wb, `asistencia_${desde}_${hasta}.xlsx`);
+    }
+
+    // ABRIR / CERRAR MODAL
+    document.getElementById("asistenciaBtn").addEventListener("click", () => {
+        absentPlayers = {};
+        asistSelectedDay = null;
+        document.getElementById("asistenciaModal").classList.add("open");
+        renderDayChips();
+        loadExistingSession();
+        document.getElementById("asistSearchInput").value = "";
+        document.getElementById("asistSearchResults").innerHTML = "";
+        switchAsistTab("registro");
+    });
+    document.getElementById("asistCloseBtn").addEventListener("click", () => document.getElementById("asistenciaModal").classList.remove("open"));
+    document.getElementById("asistCancelBtn").addEventListener("click", () => document.getElementById("asistenciaModal").classList.remove("open"));
+    document.getElementById("asistSaveBtn").addEventListener("click", saveAsistSession);
+    document.getElementById("asistSearchInput").addEventListener("input", e => renderAsistSearch(e.target.value));
+    document.getElementById("histExportBtn").addEventListener("click", exportHistorialExcel);
+    document.getElementById("histDesde").addEventListener("change", loadHistorial);
+    document.getElementById("histHasta").addEventListener("change", loadHistorial);
+
+    document.querySelectorAll(".asist-tab").forEach(tab => {
+        tab.addEventListener("click", () => switchAsistTab(tab.dataset.atab));
+    });
+
+    function switchAsistTab(tab) {
+        asistActiveTab = tab;
+        document.querySelectorAll(".asist-tab").forEach(t => t.classList.toggle("active", t.dataset.atab === tab));
+        document.getElementById("asistTabRegistro").style.display = tab === "registro" ? "block" : "none";
+        document.getElementById("asistTabHistorial").style.display = tab === "historial" ? "block" : "none";
+        document.getElementById("asistFooter").style.display = tab === "registro" ? "flex" : "none";
+        if (tab === "historial") {
+            const hoy = new Date().toISOString().slice(0,10);
+            const hace7 = new Date(Date.now() - 7*24*60*60*1000).toISOString().slice(0,10);
+            if (!document.getElementById("histDesde").value) document.getElementById("histDesde").value = hace7;
+            if (!document.getElementById("histHasta").value) document.getElementById("histHasta").value = hoy;
+            loadHistorial();
+        }
+    }
+    // ===== FIN MÓDULO ASISTENCIA =====
+
+    console.log("✅ Scout CF v7 · Listo");
 </script>
 </body>
 </html>
