@@ -207,25 +207,38 @@
         .asist-tab.active{background:#fff;color:var(--blue);}
         .asist-close{background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;padding:0 4px;}
         .asist-body{flex:1;overflow-y:auto;padding:16px;}
-        /* Tab registro */
-        .asist-day-bar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
-        .day-chip{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface2);font-size:.8rem;font-weight:600;cursor:pointer;color:var(--muted);}
-        .day-chip.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+        /* Selector de día */
+        .asist-date-wrap{display:flex;align-items:center;gap:10px;margin-bottom:14px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rbtn);padding:8px 14px;}
+        .asist-date-wrap label{font-size:.8rem;font-weight:600;color:var(--muted);white-space:nowrap;}
+        .asist-date-wrap input[type=date]{border:none;background:none;font-family:inherit;font-size:.9rem;color:var(--text);outline:none;flex:1;}
+        .asist-date-warn{font-size:.75rem;color:#B45309;background:#FEF3C7;border-radius:10px;padding:3px 10px;display:none;}
+        .asist-date-warn.show{display:inline-block;}
+        /* Registro */
         .asist-search{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rbtn);padding:8px 14px;margin-bottom:12px;}
         .asist-search input{border:none;background:none;flex:1;font-family:inherit;font-size:.9rem;outline:none;color:var(--text);}
-        .absent-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
-        .absent-row{background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-        .absent-name{font-weight:600;font-size:.9rem;flex:1;min-width:120px;}
+        .absent-list{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+        .absent-row{background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;}
+        .absent-row.tipo-falta{border-color:#EF4444;background:#FFF5F5;}
+        .absent-row.tipo-retraso{border-color:#F59E0B;background:#FFFBEB;}
+        .absent-top{display:flex;align-items:center;gap:8px;width:100%;}
+        .absent-name{font-weight:700;font-size:.9rem;flex:1;}
         .absent-type{display:flex;gap:6px;}
         .atype-btn{padding:4px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--surface);font-size:.75rem;font-weight:600;cursor:pointer;color:var(--muted);}
         .atype-btn.sel-falta{background:#FECACA;border-color:#EF4444;color:#B91C1C;}
         .atype-btn.sel-retraso{background:#FEF3C7;border-color:#F59E0B;color:#92400E;}
-        .absent-motivo{width:100%;margin-top:4px;}
-        .absent-motivo select{padding:6px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.8rem;color:var(--text);width:auto;}
-        .absent-motivo input{padding:6px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.8rem;width:100%;margin-top:4px;}
-        .absent-remove{background:none;border:none;color:var(--danger);font-size:1.1rem;cursor:pointer;padding:2px;}
+        .absent-remove{background:none;border:none;color:var(--danger);font-size:1.1rem;cursor:pointer;padding:2px;margin-left:auto;}
+        .absent-extras{width:100%;display:flex;flex-direction:column;gap:6px;}
+        .absent-motivo-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+        .absent-motivo-row select{padding:6px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.8rem;color:var(--text);}
+        .absent-motivo-row input[type=text]{flex:1;min-width:120px;padding:6px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.8rem;}
+        .absent-comentario{width:100%;padding:7px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.8rem;resize:none;color:var(--text);}
+        .absent-multa-row{display:flex;align-items:center;gap:8px;}
+        .btn-multa{padding:5px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:.75rem;font-weight:700;cursor:pointer;transition:all .2s;}
+        .btn-multa.sin-pagar{background:#FEE2E2;border-color:#EF4444;color:#B91C1C;}
+        .btn-multa.pagado{background:#D1FAE5;border-color:#10B981;color:#065F46;}
+        .multa-label{font-size:.75rem;color:var(--muted);}
         .search-results{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
-        .search-result-row{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+        .search-result-row{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;}
         .search-result-row:hover{border-color:var(--blue-mid);}
         .search-result-row span{font-size:.85rem;}
         .search-result-row button{background:var(--blue);color:#fff;border:none;border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:600;cursor:pointer;}
@@ -239,12 +252,15 @@
         .hist-table-wrap{overflow-x:auto;}
         .hist-table{width:100%;border-collapse:collapse;font-size:.78rem;}
         .hist-table th{background:var(--blue);color:#fff;padding:7px 10px;text-align:left;white-space:nowrap;}
-        .hist-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+        .hist-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;text-align:center;}
+        .hist-table td:first-child{text-align:left;}
         .hist-table tr:nth-child(even) td{background:var(--surface2);}
-        .htag{padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:600;}
+        .htag{padding:3px 9px;border-radius:10px;font-size:.72rem;font-weight:700;display:inline-block;}
         .htag-p{background:#D1FAE5;color:#065F46;}
         .htag-f{background:#FEE2E2;color:#991B1B;}
         .htag-r{background:#FEF3C7;color:#92400E;}
+        .htag-m-sp{background:#FEE2E2;color:#991B1B;font-size:.65rem;}
+        .htag-m-p{background:#D1FAE5;color:#065F46;font-size:.65rem;}
         .empty-hist{text-align:center;padding:40px 20px;color:var(--muted);}
     </style>
 </head>
@@ -601,7 +617,11 @@
             <button class="asist-close" id="asistCloseBtn">✕</button>
         </div>
         <div id="asistTabRegistro" class="asist-body">
-            <div class="asist-day-bar" id="dayChips"></div>
+            <div class="asist-date-wrap">
+                <label>📅 Día:</label>
+                <input type="date" id="asistDatePicker">
+                <span class="asist-date-warn" id="asistDateWarn">⚠️ No es Mar/Jue/Vie</span>
+            </div>
             <p style="font-size:.78rem;color:var(--muted);margin-bottom:10px;">Solo añade los jugadores que <strong>faltan o llegan tarde</strong>. El resto se marca como presente.</p>
             <div class="asist-search">
                 <span>🔍</span>
@@ -1188,60 +1208,61 @@
     // ===== MÓDULO ASISTENCIA =====
     let asistActiveTab = "registro";
     let asistSelectedDay = null;
-    let absentPlayers = {}; // { uid: { tipo: 'falta'|'retraso', motivo, motivoCustom } }
+    let absentPlayers = {};
+    // estructura: { [playerId]: { tipo:'falta'|'retraso', motivo, motivoCustom, comentario, multa:'sin-pagar'|'pagado'|null } }
 
     const MOTIVOS = ["Enfermedad", "Castigo", "Viaje", "Estudios", "Varios"];
-    const DIAS_ENTRENO = [2, 4, 5]; // martes=2, jueves=4, viernes=5
+    const DIAS_ENTRENO = [2, 4, 5]; // martes, jueves, viernes
 
-    function getNextTrainDays() {
-        const today = new Date();
-        const result = [];
-        for (let i = -7; i <= 7; i++) {
-            const d = new Date(today);
-            d.setDate(today.getDate() + i);
-            if (DIAS_ENTRENO.includes(d.getDay())) {
-                result.push(new Date(d.setHours(0,0,0,0)));
-            }
-        }
-        result.sort((a,b) => a-b);
-        const unique = [];
-        const seen = new Set();
-        result.forEach(d => { const k = d.toISOString().slice(0,10); if (!seen.has(k)){ seen.add(k); unique.push(d); }});
-        return unique.slice(-5).concat(unique.slice(0,5).filter(d => !unique.slice(-5).includes(d)));
+    function getTodayKey() {
+        return new Date().toISOString().slice(0,10);
     }
 
-    function formatDayLabel(d) {
-        const dias = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-        return `${dias[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`;
-    }
-
-    function renderDayChips() {
-        const container = document.getElementById("dayChips");
-        container.innerHTML = "";
-        const days = getNextTrainDays();
+    function getClosestTrainDay() {
         const today = new Date(); today.setHours(0,0,0,0);
-        if (!asistSelectedDay) {
-            const closest = days.reduce((prev, curr) => Math.abs(curr - today) < Math.abs(prev - today) ? curr : prev, days[0]);
-            asistSelectedDay = closest.toISOString().slice(0,10);
+        // buscar el día de entrenamiento más cercano (hoy o anterior)
+        for (let i = 0; i <= 7; i++) {
+            const d = new Date(today); d.setDate(today.getDate() - i);
+            if (DIAS_ENTRENO.includes(d.getDay())) return d.toISOString().slice(0,10);
         }
-        days.forEach(d => {
-            const key = d.toISOString().slice(0,10);
-            const btn = document.createElement("button");
-            btn.className = "day-chip" + (key === asistSelectedDay ? " active" : "");
-            btn.textContent = formatDayLabel(d);
-            btn.onclick = () => { asistSelectedDay = key; absentPlayers = {}; renderDayChips(); renderAbsentList(); loadExistingSession(); };
-            container.appendChild(btn);
+        return getTodayKey();
+    }
+
+    function initDatePicker() {
+        const picker = document.getElementById("asistDatePicker");
+        picker.value = getClosestTrainDay();
+        asistSelectedDay = picker.value;
+        checkDateWarn(picker.value);
+        picker.addEventListener("change", () => {
+            asistSelectedDay = picker.value;
+            absentPlayers = {};
+            checkDateWarn(picker.value);
+            renderAbsentList();
+            loadExistingSession();
         });
+    }
+
+    function checkDateWarn(val) {
+        if (!val) return;
+        const day = new Date(val + "T00:00:00").getDay();
+        const warn = document.getElementById("asistDateWarn");
+        warn.classList.toggle("show", !DIAS_ENTRENO.includes(day));
     }
 
     async function loadExistingSession() {
         absentPlayers = {};
-        const key = `${asistSelectedDay}_${currentUserProfile?.club || currentUser.uid}`;
+        if (!asistSelectedDay) { renderAbsentList(); return; }
+        const clubKey = (currentUserProfile?.club || currentUser.uid).trim();
+        const key = `${asistSelectedDay}_${clubKey}`;
         try {
             const snap = await getDoc(doc(db, "asistencia", key));
             if (snap.exists()) {
-                const data = snap.data();
-                (data.ausentes || []).forEach(a => { absentPlayers[a.id] = { tipo: a.tipo, motivo: a.motivo, motivoCustom: a.motivoCustom || "" }; });
+                (snap.data().ausentes || []).forEach(a => {
+                    absentPlayers[a.id] = {
+                        tipo: a.tipo, motivo: a.motivo, motivoCustom: a.motivoCustom || "",
+                        comentario: a.comentario || "", multa: a.multa || null
+                    };
+                });
             }
         } catch(e) {}
         renderAbsentList();
@@ -1252,41 +1273,70 @@
         list.innerHTML = "";
         const ids = Object.keys(absentPlayers);
         if (!ids.length) {
-            list.innerHTML = `<p style="font-size:.8rem;color:var(--muted);text-align:center;padding:12px;">Sin ausencias registradas para este día.</p>`;
+            list.innerHTML = `<p style="font-size:.8rem;color:var(--muted);text-align:center;padding:16px;">Sin ausencias registradas para este día.</p>`;
             return;
         }
         ids.forEach(id => {
             const player = allPlayers.find(p => p.id === id);
             if (!player) return;
-            const entry = absentPlayers[id];
+            const e = absentPlayers[id];
+            const esRetraso = e.tipo === 'retraso';
+            const multaClass = e.multa === 'pagado' ? 'pagado' : 'sin-pagar';
+            const multaLabel = e.multa === 'pagado' ? '✅ Pagado' : '🔴 Sin pagar';
+
             const row = document.createElement("div");
-            row.className = "absent-row";
+            row.className = `absent-row tipo-${e.tipo}`;
             row.innerHTML = `
-                <span class="absent-name">${player.name}</span>
-                <div class="absent-type">
-                    <button class="atype-btn ${entry.tipo === 'falta' ? 'sel-falta' : ''}" data-id="${id}" data-tipo="falta">❌ Falta</button>
-                    <button class="atype-btn ${entry.tipo === 'retraso' ? 'sel-retraso' : ''}" data-id="${id}" data-tipo="retraso">⏱️ Retraso</button>
+                <div class="absent-top">
+                    <span class="absent-name">${player.name}</span>
+                    <div class="absent-type">
+                        <button class="atype-btn ${e.tipo==='falta'?'sel-falta':''}" data-id="${id}" data-tipo="falta">❌ Falta</button>
+                        <button class="atype-btn ${esRetraso?'sel-retraso':''}" data-id="${id}" data-tipo="retraso">⏱️ Retraso</button>
+                    </div>
+                    <button class="absent-remove" data-remove="${id}">✕</button>
                 </div>
-                <div class="absent-motivo">
-                    <select data-motivo="${id}">
-                        ${MOTIVOS.map(m => `<option value="${m}" ${entry.motivo === m ? 'selected' : ''}>${m}</option>`).join('')}
-                        <option value="Otro" ${entry.motivo === 'Otro' ? 'selected' : ''}>Otro (editable)</option>
-                    </select>
-                    ${entry.motivo === 'Otro' ? `<input type="text" data-custom="${id}" placeholder="Especifica el motivo..." value="${entry.motivoCustom || ''}">` : ''}
+                <div class="absent-extras">
+                    <div class="absent-motivo-row">
+                        <select data-motivo="${id}">
+                            ${MOTIVOS.map(m=>`<option value="${m}" ${e.motivo===m?'selected':''}>${m}</option>`).join('')}
+                            <option value="Otro" ${e.motivo==='Otro'?'selected':''}>Otro (editable)</option>
+                        </select>
+                        ${e.motivo==='Otro' ? `<input type="text" data-custom="${id}" placeholder="Especifica..." value="${e.motivoCustom||''}">` : ''}
+                    </div>
+                    <textarea class="absent-comentario" data-comentario="${id}" rows="2" placeholder="Comentario (opcional)...">${e.comentario||''}</textarea>
+                    ${esRetraso ? `
+                    <div class="absent-multa-row">
+                        <span class="multa-label">💶 Multa 1€:</span>
+                        <button class="btn-multa ${multaClass}" data-multa="${id}">${multaLabel}</button>
+                    </div>` : ''}
                 </div>
-                <button class="absent-remove" data-remove="${id}">✕</button>
             `;
             list.appendChild(row);
         });
 
         list.querySelectorAll(".atype-btn").forEach(btn => {
-            btn.onclick = () => { absentPlayers[btn.dataset.id].tipo = btn.dataset.tipo; renderAbsentList(); };
+            btn.onclick = () => {
+                absentPlayers[btn.dataset.id].tipo = btn.dataset.tipo;
+                if (btn.dataset.tipo === 'falta') absentPlayers[btn.dataset.id].multa = null;
+                if (btn.dataset.tipo === 'retraso' && !absentPlayers[btn.dataset.id].multa) absentPlayers[btn.dataset.id].multa = 'sin-pagar';
+                renderAbsentList();
+            };
         });
         list.querySelectorAll("[data-motivo]").forEach(sel => {
             sel.onchange = () => { absentPlayers[sel.dataset.motivo].motivo = sel.value; renderAbsentList(); };
         });
         list.querySelectorAll("[data-custom]").forEach(inp => {
             inp.oninput = () => { absentPlayers[inp.dataset.custom].motivoCustom = inp.value; };
+        });
+        list.querySelectorAll("[data-comentario]").forEach(ta => {
+            ta.oninput = () => { absentPlayers[ta.dataset.comentario].comentario = ta.value; };
+        });
+        list.querySelectorAll("[data-multa]").forEach(btn => {
+            btn.onclick = () => {
+                const id = btn.dataset.multa;
+                absentPlayers[id].multa = absentPlayers[id].multa === 'pagado' ? 'sin-pagar' : 'pagado';
+                renderAbsentList();
+            };
         });
         list.querySelectorAll("[data-remove]").forEach(btn => {
             btn.onclick = () => { delete absentPlayers[btn.dataset.remove]; renderAbsentList(); };
@@ -1302,9 +1352,9 @@
         results.forEach(p => {
             const row = document.createElement("div");
             row.className = "search-result-row";
-            row.innerHTML = `<span>${p.name} <span style="color:var(--muted);font-size:.75rem;">${p.category || ""}</span></span><button>+ Añadir</button>`;
+            row.innerHTML = `<span>${p.name} <span style="color:var(--muted);font-size:.75rem;">${p.category||""}</span></span><button>+ Añadir</button>`;
             row.querySelector("button").onclick = () => {
-                absentPlayers[p.id] = { tipo: "falta", motivo: "Varios", motivoCustom: "" };
+                absentPlayers[p.id] = { tipo:"falta", motivo:"Varios", motivoCustom:"", comentario:"", multa:null };
                 document.getElementById("asistSearchInput").value = "";
                 container.innerHTML = "";
                 renderAbsentList();
@@ -1316,16 +1366,18 @@
     async function saveAsistSession() {
         if (!asistSelectedDay) { toast("Selecciona un día", "error"); return; }
         const ausentes = Object.entries(absentPlayers).map(([id, v]) => ({
-            id, tipo: v.tipo, motivo: v.motivo === "Otro" ? (v.motivoCustom || "Otros") : v.motivo, motivoCustom: v.motivoCustom || ""
+            id, tipo: v.tipo,
+            motivo: v.motivo === "Otro" ? (v.motivoCustom || "Otros") : v.motivo,
+            motivoCustom: v.motivoCustom || "",
+            comentario: v.comentario || "",
+            multa: v.multa || null
         }));
         const clubKey = (currentUserProfile?.club || currentUser.uid).trim();
         const key = `${asistSelectedDay}_${clubKey}`;
-        const presenteIds = allPlayers.filter(p => !absentPlayers[p.id]).map(p => p.id);
         await setDoc(doc(db, "asistencia", key), {
             fecha: asistSelectedDay, club: clubKey,
-            registradoPor: currentUser.uid,
-            registradoEn: new Date(),
-            ausentes, presenteCount: presenteIds.length, totalCount: allPlayers.length
+            registradoPor: currentUser.uid, registradoEn: new Date(),
+            ausentes, presenteCount: allPlayers.length - ausentes.length, totalCount: allPlayers.length
         });
         toast("✅ Sesión guardada");
         document.getElementById("asistenciaModal").classList.remove("open");
@@ -1337,6 +1389,7 @@
         const hasta = document.getElementById("histHasta").value;
         const container = document.getElementById("histContent");
         if (!desde || !hasta) { container.innerHTML = `<div class="empty-hist">Selecciona un rango de fechas.</div>`; return; }
+        container.innerHTML = `<div class="empty-hist">Cargando...</div>`;
         const clubKey = (currentUserProfile?.club || "").trim();
         const snap = await getDocs(asistenciaCol);
         const sesiones = [];
@@ -1348,7 +1401,6 @@
         sesiones.sort((a,b) => a.fecha.localeCompare(b.fecha));
         if (!sesiones.length) { container.innerHTML = `<div class="empty-hist">Sin sesiones en ese rango.</div>`; return; }
 
-        const allPlayerIds = [...new Set(sesiones.flatMap(s => (s.ausentes||[]).map(a => a.id)))];
         const jugMap = {};
         allPlayers.forEach(p => { jugMap[p.id] = p.name; });
 
@@ -1356,16 +1408,22 @@
         sesiones.forEach(s => { html += `<th>${s.fecha}</th>`; });
         html += `</tr></thead><tbody>`;
 
-        const allIds = [...new Set(allPlayers.map(p => p.id))];
-        allIds.forEach(pid => {
-            const name = jugMap[pid] || pid;
-            html += `<tr><td><strong>${name}</strong></td>`;
+        allPlayers.forEach(player => {
+            html += `<tr><td><strong>${player.name}</strong></td>`;
             sesiones.forEach(s => {
-                const ausente = (s.ausentes||[]).find(a => a.id === pid);
+                const ausente = (s.ausentes||[]).find(a => a.id === player.id);
                 if (ausente) {
-                    const label = ausente.tipo === 'retraso' ? 'R' : 'F';
-                    const cls = ausente.tipo === 'retraso' ? 'htag-r' : 'htag-f';
-                    html += `<td><span class="htag ${cls}" title="${ausente.motivo}">${label}</span></td>`;
+                    if (ausente.tipo === 'retraso') {
+                        const multaHtml = ausente.multa === 'pagado'
+                            ? `<br><span class="htag htag-m-p">€✅</span>`
+                            : ausente.multa === 'sin-pagar'
+                            ? `<br><span class="htag htag-m-sp">€🔴</span>` : '';
+                        const title = [ausente.motivo, ausente.comentario].filter(Boolean).join(' · ');
+                        html += `<td><span class="htag htag-r" title="${title}">R</span>${multaHtml}</td>`;
+                    } else {
+                        const title = [ausente.motivo, ausente.comentario].filter(Boolean).join(' · ');
+                        html += `<td><span class="htag htag-f" title="${title}">F</span></td>`;
+                    }
                 } else {
                     html += `<td><span class="htag htag-p">P</span></td>`;
                 }
@@ -1381,22 +1439,38 @@
         const hasta = document.getElementById("histHasta").value;
         const table = document.querySelector("#histContent .hist-table");
         if (!table) { toast("No hay datos para exportar", "error"); return; }
+        // Generar datos limpios sin HTML
         const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.table_to_sheet(table);
+        const rows = [];
+        const headers = ["Jugador"];
+        table.querySelectorAll("thead th").forEach((th, i) => { if(i>0) headers.push(th.textContent); });
+        rows.push(headers);
+        table.querySelectorAll("tbody tr").forEach(tr => {
+            const row = [];
+            tr.querySelectorAll("td").forEach((td, i) => {
+                if (i === 0) { row.push(td.textContent.trim()); return; }
+                const htag = td.querySelector(".htag");
+                const multa = td.querySelector(".htag-m-sp, .htag-m-p");
+                let val = htag ? htag.textContent.trim() : "P";
+                if (multa) val += multa.classList.contains("htag-m-p") ? " (Multa pagada)" : " (Multa pendiente)";
+                row.push(val);
+            });
+            rows.push(row);
+        });
+        const ws = XLSX.utils.aoa_to_sheet(rows);
         XLSX.utils.book_append_sheet(wb, ws, "Asistencia");
         XLSX.writeFile(wb, `asistencia_${desde}_${hasta}.xlsx`);
     }
 
-    // ABRIR / CERRAR MODAL
+    // ABRIR / CERRAR
     document.getElementById("asistenciaBtn").addEventListener("click", () => {
         absentPlayers = {};
-        asistSelectedDay = null;
         document.getElementById("asistenciaModal").classList.add("open");
-        renderDayChips();
-        loadExistingSession();
         document.getElementById("asistSearchInput").value = "";
         document.getElementById("asistSearchResults").innerHTML = "";
         switchAsistTab("registro");
+        initDatePicker();
+        loadExistingSession();
     });
     document.getElementById("asistCloseBtn").addEventListener("click", () => document.getElementById("asistenciaModal").classList.remove("open"));
     document.getElementById("asistCancelBtn").addEventListener("click", () => document.getElementById("asistenciaModal").classList.remove("open"));
