@@ -665,12 +665,31 @@
                 <span style="font-size:.85rem;color:var(--muted);">→</span>
                 <input type="date" id="histHasta">
                 <button class="btn-hist-export" id="histExportBtn">📊 Exportar Excel</button>
+                <button class="btn-hist-export" id="histStatsBtn" style="background:var(--blue);color:#fff;">🏆 Estadísticas</button>
             </div>
             <div id="histContent"><div class="empty-hist">Selecciona un rango de fechas.</div></div>
         </div>
         <div class="asist-footer" id="asistFooter">
             <button class="btn-cancel-asist" id="asistCancelBtn">Cancelar</button>
             <button class="btn-save-asist" id="asistSaveBtn">💾 GUARDAR SESIÓN</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL ESTADÍSTICAS ASISTENCIA -->
+<div class="modal-overlay" id="statsModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2>🏆 RANKING DE ASISTENCIA</h2>
+            <p id="statsRangeLabel"></p>
+        </div>
+        <div class="modal-body">
+            <div style="display:flex;gap:8px;margin-bottom:14px;">
+                <button id="statsSortWorst" data-sort="worst" style="flex:1;background:var(--blue);color:#fff;border:none;border-radius:30px;padding:8px 12px;font-size:.75rem;font-weight:700;cursor:pointer;">⬇️ Peor asistencia primero</button>
+                <button id="statsSortBest" data-sort="best" style="flex:1;background:var(--surface2);color:var(--muted);border:1.5px solid var(--border);border-radius:30px;padding:8px 12px;font-size:.75rem;font-weight:700;cursor:pointer;">⬆️ Mejor asistencia primero</button>
+            </div>
+            <div id="statsContent"></div>
+            <button class="btn-cancel-asist" id="statsCloseBtn" style="width:100%;margin-top:14px;">Cerrar</button>
         </div>
     </div>
 </div>
@@ -1581,6 +1600,8 @@
     }
 
     // HISTORIAL
+    let lastSesionesCache = [];
+
     async function loadHistorial() {
         const desde = document.getElementById("histDesde").value;
         const hasta = document.getElementById("histHasta").value;
@@ -1596,6 +1617,7 @@
             if (mismoClub && data.fecha >= desde && data.fecha <= hasta) sesiones.push(data);
         });
         sesiones.sort((a,b) => a.fecha.localeCompare(b.fecha));
+        lastSesionesCache = sesiones;
         if (!sesiones.length) { container.innerHTML = `<div class="empty-hist">Sin sesiones en ese rango.</div>`; return; }
 
         const jugMap = {};
@@ -1638,6 +1660,84 @@
         html += `</tbody></table></div>`;
         container.innerHTML = html;
     }
+
+    // ===== ESTADÍSTICAS / RANKING DE ASISTENCIA =====
+    let statsSortMode = "worst";
+
+    function computeStats() {
+        const sesionesValidas = lastSesionesCache.filter(s => !s.cancelada);
+        const total = sesionesValidas.length;
+        const stats = allPlayers.map(player => {
+            let faltas = 0, retrasos = 0;
+            sesionesValidas.forEach(s => {
+                const a = (s.ausentes || []).find(x => x.id === player.id);
+                if (a) { if (a.tipo === 'falta') faltas++; else if (a.tipo === 'retraso') retrasos++; }
+            });
+            const asistencias = total - faltas;
+            const pct = total > 0 ? Math.round((asistencias / total) * 1000) / 10 : null;
+            return { name: player.name, total, faltas, retrasos, asistencias, pct };
+        });
+        stats.sort((a, b) => {
+            const pa = a.pct === null ? -1 : a.pct;
+            const pb = b.pct === null ? -1 : b.pct;
+            return statsSortMode === "worst" ? pa - pb : pb - pa;
+        });
+        return stats;
+    }
+
+    function renderStats() {
+        const desde = document.getElementById("histDesde").value;
+        const hasta = document.getElementById("histHasta").value;
+        document.getElementById("statsRangeLabel").textContent = `${desde} → ${hasta} · ${lastSesionesCache.filter(s=>!s.cancelada).length} entrenos computables`;
+
+        if (!lastSesionesCache.length) {
+            document.getElementById("statsContent").innerHTML = `<p style="font-size:.85rem;color:var(--muted);text-align:center;padding:20px;">No hay sesiones guardadas en ese rango. Ve primero a la pestaña Historial y comprueba las fechas.</p>`;
+            return;
+        }
+
+        const stats = computeStats();
+        const rows = stats.map((s, i) => {
+            const pctLabel = s.pct === null ? "—" : `${s.pct}%`;
+            const barColor = s.pct === null ? "var(--border)" : s.pct >= 80 ? "var(--success)" : s.pct >= 60 ? "var(--gold-dark)" : "var(--danger)";
+            return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);">
+                <div style="width:22px;font-weight:700;color:var(--muted);font-size:.8rem;">${i+1}</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;font-size:.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.name}</div>
+                    <div style="background:var(--surface2);border-radius:20px;height:6px;margin-top:4px;overflow:hidden;">
+                        <div style="width:${s.pct||0}%;height:100%;background:${barColor};"></div>
+                    </div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;">
+                    <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:${barColor};">${pctLabel}</div>
+                    <div style="font-size:.65rem;color:var(--muted);">${s.faltas}F · ${s.retrasos}R / ${s.total}</div>
+                </div>
+            </div>`;
+        }).join("");
+        document.getElementById("statsContent").innerHTML = rows;
+    }
+
+    document.getElementById("histStatsBtn").addEventListener("click", () => {
+        if (!document.getElementById("histDesde").value || !document.getElementById("histHasta").value) {
+            toast("Selecciona un rango de fechas en Historial primero", "error");
+            return;
+        }
+        renderStats();
+        document.getElementById("statsModal").classList.add("open");
+    });
+    document.getElementById("statsCloseBtn").addEventListener("click", () => document.getElementById("statsModal").classList.remove("open"));
+    document.getElementById("statsModal").addEventListener("click", (e) => {
+        if (e.target.id === "statsModal") document.getElementById("statsModal").classList.remove("open");
+    });
+    [["statsSortWorst","worst"],["statsSortBest","best"]].forEach(([id, mode]) => {
+        document.getElementById(id).addEventListener("click", () => {
+            statsSortMode = mode;
+            document.getElementById("statsSortWorst").style.background = mode === "worst" ? "var(--blue)" : "var(--surface2)";
+            document.getElementById("statsSortWorst").style.color = mode === "worst" ? "#fff" : "var(--muted)";
+            document.getElementById("statsSortBest").style.background = mode === "best" ? "var(--blue)" : "var(--surface2)";
+            document.getElementById("statsSortBest").style.color = mode === "best" ? "#fff" : "var(--muted)";
+            renderStats();
+        });
+    });
 
     function exportHistorialExcel() {
         const desde = document.getElementById("histDesde").value;
