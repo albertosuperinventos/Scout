@@ -45,6 +45,7 @@
         .header-inner{padding:14px 16px 10px;}
         .header-row{display:flex;justify-content:space-between;align-items:center;gap:8px;}
         .header-logo{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px;color:#fff;}
+        #homeLogo{color:var(--text);}
         .header-logo span{color:var(--gold);}
         .header-btns{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
         .hbtn{background:rgba(255,255,255,.12);border:none;color:#fff;padding:6px 10px;border-radius:var(--rbtn);font-size:.72rem;font-weight:600;cursor:pointer;white-space:nowrap;}
@@ -819,6 +820,15 @@
     let currentAuthSig = null, currentAuthName = "", currentAuthDate = "";
 
     // TOAST
+    // Escapa texto antes de insertarlo en HTML, para que nombres/observaciones escritos
+    // por cualquier usuario nunca puedan ejecutarse como código (protección XSS).
+    function esc(str) {
+        if (str === null || str === undefined) return "";
+        const div = document.createElement("div");
+        div.textContent = String(str);
+        return div.innerHTML;
+    }
+
     function toast(msg, type = "success") {
         const t = document.getElementById("toast");
         t.textContent = msg; t.className = "show " + type;
@@ -940,7 +950,7 @@
             const dias = (Array.isArray(c.diasEntreno) && c.diasEntreno.length) ? c.diasEntreno : [2,4,5];
             if (editingClubId === c.id) {
                 return `<div class="club-chip" style="flex-direction:column;align-items:stretch;width:100%;gap:6px;">
-                    <strong style="font-size:.8rem;">🏟️ ${c.nombre}</strong>
+                    <strong style="font-size:.8rem;">🏟️ ${esc(c.nombre)}</strong>
                     <div class="chip-group" id="editDias_${c.id}">${DIAS_LABELS.map((lbl,i)=>`<span class="chip ${dias.includes(i)?'selected':''}" data-day="${i}">${lbl}</span>`).join("")}</div>
                     <input type="text" id="editUrl_${c.id}" placeholder="URL app de seguimiento (https://...)" value="${c.urlPartido || ''}" style="padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.8rem;">
                     <div style="display:flex;gap:6px;">
@@ -953,7 +963,7 @@
             const urlTag = c.urlPartido ? ` <span title="${c.urlPartido}">🔗</span>` : "";
             const crestSm = getClubLogo(c.nombre);
             const iconHtml = crestSm ? `<img src="${crestSm}" alt="" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:4px;">` : "🏟️ ";
-            return `<div class="club-chip">${iconHtml}${c.nombre} <span style="opacity:.6;font-size:.68rem;">(${diasStr})</span>${urlTag}
+            return `<div class="club-chip">${iconHtml}${esc(c.nombre)} <span style="opacity:.6;font-size:.68rem;">(${diasStr})</span>${urlTag}
                 <button data-id="${c.id}" class="edit-club-btn" style="background:none;border:none;color:var(--blue);cursor:pointer;">✏️</button>
                 <button data-id="${c.id}" class="del-club-btn">✕</button></div>`;
         }).join("");
@@ -1021,8 +1031,8 @@
             return `
             <div class="user-row" style="${isEditing ? "flex-direction:column;align-items:stretch;" : ""}">
                 <div class="user-row-info">
-                    <div class="user-row-email">${u.nombre || u.email || u.id}</div>
-                    <div class="user-row-meta">${u.email || ""} · ${u.club ? `🏟️ ${u.club}` : "Sin club"} · ${u.categoria || "Sin cat."}</div>
+                    <div class="user-row-email">${esc(u.nombre) || esc(u.email) || esc(u.id)}</div>
+                    <div class="user-row-meta">${esc(u.email)} · ${u.club ? `🏟️ ${esc(u.club)}` : "Sin club"} · ${esc(u.categoria) || "Sin cat."}</div>
                 </div>
                 ${isEditing ? `
                 <div style="display:flex;gap:8px;flex-wrap:wrap;width:100%;">
@@ -1117,19 +1127,19 @@
                 ? `<div class="rating-badge" style="background:var(--gold);color:var(--blue);">⚡ Posible</div>`
                 : ratingsVisible ? `<div class="rating-badge">${player.rating || "—"}</div>` : `<div class="rating-badge hidden">🔒</div>`;
             const avatarHtml = player.photoB64 ? `<img src="${player.photoB64}" alt="">` : "👤";
-            const posTags = (player.positions || []).slice(0,3).map(p => `<span class="tag pos">${p}</span>`).join("");
-            const extraTags = [footLabel, shootLabel, player.category].filter(Boolean).map(t => `<span class="tag">${t}</span>`).join("");
-            const valTag = player.valFinal ? `<span class="tag" style="background:var(--gold);color:var(--blue);border-color:var(--gold-dark);">🏆 ${player.valFinal}</span>` : "";
-            const clubTag = isAdmin && player.club ? `<span class="tag" style="background:#E8EEFF;color:var(--blue-mid);">🏟️ ${player.club}</span>` : "";
-            const dorsalStr = player.dorsal ? `#${player.dorsal} · ` : "";
+            const posTags = (player.positions || []).slice(0,3).map(p => `<span class="tag pos">${esc(p)}</span>`).join("");
+            const extraTags = [footLabel, shootLabel, player.category].filter(Boolean).map(t => `<span class="tag">${esc(t)}</span>`).join("");
+            const valTag = player.valFinal ? `<span class="tag" style="background:var(--gold);color:var(--blue);border-color:var(--gold-dark);">🏆 ${esc(player.valFinal)}</span>` : "";
+            const clubTag = isAdmin && player.club ? `<span class="tag" style="background:#E8EEFF;color:var(--blue-mid);">🏟️ ${esc(player.club)}</span>` : "";
+            const dorsalStr = player.dorsal ? `#${esc(player.dorsal)} · ` : "";
             const card = document.createElement("div");
             card.className = "player-card";
             card.innerHTML = `
                 <div class="player-avatar">${avatarHtml}</div>
                 <div class="player-body">
-                    <div class="player-name-row"><div class="player-name">${player.name || "Sin nombre"}</div>${ratingHtml}</div>
-                    <div class="player-meta">${dorsalStr}${player.team || "Sin equipo"} · ${player.birthYear || ""}</div>
-                    ${player.observations ? `<div class="player-obs">${player.observations.substring(0,90)}${player.observations.length>90?"…":""}</div>` : ""}
+                    <div class="player-name-row"><div class="player-name">${esc(player.name) || "Sin nombre"}</div>${ratingHtml}</div>
+                    <div class="player-meta">${dorsalStr}${esc(player.team) || "Sin equipo"} · ${esc(player.birthYear)}</div>
+                    ${player.observations ? `<div class="player-obs">${esc(player.observations.substring(0,90))}${player.observations.length>90?"…":""}</div>` : ""}
                     <div class="player-tags">${clubTag}${posTags}${extraTags}${valTag}</div>
                 </div>
                 <div class="player-actions-col">
@@ -1285,7 +1295,7 @@
             const foto = p.photoB64 ? `<img src="${p.photoB64}" style="width:55px;height:55px;border-radius:8px;object-fit:cover;">` : `<div style="width:55px;height:55px;border-radius:8px;background:#EEF2FA;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">👤</div>`;
             const auth = p.authName ? `<span style="color:#1A8A4A;font-weight:bold;">✅ ${p.authName}</span>` : `<span style="color:#92620A;">⚠️ Pte.</span>`;
             const vf = p.valFinal ? `<strong style="color:#1A3A8F;">${p.valFinal}</strong>` : "—";
-            return `<tr><td>${foto}</td><td><strong>${p.name||""}</strong></td><td>${p.club||""}</td><td>${p.category||""}</td><td>${p.birthYear||""}</td><td>${p.team||""}</td><td>${p.phone||""}</td><td>${p.numCaptaciones||""}</td><td>${(p.positions||[]).join(", ")}</td><td>${p.foot||""}</td><td>${p.shoot||""}</td><td>${p.tactica||"—"}</td><td>${p.tecnica||"—"}</td><td>${p.fisico||"—"}</td><td><span style="background:#F5B800;color:#1A3A8F;font-weight:bold;padding:2px 8px;border-radius:20px;">${p.rating||"—"}</span></td><td>${vf}</td><td>${auth}</td><td style="font-style:italic;font-size:.78rem;color:#555;">${p.observations||""}</td></tr>`;
+            return `<tr><td>${foto}</td><td><strong>${esc(p.name)}</strong></td><td>${esc(p.club)}</td><td>${esc(p.category)}</td><td>${esc(p.birthYear)}</td><td>${esc(p.team)}</td><td>${esc(p.phone)}</td><td>${esc(p.numCaptaciones)}</td><td>${esc((p.positions||[]).join(", "))}</td><td>${esc(p.foot)}</td><td>${esc(p.shoot)}</td><td>${esc(p.tactica) || "—"}</td><td>${esc(p.tecnica) || "—"}</td><td>${esc(p.fisico) || "—"}</td><td><span style="background:#F5B800;color:#1A3A8F;font-weight:bold;padding:2px 8px;border-radius:20px;">${esc(p.rating) || "—"}</span></td><td>${esc(vf)}</td><td>${esc(auth)}</td><td style="font-style:italic;font-size:.78rem;color:#555;">${esc(p.observations)}</td></tr>`;
         }).join("");
         const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Scout · Informe</title><style>body{font-family:Arial,sans-serif;padding:20px;color:#0D1B3E;}h1{color:#1A3A8F;margin-bottom:4px;}p{color:#666;font-size:.85rem;margin-bottom:20px;}table{width:100%;border-collapse:collapse;font-size:.78rem;}th{background:#1A3A8F;color:#fff;padding:7px 8px;text-align:left;}td{padding:7px 8px;border-bottom:1px solid #D8E2F8;vertical-align:middle;}tr:nth-child(even) td{background:#F4F7FF;}@media print{body{padding:0;}}</style></head><body><h1>⚽ Scout CF · Informe de captaciones</h1><p>Generado el ${new Date().toLocaleDateString("es-ES")} · ${sorted.length} jugadores${activeFilter ? ` · Filtro: ${activeFilter}` : ""}${activeClubFilter ? ` · Club: ${activeClubFilter}` : ""}</p><table><thead><tr><th>Foto</th><th>Nombre</th><th>Club</th><th>Cat.</th><th>Año</th><th>Equipo</th><th>Tel.</th><th>Nº Cap.</th><th>Posiciones</th><th>Pierna</th><th>Golpeo</th><th>Tác.</th><th>Téc.</th><th>Fís.</th><th>Val.</th><th>Final</th><th>Autor.</th><th>Observaciones</th></tr></thead><tbody>${rows}</tbody></table></body></html>`;
         const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], {type:"text/html"})); a.download = `scout_informe_${new Date().toISOString().slice(0,10)}.html`; a.click();
@@ -1480,7 +1490,7 @@
         document.getElementById("detailBody").innerHTML = `
             <div class="detail-header">
                 <div class="detail-photo">${avatarHtml}</div>
-                <div><div class="detail-name">${p.name || ""}</div><div class="detail-sub">${p.team||""} · ${p.category||""} · ${p.birthYear||""}${p.club ? ` · 🏟️ ${p.club}` : ""}</div>${ratingBlock}</div>
+                <div><div class="detail-name">${esc(p.name)}</div><div class="detail-sub">${esc(p.team)} · ${esc(p.category)} · ${esc(p.birthYear)}${p.club ? ` · 🏟️ ${esc(p.club)}` : ""}</div>${ratingBlock}</div>
             </div>
             ${p.phone || p.numCaptaciones ? `<div class="detail-section"><div class="detail-section-label">📋 Contacto</div><div class="player-tags">${p.phone?`<span class="tag">📱 ${p.phone}</span>`:""}${p.numCaptaciones?`<span class="tag pos">🔢 Captación nº ${p.numCaptaciones}</span>`:""}</div></div>` : ""}
             <div class="detail-section"><div class="detail-section-label">🏟️ Posiciones</div><div class="player-tags">${(p.positions||[]).map(pos=>`<span class="tag pos">${pos}</span>`).join("")||'<span class="tag">Sin especificar</span>'}</div></div>
@@ -1719,7 +1729,7 @@
             row.className = `absent-row tipo-${e.tipo}`;
             row.innerHTML = `
                 <div class="absent-top">
-                    <span class="absent-name">${player.name}</span>
+                    <span class="absent-name">${esc(player.name)}</span>
                     <div class="absent-type">
                         <button class="atype-btn ${e.tipo==='falta'?'sel-falta':''}" data-id="${id}" data-tipo="falta">❌ Falta</button>
                         <button class="atype-btn ${esRetraso?'sel-retraso':''}" data-id="${id}" data-tipo="retraso">⏱️ Retraso</button>
@@ -1783,7 +1793,7 @@
         results.forEach(p => {
             const row = document.createElement("div");
             row.className = "search-result-row";
-            row.innerHTML = `<span>${p.name} <span style="color:var(--muted);font-size:.75rem;">${p.category||""}</span></span><button>+ Añadir</button>`;
+            row.innerHTML = `<span>${esc(p.name)} <span style="color:var(--muted);font-size:.75rem;">${esc(p.category)}</span></span><button>+ Añadir</button>`;
             row.querySelector("button").onclick = () => {
                 absentPlayers[p.id] = { tipo:"falta", motivo:"Varios", motivoCustom:"", comentario:"", multa:null };
                 document.getElementById("asistSearchInput").value = "";
@@ -1865,7 +1875,7 @@
         html += `</tr></thead><tbody>`;
 
         allPlayers.forEach(player => {
-            html += `<tr><td><strong>${player.name}</strong></td>`;
+            html += `<tr><td><strong>${esc(player.name)}</strong></td>`;
             sesiones.forEach(s => {
                 if (s.cancelada) {
                     html += `<td><span class="htag" style="background:#F3F4F6;color:#9CA3AF;" title="No computable · ${s.motivoCancelacion||''}">—</span></td>`;
@@ -2027,9 +2037,9 @@
         } else {
             body.innerHTML = clubsConUrl.map(c => {
                 if (c.urlPartido) {
-                    return `<a href="${c.urlPartido}" target="_blank" style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:10px;text-decoration:none;color:var(--text);font-weight:600;">🏟️ ${c.nombre} <span>▶️ Abrir</span></a>`;
+                    return `<a href="${esc(c.urlPartido)}" target="_blank" style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:10px;text-decoration:none;color:var(--text);font-weight:600;">🏟️ ${esc(c.nombre)} <span>▶️ Abrir</span></a>`;
                 }
-                return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:10px;color:var(--muted);font-size:.85rem;">🏟️ ${c.nombre} <span>Sin app configurada</span></div>`;
+                return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:10px;color:var(--muted);font-size:.85rem;">🏟️ ${esc(c.nombre)} <span>Sin app configurada</span></div>`;
             }).join("");
         }
         document.getElementById("partidoModal").classList.add("open");
