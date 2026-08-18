@@ -90,6 +90,19 @@
 </head>
 <body>
 
+<!-- LOGIN (solo se ve si no hay sesión ya activa desde Scout CF en este navegador) -->
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;background:#101012;z-index:9000;align-items:center;justify-content:center;padding:20px;">
+    <div style="max-width:340px;width:100%;background:#1E222B;border-radius:20px;padding:28px 22px;text-align:center;">
+        <div style="font-size:2rem;margin-bottom:6px;">🔒</div>
+        <h2 style="font-size:1.1rem;color:#fff;margin-bottom:4px;">Inicia sesión</h2>
+        <p style="font-size:.8rem;color:#aaa;margin-bottom:18px;">Usa la misma cuenta que en Scout CF</p>
+        <input type="email" id="loginEmailPartido" placeholder="Email" autocomplete="email" style="width:100%;padding:12px;border-radius:10px;border:1px solid #4A505C;background:#2A2E37;color:#fff;margin-bottom:10px;box-sizing:border-box;">
+        <input type="password" id="loginPasswordPartido" placeholder="Contraseña" autocomplete="current-password" style="width:100%;padding:12px;border-radius:10px;border:1px solid #4A505C;background:#2A2E37;color:#fff;margin-bottom:14px;box-sizing:border-box;">
+        <button id="loginSubmitPartido" style="width:100%;padding:13px;border-radius:10px;border:none;background:#3498db;color:#fff;font-weight:700;cursor:pointer;">Entrar</button>
+        <p id="loginErrorPartido" style="font-size:.75rem;color:#e74c3c;margin-top:10px;min-height:16px;"></p>
+    </div>
+</div>
+
 <button onclick="cambiarApiKey()" title="Configurar clave de API" style="position:fixed;top:14px;right:14px;z-index:500;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.2);color:#F5B800;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🔑</button>
 
 <!-- Pantalla Configuración -->
@@ -188,8 +201,8 @@ const STAFF_TECNICO = [
 ];
 
 // ===== JUGADORES BASE =====
-const PLANTILLA_BASE = [
-    // ⚠️ EDITAR: renombra estos jugadores desde la pantalla de Convocatoria antes del primer partido
+var PLANTILLA_BASE = [
+    // ⚠️ Estos son solo un respaldo hasta que Firestore cargue la plantilla real de Scout
     {d:0, n:"Jugador 1"},
     {d:0, n:"Jugador 2"},
     {d:0, n:"Jugador 3"},
@@ -3024,6 +3037,103 @@ window.ocultarAvisoSanciones = function() {
     <button id="btnAplicarActa" class="btn btn-exito" style="display:none; margin-top:8px;" onclick="window.aplicarTarjetasActa()">✅ APLICAR TARJETAS</button>
 </div>
 
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCoK9OFm9Y9kzqP2vUfmruJtBPdad8CbCo",
+        authDomain: "scouting-9cd50.firebaseapp.com",
+        projectId: "scouting-9cd50",
+        storageBucket: "scouting-9cd50.firebasestorage.app",
+        messagingSenderId: "434346205979",
+        appId: "1:434346205979:web:210036255c681b87a0a9be"
+    };
+    const fbApp = initializeApp(firebaseConfig);
+    const fbAuth = getAuth(fbApp);
+    const fbDb = getFirestore(fbApp);
+
+    const CLUB_CORTO = "C.D Regate";  // ⚠️ Debe coincidir EXACTO con el nombre en el panel admin de Scout CF              // nombre corto de este club (para la clave de caché local)
+    const CLUB_FALLBACK = "C.D Regate";  // ⚠️ Debe coincidir EXACTO con el nombre en el panel admin de Scout CF           // se usa solo si el perfil del usuario no tiene club (p.ej. admin)
+
+    function rosterCacheKey() { return `${CLUB_CORTO}_plantilla_cache`; }
+
+    function cargarPlantillaDeCache() {
+        try {
+            const raw = localStorage.getItem(rosterCacheKey());
+            if (raw) {
+                const arr = JSON.parse(raw);
+                if (Array.isArray(arr) && arr.length) window.PLANTILLA_BASE = arr;
+            }
+        } catch(e) {}
+    }
+    cargarPlantillaDeCache();
+
+    function avisoPlantilla(msg, esAviso) {
+        let el = document.getElementById('avisoPlantilla');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'avisoPlantilla';
+            el.style.cssText = 'position:fixed;bottom:14px;left:14px;right:14px;z-index:600;padding:10px 16px;border-radius:12px;font-size:13px;text-align:center;color:#fff;';
+            document.body.appendChild(el);
+        }
+        el.style.background = esAviso ? '#4A3030' : '#1A6B3A';
+        el.textContent = msg;
+        clearTimeout(el._t);
+        el._t = setTimeout(() => { el.remove(); }, 5000);
+    }
+
+    async function cargarPlantillaDesdeFirestore(clubName) {
+        try {
+            const q = query(collection(fbDb, "jugadores"), where("club", "==", clubName));
+            const snap = await getDocs(q);
+            const jugadores = [];
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                if (data.tipo === "posible") return; // excluir capturas rápidas sin completar
+                jugadores.push({ d: data.dorsal || 0, n: data.name || "Sin nombre" });
+            });
+            if (jugadores.length) {
+                window.PLANTILLA_BASE = jugadores;
+                localStorage.setItem(rosterCacheKey(), JSON.stringify(jugadores));
+                avisoPlantilla(`✅ Plantilla actualizada desde Scout (${jugadores.length} jugadores)`, false);
+            } else {
+                avisoPlantilla("⚠️ Scout no tiene jugadores para este club. Usando la plantilla guardada en este dispositivo.", true);
+            }
+        } catch (e) {
+            avisoPlantilla("⚠️ Sin conexión. Usando la plantilla guardada en este dispositivo.", true);
+        }
+    }
+
+    async function iniciarConUsuario(user) {
+        let club = CLUB_FALLBACK;
+        try {
+            const perfilSnap = await getDoc(doc(fbDb, "usuarios", user.uid));
+            if (perfilSnap.exists() && perfilSnap.data().club) club = perfilSnap.data().club;
+        } catch(e) {}
+        await cargarPlantillaDesdeFirestore(club);
+    }
+
+    onAuthStateChanged(fbAuth, (user) => {
+        document.getElementById('loginOverlay').style.display = user ? 'none' : 'flex';
+        if (user) iniciarConUsuario(user);
+    });
+
+    document.getElementById('loginSubmitPartido').addEventListener('click', async () => {
+        const email = document.getElementById('loginEmailPartido').value.trim();
+        const pass = document.getElementById('loginPasswordPartido').value;
+        const errEl = document.getElementById('loginErrorPartido');
+        errEl.textContent = '';
+        if (!email || !pass) { errEl.textContent = '⚠️ Completa email y contraseña.'; return; }
+        try {
+            await signInWithEmailAndPassword(fbAuth, email, pass);
+        } catch(e) {
+            errEl.textContent = '❌ Email o contraseña incorrectos.';
+        }
+    });
+</script>
 
 </body>
 </html>
