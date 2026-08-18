@@ -6,25 +6,25 @@
     <title>GELVES STATS - VERSIÓN FINAL</title>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #0a0a0a; color: white; margin: 0; padding: 15px; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #2A2E37; color: white; margin: 0; padding: 15px; }
         .pantalla { display: none; flex-direction: column; min-height: 100vh; }
         .active { display: flex; }
-        .btn { border: none; border-radius: 40px; color: white; font-weight: bold; cursor: pointer; padding: 15px; margin: 5px 0; text-align: center; font-size: 16px; border: 1px solid #333; }
+        .btn { border: none; border-radius: 40px; color: white; font-weight: bold; cursor: pointer; padding: 15px; margin: 5px 0; text-align: center; font-size: 16px; border: 1px solid #4A505C; }
         .btn-primario { background: #3498db; }
         .btn-exito { background: #2ecc71; }
         .btn-peligro { background: #e74c3c; }
-        .btn-neutral { background: #333; }
-        input, select { background: #222; color: white; border: 1px solid #444; padding: 15px; border-radius: 40px; width: 100%; margin: 8px 0; font-size: 16px; }
-        .marcador-box { background: #121212; border-radius: 28px; padding: 20px; margin: 10px 0; border: 1px solid #333; text-align: center; }
+        .btn-neutral { background: #4A505C; }
+        input, select { background: #3D4250; color: white; border: 1px solid #545B6B; padding: 15px; border-radius: 40px; width: 100%; margin: 8px 0; font-size: 16px; }
+        .marcador-box { background: #363B47; border-radius: 28px; padding: 20px; margin: 10px 0; border: 1px solid #4A505C; text-align: center; }
         .nombres-marcador { display: flex; justify-content: space-around; font-size: 20px; font-weight: bold; color: #3498db; margin-bottom: 10px; }
         .marcador { font-size: 64px; font-weight: 900; margin: 10px 0; }
-        .timer { font-size: 48px; color: #f1c40f; font-family: monospace; background: #000; padding: 10px 20px; border-radius: 60px; display: inline-block; }
-        .timeline-container { flex: 1; background: #111; border-radius: 20px; border: 1px solid #222; margin: 10px 0; overflow: hidden; display: flex; flex-direction: column; }
-        .timeline-header { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #1a1a1a; border-bottom: 1px solid #333; }
+        .timer { font-size: 48px; color: #f1c40f; font-family: monospace; background: #1E222B; padding: 10px 20px; border-radius: 60px; display: inline-block; }
+        .timeline-container { flex: 1; background: #363B47; border-radius: 20px; border: 1px solid #3D4250; margin: 10px 0; overflow: hidden; display: flex; flex-direction: column; }
+        .timeline-header { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #363B47; border-bottom: 1px solid #4A505C; }
         .timeline-scroll { flex: 1; overflow-y: auto; display: flex; min-height: 0; }
         .col { width: 50%; padding: 10px; }
-        .col:first-child { border-right: 1px solid #333; }
-        .evento { background: #1a1a1a; padding: 8px; margin: 5px; border-radius: 20px; font-size: 12px; display: flex; justify-content: space-between; }
+        .col:first-child { border-right: 1px solid #4A505C; }
+        .evento { background: #363B47; padding: 8px; margin: 5px; border-radius: 20px; font-size: 12px; display: flex; justify-content: space-between; }
         .evento[data-tipo="GOL"] { border-left: 4px solid #3498db; }
         .evento[data-tipo="AMARILLA"] { border-left: 4px solid #f1c40f; }
         .evento[data-tipo="ROJA"] { border-left: 4px solid #e74c3c; }
@@ -36,11 +36,11 @@
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 2000; padding: 20px; display: flex; flex-direction: column; justify-content: center; }
         .grid-jugadores { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 20px 0; max-height: 60vh; overflow-y: auto; }
         .dorsal { background: #3498db; color: black; font-weight: bold; padding: 5px 10px; border-radius: 20px; min-width: 40px; text-align: center; display: inline-block; margin-right: 10px; }
-        .jugador-item { padding: 15px; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 10px; }
+        .jugador-item { padding: 15px; border-bottom: 1px solid #4A505C; display: flex; align-items: center; gap: 10px; }
         table { width: 100%; border-collapse: collapse; }
         td { padding: 8px 5px; }
-        .dorsal-input { width: 70px; background: #222; color: #f1c40f; border: 1px solid #444; border-radius: 20px; padding: 8px; text-align: center; font-weight: bold; }
-        .nombre-input { width: 100%; background: #222; color: white; border: 1px solid #444; border-radius: 20px; padding: 8px; }
+        .dorsal-input { width: 70px; background: #3D4250; color: #f1c40f; border: 1px solid #545B6B; border-radius: 20px; padding: 8px; text-align: center; font-weight: bold; }
+        .nombre-input { width: 100%; background: #3D4250; color: white; border: 1px solid #545B6B; border-radius: 20px; padding: 8px; }
         .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; border-radius: 34px; transition: .4s; }
@@ -68,10 +68,10 @@
         .once-item {
             display: flex;
             align-items: center;
-            background: #1a1a1a;
+            background: #363B47;
             padding: 12px 15px;
             border-radius: 50px;
-            border: 1px solid #333;
+            border: 1px solid #4A505C;
         }
         .once-item input[type="checkbox"] {
             width: 24px;
@@ -92,6 +92,7 @@
 
 <!-- Pantalla Configuración -->
 <div id="pConfig" class="pantalla active">
+    <img src="data:image/png;base64,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" alt="Escudo Camino Viejo" style="display:block;margin:0 auto 10px;width:72px;height:auto;">
     <h2 id="tituloApp" style="text-align: center; color: #3498db;">⚡ GELVES STATS PRO</h2>
     <div id="bannerAutoSave" style="display: none; background: #1a2a3a; padding: 20px; border-radius: 20px; margin-bottom: 20px;">
         <p style="font-size: 18px;">📦 Partido guardado detectado</p>
@@ -212,7 +213,7 @@ const PLANTILLA_BASE = [
 
 // ===== CONFIGURACIÓN DEL CLUB (única línea a cambiar por cada copia) =====
 const NOMBRE_EQUIPO = "CAMINO VIEJO";              // nombre corto usado en botones, marcador, CSV...
-const NOMBRE_EQUIPO_COMPLETO = "CAMINO VIEJO CF";  // ⚠️ Verificar que coincide EXACTO con el nombre en rfaf.es // nombre oficial completo, usado en extracción de actas (OCR)
+const NOMBRE_EQUIPO_COMPLETO = "CAMINO VIEJO C.F.";  // ✅ Confirmado con el escudo oficial // nombre oficial completo, usado en extracción de actas (OCR)
 
 // ===== VARIABLES GLOBALES =====
 let rolGelves = 'L';
@@ -263,8 +264,8 @@ window.mostrarPantalla = function(id) {
 window.cambiarRol = function(rol) {
     rolGelves = rol;
     rolRival = rol === 'L' ? 'V' : 'L';
-    document.getElementById('btnLocal').style.background = rol === 'L' ? '#3498db' : '#333';
-    document.getElementById('btnVisitante').style.background = rol === 'V' ? '#3498db' : '#333';
+    document.getElementById('btnLocal').style.background = rol === 'L' ? '#3498db' : '#4A505C';
+    document.getElementById('btnVisitante').style.background = rol === 'V' ? '#3498db' : '#4A505C';
     actualizarNombresEquipos();
 };
 
@@ -1013,14 +1014,14 @@ function renderTitularidades() {
     cont.innerHTML = '';
     convocados.forEach((j, idx) => {
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid #222;';
+        row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid #3D4250;';
         row.innerHTML = `
             <span style="min-width:30px; color:#f1c40f; font-weight:bold; text-align:center;">${j.num}</span>
             <span style="flex:1; font-size:14px;">${j.name}</span>
             <div style="display:flex; gap:6px;">
-                <button onclick="setTitular(${idx}, true)"  style="padding:5px 12px; border-radius:20px; border:none; cursor:pointer; font-weight:bold; font-size:12px; background:${j.titular ? '#3498db' : '#333'}; color:white;">TITULAR</button>
-                <button onclick="setTitular(${idx}, false)" style="padding:5px 12px; border-radius:20px; border:none; cursor:pointer; font-weight:bold; font-size:12px; background:${!j.titular && j.intervalos.length > 0 ? '#e67e22' : '#333'}; color:white;">SUPLENTE</button>
-                <button onclick="setTitular(${idx}, null)"  style="padding:5px 12px; border-radius:20px; border:none; cursor:pointer; font-weight:bold; font-size:12px; background:${j.intervalos.length === 0 ? '#555' : '#333'}; color:#aaa;">NO CONV.</button>
+                <button onclick="setTitular(${idx}, true)"  style="padding:5px 12px; border-radius:20px; border:none; cursor:pointer; font-weight:bold; font-size:12px; background:${j.titular ? '#3498db' : '#4A505C'}; color:white;">TITULAR</button>
+                <button onclick="setTitular(${idx}, false)" style="padding:5px 12px; border-radius:20px; border:none; cursor:pointer; font-weight:bold; font-size:12px; background:${!j.titular && j.intervalos.length > 0 ? '#e67e22' : '#4A505C'}; color:white;">SUPLENTE</button>
+                <button onclick="setTitular(${idx}, null)"  style="padding:5px 12px; border-radius:20px; border:none; cursor:pointer; font-weight:bold; font-size:12px; background:${j.intervalos.length === 0 ? '#626878' : '#4A505C'}; color:#aaa;">NO CONV.</button>
             </div>
         `;
         cont.appendChild(row);
@@ -1097,7 +1098,7 @@ window.confirmarNuevoPartido = function() {
     document.getElementById('timelineVisitante').innerHTML = '';
     document.getElementById('bannerAutoSave').style.display = 'none';
     document.getElementById('btnLocal').style.background = '#3498db';
-    document.getElementById('btnVisitante').style.background = '#333';
+    document.getElementById('btnVisitante').style.background = '#4A505C';
     actualizarNombresEquipos();
     mostrarPantalla('pConfig');
 };
@@ -1303,7 +1304,7 @@ function crearModal(titulo) {
     modal.innerHTML = `
         <div style="position:relative;">
             <h3 style="text-align:center; padding-right:40px;">${titulo}</h3>
-            <button onclick="cerrarModal()" style="position:absolute; top:-5px; right:0; background:#333; border:none; color:white; font-size:22px; width:36px; height:36px; border-radius:50%; cursor:pointer; line-height:1;">✕</button>
+            <button onclick="cerrarModal()" style="position:absolute; top:-5px; right:0; background:#4A505C; border:none; color:white; font-size:22px; width:36px; height:36px; border-radius:50%; cursor:pointer; line-height:1;">✕</button>
         </div>`;
     document.body.appendChild(modal);
     return modal;
@@ -1554,7 +1555,7 @@ Devuelve JSON exacto:
         if (ocrRfafData.sanciones?.length > 0) {
             ocrRfafData.sanciones.forEach(s => {
                 const d = document.createElement('div');
-                d.style.cssText = 'background:#222;border-radius:10px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;';
+                d.style.cssText = 'background:#3D4250;border-radius:10px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;';
                 d.innerHTML = `<span style="font-weight:bold;">${s.nombre}</span><span style="color:#f1c40f;">${s.tipo} — ${s.partidos} partido${s.partidos>1?'s':''}</span>`;
                 lista.appendChild(d);
             });
@@ -1569,7 +1570,7 @@ Devuelve JSON exacto:
             lista.appendChild(sep);
             ocrRfafData.otros_equipos.slice(0,5).forEach(o => {
                 const d = document.createElement('div');
-                d.style.cssText = 'background:#111;border-radius:8px;padding:8px;margin-bottom:5px;font-size:12px;color:#888;';
+                d.style.cssText = 'background:#363B47;border-radius:8px;padding:8px;margin-bottom:5px;font-size:12px;color:#888;';
                 d.innerText = `${o.equipo} — ${o.jugador}: ${o.tipo}`;
                 lista.appendChild(d);
             });
@@ -1636,7 +1637,7 @@ window.aplicarSancionesRfaf = function() {
     modal.innerHTML = `
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
             <h2 style="color:#f39c12; margin:0;">⚠️ COMPARACIÓN RFAF</h2>
-            <button onclick="this.closest('.modal').remove()" style="background:#333; border:none; color:white; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer;">✕</button>
+            <button onclick="this.closest('.modal').remove()" style="background:#4A505C; border:none; color:white; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer;">✕</button>
         </div>
         <p style="color:#aaa; font-size:13px; margin-bottom:15px;">El RFAF indica diferencias respecto a tus datos. Decide qué aplicar:</p>
         <div id="rfaf-diff-lista" style="flex:1; overflow-y:auto; margin-bottom:15px;"></div>
@@ -1651,7 +1652,7 @@ window.aplicarSancionesRfaf = function() {
 
     diferencias.forEach((d, idx) => {
         const div = document.createElement('div');
-        div.style.cssText = 'background:#222; border-radius:10px; padding:12px; margin-bottom:10px; border:1px solid #f39c12;';
+        div.style.cssText = 'background:#3D4250; border-radius:10px; padding:12px; margin-bottom:10px; border:1px solid #f39c12;';
         div.innerHTML = `
             <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
                 <input type="checkbox" id="diff_${idx}" checked style="width:20px; height:20px; accent-color:#2ecc71;">
@@ -1663,7 +1664,7 @@ window.aplicarSancionesRfaf = function() {
                     <div>🟨 Amarillas: <strong style="color:#f1c40f;">${d.actualAmarillas}</strong></div>
                     <div>🔴 Sanción: <strong style="color:#e74c3c;">${d.actualSancion}</strong></div>
                 </div>
-                <div style="border-left:1px solid #444; padding-left:20px;">
+                <div style="border-left:1px solid #545B6B; padding-left:20px;">
                     <div style="color:#888; margin-bottom:2px;">RFAF INDICA</div>
                     <div>🟨 Amarillas: <strong style="color:#f1c40f;">${d.rfafAmarillas}</strong></div>
                     <div>🔴 Sanción: <strong style="color:#e74c3c;">${d.rfafSancion}</strong></div>
@@ -1751,7 +1752,7 @@ Devuelve JSON exacto:
         if (ocrActaData.tarjetas?.length > 0) {
             ocrActaData.tarjetas.forEach(t => {
                 const d = document.createElement('div');
-                d.style.cssText = 'background:#222;border-radius:10px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;';
+                d.style.cssText = 'background:#3D4250;border-radius:10px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;';
                 const color = t.tipo==='AMARILLA'?'#f1c40f':'#e74c3c';
                 d.innerHTML = `<span style="font-weight:bold;">${t.nombre}</span><span style="color:${color};">${t.tipo==='AMARILLA'?'🟨':'🟥'} ${t.tipo}${t.minuto?' (min. '+t.minuto+"')":''}`;
                 lista.appendChild(d);
@@ -1869,7 +1870,7 @@ window.renderSancionadosPendientes = function() {
     const historial = JSON.parse(localStorage.getItem(`${NOMBRE_EQUIPO}_rivales`) || '{}');
 
     if (Object.keys(historial).length === 0) {
-        cont.innerHTML = '<p style="color:#555; font-size:12px; text-align:center;">Sin datos — sube capturas del RFAF para calcular pendientes</p>';
+        cont.innerHTML = '<p style="color:#626878; font-size:12px; text-align:center;">Sin datos — sube capturas del RFAF para calcular pendientes</p>';
         return;
     }
 
@@ -2073,11 +2074,11 @@ function renderRivalesResultado(equipos, jornadas) {
 
     equipos.forEach(eq => {
         const d = document.createElement('div');
-        d.style.cssText = 'background:#1a1a2e; border-radius:12px; padding:12px; margin-bottom:10px; border:1px solid #1F6AA5;';
+        d.style.cssText = 'background:#363B47; border-radius:12px; padding:12px; margin-bottom:10px; border:1px solid #1F6AA5;';
         let html = `<div style="font-weight:bold; color:#1F6AA5; font-size:14px; margin-bottom:8px;">🏟️ ${eq.equipo} <span style="color:#888; font-size:12px;">(${eq.sancionados.length} sancionado${eq.sancionados.length>1?'s':''})</span></div>`;
         eq.sancionados.forEach(s => {
             const color = s.partidos >= 2 ? '#e74c3c' : '#f39c12';
-            html += `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #333; font-size:13px;">
+            html += `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #4A505C; font-size:13px;">
                 <span>${s.jugador}</span>
                 <span style="color:${color}; font-weight:bold;">🔴 ${s.partidos} partido${s.partidos>1?'s':''}</span>
             </div>`;
@@ -2106,7 +2107,7 @@ function renderHistorialRivales() {
     });
 
     if (jornadas.length === 0) {
-        cont.innerHTML = '<p style="color:#555; font-size:12px; text-align:center;">Sin historial guardado</p>';
+        cont.innerHTML = '<p style="color:#626878; font-size:12px; text-align:center;">Sin historial guardado</p>';
         return;
     }
 
@@ -2114,7 +2115,7 @@ function renderHistorialRivales() {
         const entry = historial[key];
         const total = entry.equipos.reduce((a, eq) => a + eq.sancionados.length, 0);
         const btn = document.createElement('button');
-        btn.style.cssText = 'width:100%; background:#1a1a2e; border:1px solid #1F6AA5; border-radius:8px; padding:10px; text-align:left; color:white; cursor:pointer; margin-bottom:6px; font-size:13px;';
+        btn.style.cssText = 'width:100%; background:#363B47; border:1px solid #1F6AA5; border-radius:8px; padding:10px; text-align:left; color:white; cursor:pointer; margin-bottom:6px; font-size:13px;';
         btn.innerHTML = `<span style="color:#f1c40f; font-weight:bold;">J${entry.jornada || '?'}</span> <span style="color:#aaa; font-size:11px;">${entry.fecha}</span> — <span style="color:#1F6AA5;">${total} sancionado${total>1?'s':''} / ${entry.equipos.length} equipos</span>`;
         btn.onclick = () => {
             renderRivalesResultado(entry.equipos, entry.jornada);
@@ -2627,19 +2628,19 @@ window.cargarPantallaSanciones = function() {
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
                 <span style="color:#aaa; font-size:10px;">🟨 AMARILLAS</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button onclick="cambiarAmarillas('${j.n}',-1)" style="background:#333;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
+                    <button onclick="cambiarAmarillas('${j.n}',-1)" style="background:#4A505C;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
                     <span id="amar_${j.n}" style="font-size:22px;font-weight:bold;color:#f1c40f;min-width:28px;text-align:center;">${est.amarillas}</span>
-                    <button onclick="cambiarAmarillas('${j.n}',1)" style="background:#333;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
+                    <button onclick="cambiarAmarillas('${j.n}',1)" style="background:#4A505C;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
                 </div>
             </div>
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; margin-left:6px;">
                 <span style="color:#aaa; font-size:10px;">🔴 SANCIÓN</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button onclick="cambiarSancion('${j.n}',-1)" style="background:#333;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
+                    <button onclick="cambiarSancion('${j.n}',-1)" style="background:#4A505C;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
                     <span id="san_${j.n}" data-partidos="${est.sancionado}" style="font-size:22px;font-weight:bold;color:#e74c3c;min-width:28px;text-align:center;">${est.sancionado}</span>
-                    <button onclick="cambiarSancion('${j.n}',1)" style="background:#333;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
+                    <button onclick="cambiarSancion('${j.n}',1)" style="background:#4A505C;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
                 </div>
-                <select id="mot_${j.n}" style="margin-top:4px;background:#222;color:#aaa;border:1px solid #444;border-radius:8px;font-size:10px;padding:2px 4px;display:${est.sancionado>0?'block':'none'};" onchange="guardarMotivoCard('${j.n}',this.value)">
+                <select id="mot_${j.n}" style="margin-top:4px;background:#3D4250;color:#aaa;border:1px solid #545B6B;border-radius:8px;font-size:10px;padding:2px 4px;display:${est.sancionado>0?'block':'none'};" onchange="guardarMotivoCard('${j.n}',this.value)">
                     <option value="acumulacion" ${(est.motivo||'')==='acumulacion'?'selected':''}>📋 Acumulación</option>
                     <option value="doble"       ${(est.motivo||'')==='doble'?'selected':''}>🟨🟨 Doble am.</option>
                     <option value="roja"        ${(est.motivo||'')==='roja'?'selected':''}>🟥 Roja directa</option>
@@ -2648,7 +2649,7 @@ window.cargarPantallaSanciones = function() {
         </div>`;
     });
     // Sección staff técnico
-    html += `<div class="staff-header" style="background:#1a1a2e; border-radius:10px; padding:10px; margin:15px 0 8px; text-align:center;">
+    html += `<div class="staff-header" style="background:#363B47; border-radius:10px; padding:10px; margin:15px 0 8px; text-align:center;">
         <span style="color:#8e44ad; font-weight:bold; font-size:13px;">👨‍💼 STAFF TÉCNICO</span>
     </div>`;
     STAFF_TECNICO.forEach(j => {
@@ -2665,19 +2666,19 @@ window.cargarPantallaSanciones = function() {
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
                 <span style="color:#aaa; font-size:10px;">🟨 AMONEST.</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button onclick="cambiarAmarillas('${j.n}',-1)" style="background:#333;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
+                    <button onclick="cambiarAmarillas('${j.n}',-1)" style="background:#4A505C;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
                     <span id="amar_${j.n}" style="font-size:22px;font-weight:bold;color:#f1c40f;min-width:28px;text-align:center;">${est.amarillas}</span>
-                    <button onclick="cambiarAmarillas('${j.n}',1)" style="background:#333;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
+                    <button onclick="cambiarAmarillas('${j.n}',1)" style="background:#4A505C;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
                 </div>
             </div>
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; margin-left:6px;">
                 <span style="color:#aaa; font-size:10px;">🔴 SANCIÓN</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button onclick="cambiarSancion('${j.n}',-1)" style="background:#333;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
+                    <button onclick="cambiarSancion('${j.n}',-1)" style="background:#4A505C;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
                     <span id="san_${j.n}" data-partidos="${est.sancionado}" style="font-size:22px;font-weight:bold;color:#e74c3c;min-width:28px;text-align:center;">${est.sancionado}</span>
-                    <button onclick="cambiarSancion('${j.n}',1)" style="background:#333;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
+                    <button onclick="cambiarSancion('${j.n}',1)" style="background:#4A505C;border:none;color:white;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
                 </div>
-                <select id="mot_${j.n}" style="margin-top:4px;background:#222;color:#aaa;border:1px solid #444;border-radius:8px;font-size:10px;padding:2px 4px;display:${est.sancionado>0?'block':'none'};" onchange="guardarMotivoCard('${j.n}',this.value)">
+                <select id="mot_${j.n}" style="margin-top:4px;background:#3D4250;color:#aaa;border:1px solid #545B6B;border-radius:8px;font-size:10px;padding:2px 4px;display:${est.sancionado>0?'block':'none'};" onchange="guardarMotivoCard('${j.n}',this.value)">
                     <option value="acumulacion" ${(est.motivo||'')==='acumulacion'?'selected':''}>📋 Acumulación</option>
                     <option value="doble"       ${(est.motivo||'')==='doble'?'selected':''}>🟨🟨 Doble am.</option>
                     <option value="roja"        ${(est.motivo||'')==='roja'?'selected':''}>🟥 Roja directa</option>
@@ -2837,11 +2838,11 @@ window.ocultarAvisoSanciones = function() {
     </div>
 
     <!-- Árbitro y notas -->
-    <div style="background:#121212; border-radius:20px; padding:15px; margin:10px 0; border:1px solid #333;">
+    <div style="background:#363B47; border-radius:20px; padding:15px; margin:10px 0; border:1px solid #4A505C;">
         <div style="color:#888; font-size:13px; margin-bottom:8px; text-transform:uppercase;">🟡 Árbitro y notas</div>
         <input type="text" id="nombreArbitro" placeholder="Nombre del árbitro" style="margin-bottom:6px;" onchange="guardarAuto()">
         <textarea id="notasArbitro" placeholder="Notas sobre el árbitro (actuación, decisiones polémicas...)"
-            style="background:#222; color:white; border:1px solid #444; padding:12px; border-radius:20px; width:100%; font-size:15px; min-height:80px; resize:vertical; font-family:inherit;" onchange="guardarAuto()"></textarea>
+            style="background:#3D4250; color:white; border:1px solid #545B6B; padding:12px; border-radius:20px; width:100%; font-size:15px; min-height:80px; resize:vertical; font-family:inherit;" onchange="guardarAuto()"></textarea>
     </div>
 
     <div class="timeline-container">
@@ -2900,7 +2901,7 @@ window.ocultarAvisoSanciones = function() {
     <button class="btn" style="background:#27ae60; width:100%; margin-bottom:12px; font-size:14px;" onclick="jornadaJugada()">✅ JORNADA JUGADA</button>
     <button class="btn" style="background:#8e44ad; width:100%; margin-bottom:12px; font-size:14px;" onclick="abrirOcrRfaf()">📸 SUBIR CAPTURA RFAF → EXTRAER SANCIONES</button>
     <button class="btn" style="background:#1a3a5c; width:100%; margin-bottom:12px; font-size:14px;" onclick="abrirOcrRivales()">🔍 VER SANCIONADOS RIVALES</button>
-    <a href="https://www.rfaf.es/pnfg/NPcd/NFG_ConsultaSanciones?cod_primaria=5002420" target="_blank" style="display:block; background:#27ae60; color:white; text-align:center; padding:15px; border-radius:40px; font-weight:bold; font-size:14px; text-decoration:none; margin-bottom:12px; border:1px solid #333;">🌐 VER SANCIONES EN RFAF.ES</a>
+    <a href="https://www.rfaf.es/pnfg/NPcd/NFG_ConsultaSanciones?cod_primaria=5002420" target="_blank" style="display:block; background:#27ae60; color:white; text-align:center; padding:15px; border-radius:40px; font-weight:bold; font-size:14px; text-decoration:none; margin-bottom:12px; border:1px solid #4A505C;">🌐 VER SANCIONES EN RFAF.ES</a>
 
     <div id="avisoPendiente" style="display:none; background:#1a2a1a; border:1px solid #2ecc71; border-radius:15px; padding:15px; margin-bottom:15px; text-align:center;">
         <p style="color:#2ecc71; font-size:16px; margin:0;">📅 ¡Recuerda revisar las sanciones en rfaf.es!</p>
@@ -2908,7 +2909,7 @@ window.ocultarAvisoSanciones = function() {
         <button class="btn btn-neutral" style="margin-top:10px; font-size:12px; padding:8px 15px;" onclick="ocultarAvisoSanciones()">Entendido</button>
     </div>
 
-    <div style="background:#1a1a2e; border-radius:15px; padding:12px; margin-bottom:15px;">
+    <div style="background:#363B47; border-radius:15px; padding:12px; margin-bottom:15px;">
         <p style="color:#aaa; font-size:12px; margin:0 0 8px; text-align:center;">📌 Pulsa un icono para filtrar</p>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
             <div id="filtro_rojo" onclick="filtrarSanciones('rojo')" style="background:#2c1a1a; border-radius:10px; padding:8px; text-align:center; cursor:pointer; border:2px solid transparent; transition:border .2s;">
@@ -2937,11 +2938,11 @@ window.ocultarAvisoSanciones = function() {
 <div id="modalOcrRivales" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.98); z-index:9999; flex-direction:column; padding:20px; overflow-y:auto;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
         <h2 style="color:#1F6AA5; margin:0;">🔍 SANCIONADOS RIVALES</h2>
-        <button onclick="window.cerrarOcrRivales()" style="background:#333; border:none; color:white; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer;">✕</button>
+        <button onclick="window.cerrarOcrRivales()" style="background:#4A505C; border:none; color:white; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer;">✕</button>
     </div>
 
     <!-- Historial de jornadas guardadas -->
-    <div style="background:#111; border-radius:12px; padding:12px; margin-bottom:15px;">
+    <div style="background:#363B47; border-radius:12px; padding:12px; margin-bottom:15px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
             <div style="color:#888; font-size:12px; text-transform:uppercase;">📁 Historial guardado</div>
             <button onclick="window.borrarTodoHistorialRivales()" style="background:#e74c3c; border:none; color:white; padding:3px 10px; border-radius:20px; font-size:11px; cursor:pointer;">🗑️ Borrar todo</button>
@@ -2953,20 +2954,20 @@ window.ocultarAvisoSanciones = function() {
     <div style="background:#1a0a0a; border-radius:12px; padding:12px; margin-bottom:15px; border:1px solid #e74c3c;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <div style="color:#e74c3c; font-size:13px; font-weight:bold;">🔴 SANCIONADOS PRÓXIMA JORNADA</div>
-            <button onclick="window.renderSancionadosPendientes()" style="background:#333; border:none; color:#aaa; padding:4px 10px; border-radius:20px; font-size:11px; cursor:pointer;">🔄 Actualizar</button>
+            <button onclick="window.renderSancionadosPendientes()" style="background:#4A505C; border:none; color:#aaa; padding:4px 10px; border-radius:20px; font-size:11px; cursor:pointer;">🔄 Actualizar</button>
         </div>
         <div id="sancionadosPendientesLista"></div>
     </div>
 
     <!-- Nueva consulta -->
-    <div style="background:#1a1a2e; border-radius:12px; padding:12px; margin-bottom:15px; border:1px solid #1F6AA5;">
+    <div style="background:#363B47; border-radius:12px; padding:12px; margin-bottom:15px; border:1px solid #1F6AA5;">
         <div style="color:#1F6AA5; font-size:13px; font-weight:bold; margin-bottom:10px;">➕ NUEVA JORNADA</div>
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
             <label style="color:#aaa; font-size:13px; white-space:nowrap;">Jornada nº:</label>
             <input type="number" id="inputJornadaRivales" placeholder="ej: 24" min="1" max="40"
-                style="width:100px; background:#222; border:1px solid #1F6AA5; color:#f1c40f; padding:8px; border-radius:20px; text-align:center; font-size:16px; font-weight:bold;">
+                style="width:100px; background:#3D4250; border:1px solid #1F6AA5; color:#f1c40f; padding:8px; border-radius:20px; text-align:center; font-size:16px; font-weight:bold;">
         </div>
-        <label style="display:block; background:#222; border:2px dashed #1F6AA5; border-radius:15px; padding:15px; text-align:center; cursor:pointer; margin-bottom:10px;">
+        <label style="display:block; background:#3D4250; border:2px dashed #1F6AA5; border-radius:15px; padding:15px; text-align:center; cursor:pointer; margin-bottom:10px;">
             <span id="ocrRivalesLabel" style="color:#1F6AA5; font-size:14px;">📁 Pulsa para seleccionar imagen</span>
             <input type="file" id="ocrRivalesInput" accept="image/*" style="display:none;" onchange="previsualizarRivales(this)">
         </label>
@@ -2986,15 +2987,15 @@ window.ocultarAvisoSanciones = function() {
 <div id="modalOcrRfaf" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.98); z-index:9999; flex-direction:column; padding:20px; overflow-y:auto;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
         <h2 style="color:#8e44ad; margin:0;">📸 CAPTURA RFAF</h2>
-        <button onclick="window.cerrarOcrRfaf()" style="background:#333; border:none; color:white; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer;">✕</button>
+        <button onclick="window.cerrarOcrRfaf()" style="background:#4A505C; border:none; color:white; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer;">✕</button>
     </div>
     <p style="color:#aaa; font-size:13px; margin-bottom:15px;">Sube una captura de rfaf.es con las sanciones. Claude analizará la imagen y extraerá los datos automáticamente.</p>
-    <label style="display:block; background:#222; border:2px dashed #8e44ad; border-radius:15px; padding:20px; text-align:center; cursor:pointer; margin-bottom:15px;">
+    <label style="display:block; background:#3D4250; border:2px dashed #8e44ad; border-radius:15px; padding:20px; text-align:center; cursor:pointer; margin-bottom:15px;">
         <span id="ocrRfafLabel" style="color:#8e44ad; font-size:15px;">📁 Pulsa para seleccionar imagen</span>
         <input type="file" id="ocrRfafInput" accept="image/*" style="display:none;" onchange="previsualizarRfaf(this)">
     </label>
     <img id="ocrRfafPreview" style="display:none; width:100%; border-radius:10px; margin-bottom:15px; max-height:300px; object-fit:contain;">
-    <div id="ocrRfafResultado" style="display:none; background:#1a1a2e; border-radius:15px; padding:15px; margin-bottom:15px;">
+    <div id="ocrRfafResultado" style="display:none; background:#363B47; border-radius:15px; padding:15px; margin-bottom:15px;">
         <div style="color:#8e44ad; font-weight:bold; margin-bottom:10px;">📋 Sanciones detectadas:</div>
         <div id="ocrRfafLista"></div>
     </div>
@@ -3006,10 +3007,10 @@ window.ocultarAvisoSanciones = function() {
 <div id="modalOcrActa" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.98); z-index:9999; flex-direction:column; padding:20px; overflow-y:auto;">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
         <h2 style="color:#1A6B3A; margin:0;">📸 ACTA PARTIDO</h2>
-        <button onclick="window.cerrarOcrActa()" style="background:#333; border:none; color:white; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer;">✕</button>
+        <button onclick="window.cerrarOcrActa()" style="background:#4A505C; border:none; color:white; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer;">✕</button>
     </div>
     <p style="color:#aaa; font-size:13px; margin-bottom:15px;" id="descOcrActa">Sube una foto del acta del partido. Claude detectará las tarjetas amarillas y rojas de jugadores y staff de Gelves.</p>
-    <label style="display:block; background:#222; border:2px dashed #1A6B3A; border-radius:15px; padding:20px; text-align:center; cursor:pointer; margin-bottom:15px;">
+    <label style="display:block; background:#3D4250; border:2px dashed #1A6B3A; border-radius:15px; padding:20px; text-align:center; cursor:pointer; margin-bottom:15px;">
         <span id="ocrActaLabel" style="color:#1A6B3A; font-size:15px;">📁 Pulsa para seleccionar imagen</span>
         <input type="file" id="ocrActaInput" accept="image/*" style="display:none;" onchange="previsualizarActa(this)">
     </label>
