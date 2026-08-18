@@ -33,6 +33,13 @@
         .auth-form button{background:var(--blue);color:#fff;border:none;padding:13px;border-radius:var(--rbtn);font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:1px;cursor:pointer;}
         /* APP */
         #appSection{display:none;max-width:680px;margin:0 auto;}
+        #homeScreen{display:none;max-width:680px;margin:0 auto;padding:20px 16px;min-height:100vh;box-sizing:border-box;}
+        .home-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
+        .home-tiles{display:flex;flex-direction:column;gap:10px;}
+        .home-tile{border:none;border-radius:18px;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:transform .1s;}
+        .home-tile:active{transform:scale(0.98);}
+        .home-tile-icon{font-size:2rem;}
+        .home-tile-label{font-family:'Bebas Neue',sans-serif;letter-spacing:1px;font-size:1.3rem;color:#fff;}
         /* HEADER */
         .header{background:var(--blue);position:sticky;top:0;z-index:100;}
         .header-inner{padding:14px 16px 10px;}
@@ -282,6 +289,28 @@
     </div>
 </div>
 
+<!-- HOME -->
+<div id="homeScreen" style="display:none;">
+    <div class="home-header">
+        <div class="header-logo" id="homeLogo">⚽ SCOUT <span>CF</span></div>
+        <button class="hbtn danger" id="homeLogoutBtn">Salir</button>
+    </div>
+    <div class="home-tiles">
+        <button class="home-tile" id="tileScout" style="background:#1A3A8F;">
+            <span class="home-tile-icon">🔍</span>
+            <span class="home-tile-label">Scout</span>
+        </button>
+        <button class="home-tile" id="tileAsistencia" style="background:#2352C0;">
+            <span class="home-tile-icon">📋</span>
+            <span class="home-tile-label">Asistencia</span>
+        </button>
+        <button class="home-tile" id="tilePartido" style="background:#12295E;">
+            <span class="home-tile-icon">⚽</span>
+            <span class="home-tile-label">Partido</span>
+        </button>
+    </div>
+</div>
+
 <!-- APP -->
 <div id="appSection">
     <div class="header">
@@ -289,8 +318,7 @@
             <div class="header-row">
                 <div class="header-logo" id="headerLogo">⚽ SCOUT <span>CF</span></div>
                 <div class="header-btns">
-                    <button class="hbtn" id="asistenciaBtn">📋 Asistencia</button>
-                    <button class="hbtn" id="partidoBtn">⚽ Partido</button>
+                    <button class="hbtn" id="backHomeBtn">← Inicio</button>
                     <button class="hbtn" id="exportBtn">📊 Excel</button>
                     <button class="hbtn" id="exportHtmlBtn">🖨️ Informe</button>
                     <button class="hbtn danger" id="logoutBtn">Salir</button>
@@ -334,6 +362,12 @@
         </div>
         <!-- Filtro club (solo admin) -->
         <div class="filter-chips" id="clubChips" style="display:none;"></div>
+        <!-- Filtro tipo (posibles / completos) -->
+        <div class="filter-chips" id="tipoChips" style="flex-wrap:wrap;">
+            <button class="fchip active" data-tipo="">Todos</button>
+            <button class="fchip" data-tipo="posible">⚡ Posibles</button>
+            <button class="fchip" data-tipo="completo">✅ Completos</button>
+        </div>
         <div class="toggle-row">
             <span class="toggle-label" id="toggleLabel">Mostrar valoraciones</span>
             <div class="toggle-sw" id="toggleRatings"></div>
@@ -397,6 +431,7 @@
         </div>
         <div id="playersList"></div>
     </div>
+    <button class="fab" id="quickPlayerBtn" style="bottom:92px;width:46px;height:46px;background:var(--blue);color:var(--gold);font-size:1.3rem;box-shadow:0 4px 18px rgba(26,58,143,.4);">⚡</button>
     <button class="fab" id="newPlayerBtn">＋</button>
 </div>
 
@@ -460,6 +495,18 @@
                 <label>📱 Teléfono</label>
                 <input type="tel" id="playerPhone" placeholder="600 000 000">
             </div>
+        </div>
+        <!-- Dorsal -->
+        <div class="campo">
+            <label>🔢 Dorsal</label>
+            <input type="number" id="playerDorsal" placeholder="Ej: 7" min="0" max="99">
+        </div>
+        <!-- Marca de "posible" (captura rápida) -->
+        <div class="campo" id="quickFlagWrap" style="display:none;background:#FFF9E6;border:1.5px solid #F5B800;border-radius:14px;padding:10px 14px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;color:#8A6800;">
+                <input type="checkbox" id="playerEsPosible" style="width:16px;height:16px;">
+                ⚡ Sigue siendo "posible" (ficha aún sin completar)
+            </label>
         </div>
         <!-- Nº captaciones -->
         <div class="campo">
@@ -612,6 +659,47 @@
     </div>
 </div>
 
+<!-- MODAL CAPTURA RÁPIDA (posible jugador) -->
+<div class="modal-overlay" id="quickModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2>⚡ CAPTURA RÁPIDA</h2>
+            <p>Datos básicos — completa el resto más tarde</p>
+        </div>
+        <div class="modal-body">
+            <div class="campo">
+                <label>⚽ Equipo (rival)</label>
+                <input type="text" id="quickTeam" placeholder="Ej: Betis, Sevilla...">
+            </div>
+            <div class="campo">
+                <label>👤 Nombre completo</label>
+                <input type="text" id="quickName" placeholder="Nombre del jugador">
+            </div>
+            <div class="campo">
+                <label>🔢 Dorsal</label>
+                <input type="number" id="quickDorsal" placeholder="Ej: 7" min="0" max="99">
+            </div>
+            <div class="campo">
+                <label>🏟️ Posición</label>
+                <div class="chip-group" id="quickPosChips">
+                    <span class="chip">Portero</span><span class="chip">Central</span>
+                    <span class="chip">Lateral izdo</span><span class="chip">Lateral dcho</span>
+                    <span class="chip">MCD</span><span class="chip">MCO</span>
+                    <span class="chip">Interior dcho</span><span class="chip">Interior izdo</span>
+                    <span class="chip">Mediapunta</span><span class="chip">Extremo izdo</span>
+                    <span class="chip">Extremo dcho</span><span class="chip">Delantero centro</span>
+                </div>
+            </div>
+            <div class="campo">
+                <label>📞 Teléfono (opcional)</label>
+                <input type="tel" id="quickPhone" placeholder="600 000 000">
+            </div>
+            <button class="btn-cancel-asist" id="quickCancelBtn" style="width:100%;margin-top:6px;">Cancelar</button>
+            <button class="btn-save-asist" id="quickSaveBtn" style="width:100%;margin-top:8px;">⚡ Guardar como posible</button>
+        </div>
+    </div>
+</div>
+
 <!-- MODAL PARTIDO -->
 <div class="modal-overlay" id="partidoModal">
     <div class="modal-box">
@@ -709,7 +797,7 @@
     };
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, setDoc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     const app = initializeApp(firebaseConfig);
@@ -726,7 +814,7 @@
     let allPlayers = [], allClubs = [], allUserProfiles = [];
     let ratingsVisible = false; // oculto por defecto
     let currentEditId = null, currentPhotoB64 = null;
-    let activeFilter = "", activeFootFilter = "", activeClubFilter = "", activeValFilter = "";
+    let activeFilter = "", activeFootFilter = "", activeClubFilter = "", activeValFilter = "", activeTipoFilter = "";
     let sortByRating = true;
     let currentAuthSig = null, currentAuthName = "", currentAuthDate = "";
 
@@ -749,14 +837,18 @@
             }
             currentUserProfile = (await getDoc(userRef)).data();
             document.getElementById("authSection").style.display = "none";
-            document.getElementById("appSection").style.display = "block";
+            document.getElementById("appSection").style.display = "none";
+            document.getElementById("homeScreen").style.display = "block";
             document.getElementById("userEmail").textContent = isAdmin ? "👑 Admin" : `${currentUserProfile?.club || ""} · ${currentUserProfile?.categoria || ""}`;
             const logoEl = document.getElementById("headerLogo");
+            const homeLogoEl = document.getElementById("homeLogo");
             if (isAdmin) {
                 logoEl.innerHTML = `⚽ SCOUT <span>CF</span>`;
+                homeLogoEl.innerHTML = `⚽ SCOUT <span>CF</span>`;
             } else {
                 const clubName = currentUserProfile?.club || "SCOUT CF";
                 logoEl.textContent = `⚽ ${clubName}`;
+                homeLogoEl.textContent = `⚽ ${clubName}`;
             }
             if (isAdmin) {
                 document.getElementById("adminPanel").style.display = "block";
@@ -776,6 +868,7 @@
             currentUser = null; isAdmin = false;
             document.getElementById("authSection").style.display = "flex";
             document.getElementById("appSection").style.display = "none";
+            document.getElementById("homeScreen").style.display = "none";
         }
     });
 
@@ -784,6 +877,23 @@
         catch(e) { toast("❌ " + e.message, "error"); }
     });
     document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+    document.getElementById("homeLogoutBtn").addEventListener("click", () => signOut(auth));
+
+    // NAVEGACIÓN HOME ↔ SCOUT
+    document.getElementById("tileScout").addEventListener("click", () => {
+        document.getElementById("homeScreen").style.display = "none";
+        document.getElementById("appSection").style.display = "block";
+    });
+    document.getElementById("backHomeBtn").addEventListener("click", () => {
+        document.getElementById("appSection").style.display = "none";
+        document.getElementById("homeScreen").style.display = "block";
+    });
+    document.getElementById("tileAsistencia").addEventListener("click", () => {
+        openAsistenciaModal();
+    });
+    document.getElementById("tilePartido").addEventListener("click", () => {
+        openPartidoModal();
+    });
 
     // LOAD CLUBS
     async function loadClubs() {
@@ -944,14 +1054,15 @@
 
     // LOAD PLAYERS
     async function loadPlayers() {
-        const snap = await getDocs(playersCol);
-        allPlayers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        // filter by club/cat for non-admins
-        if (!isAdmin) {
+        let snap;
+        if (isAdmin) {
+            snap = await getDocs(playersCol);
+        } else {
             const uc = currentUserProfile?.club || "";
             if (!uc) { document.getElementById("playersList").innerHTML = `<div class="empty"><div class="icon">⏳</div><p>Tu cuenta no tiene club asignado. Contacta con el administrador.</p></div>`; return; }
-            allPlayers = allPlayers.filter(p => (p.club || "").trim().toLowerCase() === uc.trim().toLowerCase());
+            snap = await getDocs(query(playersCol, where("club", "==", uc)));
         }
+        allPlayers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         // sort in memory
         allPlayers.sort((a, b) => { const ta = a.createdAt?.seconds || 0, tb = b.createdAt?.seconds || 0; return tb - ta; });
         renderPlayers();
@@ -966,7 +1077,8 @@
             const mf = !activeFootFilter || p.foot === activeFootFilter;
             const mcl = !activeClubFilter || p.club === activeClubFilter;
             const mv = !activeValFilter || p.valFinal === activeValFilter;
-            return ms && mc && mf && mcl && mv;
+            const mt = !activeTipoFilter || (activeTipoFilter === "posible" ? p.tipo === "posible" : p.tipo !== "posible");
+            return ms && mc && mf && mcl && mv && mt;
         });
         if (sortByRating) list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
         document.getElementById("totalCount").textContent = allPlayers.length;
@@ -978,19 +1090,22 @@
         list.forEach(player => {
             const footLabel = { zurdo:"Zurdo", diestro:"Diestro", ambidiestro:"Ambidiestro" }[player.foot] || "";
             const shootLabel = { bueno:"Golpeo ✅", regular:"Golpeo ➖", malo:"Golpeo ❌" }[player.shoot] || "";
-            const ratingHtml = ratingsVisible ? `<div class="rating-badge">${player.rating || "—"}</div>` : `<div class="rating-badge hidden">🔒</div>`;
+            const ratingHtml = player.tipo === "posible"
+                ? `<div class="rating-badge" style="background:var(--gold);color:var(--blue);">⚡ Posible</div>`
+                : ratingsVisible ? `<div class="rating-badge">${player.rating || "—"}</div>` : `<div class="rating-badge hidden">🔒</div>`;
             const avatarHtml = player.photoB64 ? `<img src="${player.photoB64}" alt="">` : "👤";
             const posTags = (player.positions || []).slice(0,3).map(p => `<span class="tag pos">${p}</span>`).join("");
             const extraTags = [footLabel, shootLabel, player.category].filter(Boolean).map(t => `<span class="tag">${t}</span>`).join("");
             const valTag = player.valFinal ? `<span class="tag" style="background:var(--gold);color:var(--blue);border-color:var(--gold-dark);">🏆 ${player.valFinal}</span>` : "";
             const clubTag = isAdmin && player.club ? `<span class="tag" style="background:#E8EEFF;color:var(--blue-mid);">🏟️ ${player.club}</span>` : "";
+            const dorsalStr = player.dorsal ? `#${player.dorsal} · ` : "";
             const card = document.createElement("div");
             card.className = "player-card";
             card.innerHTML = `
                 <div class="player-avatar">${avatarHtml}</div>
                 <div class="player-body">
                     <div class="player-name-row"><div class="player-name">${player.name || "Sin nombre"}</div>${ratingHtml}</div>
-                    <div class="player-meta">${player.team || "Sin equipo"} · ${player.birthYear || ""}</div>
+                    <div class="player-meta">${dorsalStr}${player.team || "Sin equipo"} · ${player.birthYear || ""}</div>
                     ${player.observations ? `<div class="player-obs">${player.observations.substring(0,90)}${player.observations.length>90?"…":""}</div>` : ""}
                     <div class="player-tags">${clubTag}${posTags}${extraTags}${valTag}</div>
                 </div>
@@ -1012,6 +1127,9 @@
     });
     document.querySelectorAll("#footChips .fchip").forEach(chip => {
         chip.addEventListener("click", () => { document.querySelectorAll("#footChips .fchip").forEach(c => c.classList.remove("active")); chip.classList.add("active"); activeFootFilter = chip.dataset.foot; renderPlayers(); });
+    });
+    document.querySelectorAll("#tipoChips .fchip").forEach(chip => {
+        chip.addEventListener("click", () => { document.querySelectorAll("#tipoChips .fchip").forEach(c => c.classList.remove("active")); chip.classList.add("active"); activeTipoFilter = chip.dataset.tipo; renderPlayers(); });
     });
     document.querySelectorAll("#valChips .fchip").forEach(chip => {
         chip.addEventListener("click", () => { document.querySelectorAll("#valChips .fchip").forEach(c => c.classList.remove("active")); chip.classList.add("active"); activeValFilter = chip.dataset.val; renderPlayers(); });
@@ -1162,6 +1280,7 @@
             document.getElementById("playerCategory").value = p.category || "Cadete";
             document.getElementById("playerTeam").value = p.team || "";
             document.getElementById("playerPhone").value = p.phone || "";
+            document.getElementById("playerDorsal").value = p.dorsal || "";
             document.getElementById("playerNumCap").value = p.numCaptaciones || "";
             document.getElementById("playerTactica").value = p.tactica || "";
             document.getElementById("playerTecnica").value = p.tecnica || "";
@@ -1170,6 +1289,13 @@
             document.getElementById("ratingValue").textContent = p.rating || 7;
             document.getElementById("playerObservations").value = p.observations || "";
             document.getElementById("playerValFinal").value = p.valFinal || "";
+            if (p.tipo === "posible") {
+                document.getElementById("quickFlagWrap").style.display = "block";
+                document.getElementById("playerEsPosible").checked = true;
+            } else {
+                document.getElementById("quickFlagWrap").style.display = "block";
+                document.getElementById("playerEsPosible").checked = false;
+            }
             if (isAdmin) document.getElementById("playerClub").value = p.club || "";
             document.querySelectorAll("#posChips .chip").forEach(ch => ch.classList.toggle("selected", p.positions?.includes(ch.textContent) || false));
             document.querySelector(`input[name="foot"][value="${p.foot || 'diestro'}"]`).checked = true;
@@ -1182,6 +1308,9 @@
             document.getElementById("playerName").value = ""; document.getElementById("playerBirthYear").value = "2008";
             document.getElementById("playerCategory").value = "Cadete"; document.getElementById("playerTeam").value = "";
             document.getElementById("playerPhone").value = ""; document.getElementById("playerNumCap").value = "";
+            document.getElementById("playerDorsal").value = "";
+            document.getElementById("quickFlagWrap").style.display = "none";
+            document.getElementById("playerEsPosible").checked = false;
             document.getElementById("playerTactica").value = ""; document.getElementById("playerTecnica").value = ""; document.getElementById("playerFisico").value = "";
             document.getElementById("playerRating").value = 7; document.getElementById("ratingValue").textContent = 7;
             document.getElementById("playerObservations").value = ""; document.getElementById("playerValFinal").value = "";
@@ -1199,6 +1328,52 @@
     }
 
     function closeForm() { document.getElementById("formOverlay").classList.remove("open"); document.getElementById("formSheet").classList.remove("open"); }
+    // ===== CAPTURA RÁPIDA (posible jugador) =====
+    document.querySelectorAll("#quickPosChips .chip").forEach(ch => {
+        ch.addEventListener("click", () => ch.classList.toggle("selected"));
+    });
+
+    function resetQuickForm() {
+        document.getElementById("quickTeam").value = "";
+        document.getElementById("quickName").value = "";
+        document.getElementById("quickDorsal").value = "";
+        document.getElementById("quickPhone").value = "";
+        document.querySelectorAll("#quickPosChips .chip").forEach(ch => ch.classList.remove("selected"));
+    }
+
+    document.getElementById("quickPlayerBtn").addEventListener("click", () => {
+        resetQuickForm();
+        document.getElementById("quickModal").classList.add("open");
+    });
+    document.getElementById("quickCancelBtn").addEventListener("click", () => {
+        document.getElementById("quickModal").classList.remove("open");
+    });
+    document.getElementById("quickModal").addEventListener("click", (e) => {
+        if (e.target.id === "quickModal") document.getElementById("quickModal").classList.remove("open");
+    });
+    document.getElementById("quickSaveBtn").addEventListener("click", async () => {
+        const name = document.getElementById("quickName").value.trim();
+        if (!name) { toast("⚠️ Escribe el nombre", "error"); return; }
+        const positions = [...document.querySelectorAll("#quickPosChips .chip.selected")].map(c => c.textContent);
+        const playerData = {
+            name,
+            club: isAdmin ? (activeClubFilter || "") : (currentUserProfile?.club || ""),
+            team: document.getElementById("quickTeam").value.trim(),
+            dorsal: document.getElementById("quickDorsal").value.trim(),
+            positions,
+            phone: document.getElementById("quickPhone").value.trim(),
+            foot: "diestro",
+            tipo: "posible",
+            createdAt: new Date(), updatedAt: new Date(), createdBy: currentUser.uid
+        };
+        try {
+            await addDoc(playersCol, playerData);
+            toast("⚡ Guardado como posible jugador");
+            document.getElementById("quickModal").classList.remove("open");
+            await loadPlayers();
+        } catch(e) { toast("❌ " + e.message, "error"); }
+    });
+
     document.getElementById("newPlayerBtn").addEventListener("click", () => openForm());
     document.getElementById("cancelBtn").addEventListener("click", closeForm);
     document.getElementById("formOverlay").addEventListener("click", closeForm);
@@ -1246,6 +1421,8 @@
             category: document.getElementById("playerCategory").value,
             team: document.getElementById("playerTeam").value.trim(),
             phone: document.getElementById("playerPhone").value.trim(),
+            dorsal: document.getElementById("playerDorsal").value.trim(),
+            tipo: document.getElementById("playerEsPosible").checked ? "posible" : "",
             numCaptaciones: document.getElementById("playerNumCap").value,
             positions, foot: document.querySelector('input[name="foot"]:checked')?.value,
             shoot: document.querySelector('input[name="shoot"]:checked')?.value,
@@ -1638,12 +1815,16 @@
         if (!desde || !hasta) { container.innerHTML = `<div class="empty-hist">Selecciona un rango de fechas.</div>`; return; }
         container.innerHTML = `<div class="empty-hist">Cargando...</div>`;
         const clubKey = (currentUserProfile?.club || "").trim();
-        const snap = await getDocs(asistenciaCol);
+        let snap;
+        if (isAdmin) {
+            snap = await getDocs(asistenciaCol);
+        } else {
+            snap = await getDocs(query(asistenciaCol, where("club", "==", clubKey)));
+        }
         const sesiones = [];
         snap.forEach(d => {
             const data = d.data();
-            const mismoClub = isAdmin || data.club?.trim().toLowerCase() === clubKey.toLowerCase();
-            if (mismoClub && data.fecha >= desde && data.fecha <= hasta) sesiones.push(data);
+            if (data.fecha >= desde && data.fecha <= hasta) sesiones.push(data);
         });
         sesiones.sort((a,b) => a.fecha.localeCompare(b.fecha));
         lastSesionesCache = sesiones;
@@ -1809,7 +1990,7 @@
     }
 
     // ABRIR / CERRAR
-    document.getElementById("partidoBtn").addEventListener("click", () => {
+    function openPartidoModal() {
         const body = document.getElementById("partidoModalBody");
         const clubsConUrl = isAdmin ? allClubs : allClubs.filter(c => c.nombre.trim().toLowerCase() === (currentUserProfile?.club || "").trim().toLowerCase());
 
@@ -1829,12 +2010,12 @@
             }).join("");
         }
         document.getElementById("partidoModal").classList.add("open");
-    });
+    }
     document.getElementById("partidoModal").addEventListener("click", (e) => {
         if (e.target.id === "partidoModal") document.getElementById("partidoModal").classList.remove("open");
     });
 
-    document.getElementById("asistenciaBtn").addEventListener("click", () => {
+    function openAsistenciaModal() {
         absentPlayers = {};
         document.getElementById("asistenciaModal").classList.add("open");
         document.getElementById("asistSearchInput").value = "";
@@ -1842,7 +2023,7 @@
         switchAsistTab("registro");
         initDatePicker();
         loadExistingSession();
-    });
+    }
     document.getElementById("asistCloseBtn").addEventListener("click", () => document.getElementById("asistenciaModal").classList.remove("open"));
     document.getElementById("asistCancelBtn").addEventListener("click", () => document.getElementById("asistenciaModal").classList.remove("open"));
     document.getElementById("asistSaveBtn").addEventListener("click", saveAsistSession);
