@@ -640,6 +640,10 @@
                 <input type="date" id="asistDatePicker">
                 <span class="asist-date-warn" id="asistDateWarn">⚠️ No es Mar/Jue/Vie</span>
             </div>
+            <div id="asistExistingBanner" style="display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;background:#EFF6FF;border:1.5px solid #93C5FD;border-radius:var(--rbtn);padding:8px 14px;flex-wrap:wrap;">
+                <span style="font-size:.78rem;font-weight:600;color:#1E40AF;">✏️ Ya hay un entreno guardado este día — lo estás editando.</span>
+                <button id="asistDeleteBtn" style="display:none;background:#FEE2E2;color:#B91C1C;border:1.5px solid #FCA5A5;border-radius:20px;padding:6px 14px;font-size:.75rem;font-weight:700;cursor:pointer;">🗑️ Eliminar entreno</button>
+            </div>
             <div id="asistCancelWrap" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;background:#FFF5F5;border:1.5px solid #FCA5A5;border-radius:var(--rbtn);padding:8px 14px;flex-wrap:wrap;">
                 <label style="font-size:.8rem;font-weight:600;color:#B91C1C;display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;min-width:200px;">
                     <input type="checkbox" id="asistCancelCheck" style="width:16px;height:16px;">
@@ -1434,7 +1438,28 @@
         }
         const saveBtn = document.getElementById("asistSaveBtn");
         saveBtn.textContent = asistCancelada ? "💾 GUARDAR DÍA NO COMPUTABLE" : "💾 GUARDAR SESIÓN";
+
+        const existingBanner = document.getElementById("asistExistingBanner");
+        const deleteBtn = document.getElementById("asistDeleteBtn");
+        if (sessionExists) {
+            existingBanner.style.display = "flex";
+            deleteBtn.style.display = "block";
+        } else {
+            existingBanner.style.display = "none";
+            deleteBtn.style.display = "none";
+        }
     }
+
+    async function deleteAsistSession() {
+        if (!asistSelectedDay) return;
+        if (!confirm(`¿Seguro que quieres eliminar el entreno del ${asistSelectedDay}? Esta acción no se puede deshacer.`)) return;
+        const clubKey = (currentUserProfile?.club || currentUser.uid).trim();
+        const key = `${asistSelectedDay}_${clubKey}`;
+        await deleteDoc(doc(db, "asistencia", key));
+        toast("🗑️ Entreno eliminado");
+        loadExistingSession();
+    }
+    document.getElementById("asistDeleteBtn").addEventListener("click", deleteAsistSession);
 
     document.getElementById("asistCancelCheck").addEventListener("change", (e) => {
         asistCancelada = e.target.checked;
@@ -1444,16 +1469,20 @@
         asistMotivoCancelacion = e.target.value;
     });
 
+    let sessionExists = false;
+
     async function loadExistingSession() {
         absentPlayers = {};
         asistCancelada = false;
         asistMotivoCancelacion = "Festivo";
+        sessionExists = false;
         if (!asistSelectedDay) { applyCanceladaUI(); return; }
         const clubKey = (currentUserProfile?.club || currentUser.uid).trim();
         const key = `${asistSelectedDay}_${clubKey}`;
         try {
             const snap = await getDoc(doc(db, "asistencia", key));
             if (snap.exists()) {
+                sessionExists = true;
                 const data = snap.data();
                 if (data.cancelada) {
                     asistCancelada = true;
@@ -1626,8 +1655,8 @@
         let html = `<div class="hist-table-wrap"><table class="hist-table"><thead><tr><th>Jugador</th>`;
         sesiones.forEach(s => {
             html += s.cancelada
-                ? `<th style="background:#9CA3AF;" title="No computable · ${s.motivoCancelacion||''}">${s.fecha}<br>🚫</th>`
-                : `<th>${s.fecha}</th>`;
+                ? `<th style="background:#9CA3AF;" title="No computable · ${s.motivoCancelacion||''}">${s.fecha}<br>🚫<br><span class="del-sesion-btn" data-fecha="${s.fecha}" style="cursor:pointer;font-size:.7rem;">🗑️</span></th>`
+                : `<th>${s.fecha}<br><span class="del-sesion-btn" data-fecha="${s.fecha}" style="cursor:pointer;font-size:.7rem;">🗑️</span></th>`;
         });
         html += `</tr></thead><tbody>`;
 
@@ -1659,6 +1688,18 @@
         });
         html += `</tbody></table></div>`;
         container.innerHTML = html;
+
+        container.querySelectorAll(".del-sesion-btn").forEach(btn => {
+            btn.addEventListener("click", async (e) => {
+                e.stopPropagation();
+                const fecha = btn.dataset.fecha;
+                if (!confirm(`¿Eliminar el entreno del ${fecha}? Esta acción no se puede deshacer.`)) return;
+                const clubKey2 = (currentUserProfile?.club || currentUser.uid).trim();
+                await deleteDoc(doc(db, "asistencia", `${fecha}_${clubKey2}`));
+                toast("🗑️ Entreno eliminado");
+                loadHistorial();
+            });
+        });
     }
 
     // ===== ESTADÍSTICAS / RANKING DE ASISTENCIA =====
