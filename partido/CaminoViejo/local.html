@@ -120,11 +120,19 @@
         <option value="Amistoso">🤝 Amistoso</option>
     </select>
     <input type="text" id="nombreRival" placeholder="Nombre del rival" value="RIVAL" onchange="actualizarNombresEquipos(); guardarConfigAuto();">
+    <label style="color:#888; font-size:13px; display:block; margin:12px 0 4px;">📅 Fecha del partido</label>
     <input type="date" id="fechaPartido" onchange="guardarConfigAuto()">
-    <input type="text" id="lugarPartido" placeholder="Lugar (ej: En San Juan)" onchange="guardarConfigAuto()">
+    <label style="color:#888; font-size:13px; display:block; margin:12px 0 4px;">📍 Lugar</label>
+    <input type="text" id="lugarPartido" placeholder="Ej: En San Juan" onchange="guardarConfigAuto()">
     <div style="display: flex; gap: 10px;">
-        <input type="time" id="horaPartido" placeholder="Hora partido" style="flex:1;" onchange="guardarConfigAuto()">
-        <input type="time" id="horaCitacion" placeholder="Hora citación" style="flex:1;" onchange="guardarConfigAuto()">
+        <div style="flex:1;">
+            <label style="color:#888; font-size:13px; display:block; margin:12px 0 4px;">⚽ Hora partido</label>
+            <input type="time" id="horaPartido" style="width:100%;" onchange="guardarConfigAuto()">
+        </div>
+        <div style="flex:1;">
+            <label style="color:#888; font-size:13px; display:block; margin:12px 0 4px;">‼️ Hora citación</label>
+            <input type="time" id="horaCitacion" style="width:100%;" onchange="guardarConfigAuto()">
+        </div>
     </div>
     <div style="display: flex; gap: 10px; margin: 20px 0;">
         <button class="btn" id="btnLocal" style="flex: 1; background: #3498db;" onclick="cambiarRol('L')">LOCAL</button>
@@ -447,8 +455,9 @@ window.compartirConvocatoriaWhatsApp = function() {
     }
     let texto = '';
     if (fechaTxt) texto += `${fechaTxt}\n`;
-    texto += `${cfg.tipo}: ${cfg.rival} - ${NOMBRE_EQUIPO_COMPLETO}\n`;
-    if (cfg.lugar || cfg.horaPartido) texto += `${cfg.lugar}${cfg.lugar && cfg.horaPartido ? ' / ' : ''}${cfg.horaPartido}\n`;
+    const iconoTipo = cfg.tipo === 'Amistoso' ? '🤝' : '🏆';
+    texto += `${iconoTipo} ${cfg.tipo}: ${cfg.rival} - ${NOMBRE_EQUIPO_COMPLETO}\n`;
+    if (cfg.lugar || cfg.horaPartido) texto += `📍 ${cfg.lugar}${cfg.lugar && cfg.horaPartido ? ' / ' : ''}${cfg.horaPartido}\n`;
     if (cfg.horaCitacion) texto += `‼️ Citados en el campo a las: ${cfg.horaCitacion} ‼️\n`;
     convocados.forEach((n, i) => { texto += `${i+1}. ${n}\n`; });
     window.open('https://wa.me/?text=' + encodeURIComponent(texto.trim()), '_blank');
