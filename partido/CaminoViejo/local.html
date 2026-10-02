@@ -1886,30 +1886,43 @@ async function llamarClaude(base64, mediaType, systemPrompt, userPrompt) {
     if (!apiKey) {
         throw new Error('Falta la clave de API de Anthropic. Hace falta para usar el análisis con IA.');
     }
-    const response = await fetch(CLAUDE_API_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 4000,
-            system: systemPrompt,
-            messages: [{ role: 'user', content: [
-                { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-                { type: 'text', text: userPrompt }
-            ]}]
-        })
-    });
-    const data = await response.json();
-    if (!response.ok) {
-        console.error('Error API Claude:', JSON.stringify(data));
-        throw new Error(`[${response.status}] ${data.error?.message || data.error?.type || JSON.stringify(data)}`);
+    // Modelos por orden de preferencia. Si uno ya no existe (404), se prueba el siguiente
+    // y se recuerda en este móvil el que funcionó.
+    const MODELOS = ['claude-sonnet-5-5', 'claude-sonnet-5', 'claude-sonnet-4-6', 'claude-haiku-4-5'];
+    const guardado = localStorage.getItem('claude_modelo_ok');
+    const lista = guardado ? [guardado, ...MODELOS.filter(m => m !== guardado)] : MODELOS;
+    let ultimoError = null;
+    for (const modelo of lista) {
+        const response = await fetch(CLAUDE_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+                model: modelo,
+                max_tokens: 4000,
+                system: systemPrompt,
+                messages: [{ role: 'user', content: [
+                    { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+                    { type: 'text', text: userPrompt }
+                ]}]
+            })
+        });
+        const data = await response.json();
+        if (response.ok) {
+            localStorage.setItem('claude_modelo_ok', modelo);
+            return data.content.filter(c => c.type === 'text').map(c => c.text).join('');
+        }
+        console.error('Error API Claude (' + modelo + '):', JSON.stringify(data));
+        ultimoError = new Error(`[${response.status}] ${data.error?.message || data.error?.type || JSON.stringify(data)}`);
+        // Solo se prueba otro modelo si este no existe; cualquier otro error (clave, saldo...) se muestra ya
+        if (response.status !== 404) throw ultimoError;
+        if (guardado === modelo) localStorage.removeItem('claude_modelo_ok');
     }
-    return data.content[0].text;
+    throw ultimoError || new Error('Ningún modelo disponible');
 }
 
 // ── OCR RFAF ──────────────────────────────────────────────────────────────────
