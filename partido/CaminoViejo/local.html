@@ -85,10 +85,50 @@
             text-align: center;
             margin-right: 15px;
         }
+        /* ===== MODO LECTURA (otro móvil está apuntando el partido) ===== */
+        body.solo-lectura #btnFase,
+        body.solo-lectura .grid-controles button,
+        body.solo-lectura .btn-del,
+        body.solo-lectura #pResumen button[onclick*="volverAlPartido"],
+        body.solo-lectura #pResumen button[onclick*="nuevoPartido"],
+        body.solo-lectura #btnSubirActa,
+        body.solo-lectura #listaTitularidades button,
+        body.solo-lectura #pResumen input,
+        body.solo-lectura #pResumen textarea {
+            pointer-events: none;
+            opacity: 0.4;
+        }
+        #barraLectura {
+            display: none;
+            position: fixed; top: 0; left: 0; right: 0; z-index: 900;
+            background: #1F3A5F; color: #fff; font-size: 13px;
+            padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px;
+            align-items: center; gap: 10px; justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+        }
+        body.solo-lectura #barraLectura { display: flex; }
+        body.solo-lectura { padding-top: 48px; }
+        #barraLectura button {
+            background: #f39c12; color: #1E222B; border: none; border-radius: 16px;
+            padding: 6px 12px; font-weight: bold; font-size: 12px; white-space: nowrap; cursor: pointer;
+        }
+        #avisoRemoto {
+            position: fixed; left: 14px; right: 14px; bottom: 14px; z-index: 950;
+            background: #363B47; color: #fff; border: 1px solid #f39c12; border-radius: 14px;
+            padding: 10px 14px; display: flex; align-items: center; gap: 10px; font-size: 13px;
+        }
+        #avisoRemoto button {
+            background: #f39c12; color: #1E222B; border: none; border-radius: 12px;
+            padding: 6px 12px; font-weight: bold; cursor: pointer; white-space: nowrap;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js" async></script>
 </head>
 <body>
+<div id="barraLectura">
+    <span id="barraLecturaTexto">👁️ Solo lectura</span>
+    <button onclick="window.fbSync && window.fbSync.tomarControl()">Tomar el control</button>
+</div>
 
 <!-- LOGIN (solo se ve si no hay sesión ya activa desde Scout CF en este navegador) -->
 <div id="loginOverlay" style="display:none;position:fixed;inset:0;background:#101012;z-index:9000;align-items:center;justify-content:center;padding:20px;">
@@ -140,6 +180,7 @@
     </div>
     <button class="btn btn-primario" onclick="irAConvocatoria()">➡️ CONTINUAR</button>
     <button id="btnSanciones" class="btn" style="background:#8e44ad; margin-top:8px;" onclick="window.mostrarPantalla('pSanciones'); window.cargarPantallaSanciones()">📋 SANCIONES</button>
+    <button class="btn" style="background:#1F6AA5; margin-top:8px;" onclick="abrirHistorico()">📂 PARTIDOS JUGADOS</button>
 
 </div>
 
@@ -217,33 +258,36 @@
 // ===== STAFF TÉCNICO =====
 const STAFF_TECNICO = [
     // ⚠️ EDITAR: pon aquí el staff real de Camino Viejo
-    { n:"Iván López Martín", rol:"🧑‍💼 Entrenador" },
+    { n:"Iván López Martín", rol:"🧑‍💼 Entrenador", rfaf:"Lopez Martin, Ivan" },
 ];
 
 // ===== JUGADORES BASE =====
 var PLANTILLA_BASE = [
-    {d:0, n:"Adriano Segura Gomez"},
-    {d:0, n:"Miguel Romero"},
-    {d:0, n:"Rodrigo Vargas"},
-    {d:0, n:"Alberto Lopez"},
-    {d:0, n:"Joaquin Morera"},
-    {d:0, n:"Hugo Cabrera"},
-    {d:0, n:"Javier Serantes"},
-    {d:0, n:"Queco"},
-    {d:0, n:"Victor Rodriguez"},
-    {d:0, n:"Pablo Bernal"},
-    {d:0, n:"Guille Ocaña"},
-    {d:0, n:"Samuel"},
-    {d:0, n:"Robert Pinto"},
-    {d:0, n:"Guille Salazar"},
-    {d:0, n:"Mario Flores"},
-    {d:0, n:"Dani Guerrero"},
-    {d:0, n:"Oscar Aguilar"},
-    {d:0, n:"Alvaro Roman"},
-    {d:0, n:"Pablo Aguilar"},
-    {d:0, n:"Nico Abad"},
-    {d:0, n:"Diego García"},
-    {d:0, n:"Jorge"}
+    // Solo se usa si no se puede cargar la plantilla de Scout (Firestore).
+    // rfaf = nombre exacto en rfaf.es (para leer capturas de sanciones y actas)
+    {d:0, n:"Adriano Segura Gomez", rfaf:"Segura Gomez, Adriano"},
+    {d:0, n:"Miguel Romero",        rfaf:"Miguel Romero Segura"},
+    {d:0, n:"Rodrigo Vargas",       rfaf:"Vargas Garcia, Rodrigo"},
+    {d:0, n:"Alberto Lopez",        rfaf:"Lopez Basterra, Alberto"},
+    {d:0, n:"Joaquin Morera",       rfaf:"Morera Valentin-gamazo, Joaquin"},
+    {d:0, n:"Hugo Cabrera",         rfaf:"Cabrera Echeverria, Hugo"},
+    {d:0, n:"Queco",                rfaf:"Ayuso Clavijo, Francisco"},
+    {d:0, n:"Victor Rodriguez",     rfaf:"Mejias Rodriguez, Victor"},
+    {d:0, n:"Pablo Bernal",         rfaf:"Bernal Diaz, Pablo"},
+    {d:0, n:"Guille Ocaña",         rfaf:"Guillermo Ocaña Martinez"},
+    {d:0, n:"Samuel",               rfaf:"Becerra Arribas, Samuel"},
+    {d:0, n:"Robert Pinto",         rfaf:"Robert Antonio Pinto Romero"},
+    {d:0, n:"Guille Salazar",       rfaf:"Salazar Romero, Guillermo"},
+    {d:0, n:"Mario Flores",         rfaf:"Flores Martin, Mario"},
+    {d:0, n:"Dani Guerrero",        rfaf:"Daniel Guerrero Martin"},
+    {d:0, n:"Oscar Aguilar",        rfaf:"Aguilar Santaella, Oscar"},
+    {d:0, n:"Alvaro Roman",         rfaf:"Roman Diez, Alvaro"},
+    {d:0, n:"Pablo Aguilar",        rfaf:"Aguilar Santaella, Pablo"},
+    {d:0, n:"Nico Abad",            rfaf:"Abad Jurado, Nicolas"},
+    {d:0, n:"Diego García",         rfaf:"Diego Garcia Sousa"},
+    {d:0, n:"Jorge",                rfaf:"Jorge Aguilera Calvo"},
+    {d:0, n:"Lucas",                rfaf:"Dodera De Mello, Lucas"},
+    {d:0, n:"Pablo Monge",          rfaf:"Monge Ruiz, Pablo"}
 ];
 
 // ===== PLAZAS EXTRA PARA JUGADORES DE CADETE B / FILIAL =====
@@ -252,6 +296,148 @@ const EXTRA_CADETE_B = 4; // filas en blanco al final de la convocatoria, para a
 // ===== CONFIGURACIÓN DEL CLUB (única línea a cambiar por cada copia) =====
 const NOMBRE_EQUIPO = "CAMINO VIEJO";              // nombre corto usado en botones, marcador, CSV...
 const NOMBRE_EQUIPO_COMPLETO = "CAMINO VIEJO C.F.";  // ✅ Confirmado con el escudo oficial // nombre oficial completo, usado en extracción de actas (OCR)
+
+// ===== SINCRONIZACIÓN MULTIUSUARIO (Firestore) =====
+// convocatoria, partido, sanciones, jornada y rivales se siguen guardando en
+// localStorage como copia local, y además se suben a Firestore con window.fbSync
+// (definido en el módulo de Firebase al final del archivo).
+const FS_VERSION_DATOS = '1';   // cambiar este valor borra sanciones/jornada/rivales locales (nueva temporada)
+(function migrarTemporada() {
+    const k = `${NOMBRE_EQUIPO}_fs_version`;
+    if (localStorage.getItem(k) !== FS_VERSION_DATOS) {
+        ['sanciones', 'sanciones_ver', 'jornada', 'rivales', 'capturas'].forEach(x => localStorage.removeItem(`${NOMBRE_EQUIPO}_${x}`));
+        localStorage.setItem(k, FS_VERSION_DATOS);
+    }
+})();
+
+function guardarLocalSync(sufijo, valor) {
+    const clave = `${NOMBRE_EQUIPO}_${sufijo}`;
+    const anterior = localStorage.getItem(clave);
+    localStorage.setItem(clave, valor);
+    if (window.fbSync) window.fbSync.subir(sufijo, String(valor), anterior);
+}
+
+function borrarLocalSync(sufijo) {
+    const clave = `${NOMBRE_EQUIPO}_${sufijo}`;
+    const anterior = localStorage.getItem(clave);
+    localStorage.removeItem(clave);
+    if (window.fbSync) window.fbSync.subir(sufijo, null, anterior);
+}
+
+function soloLectura() { return document.body.classList.contains('solo-lectura'); }
+
+function avisoSoloLectura() {
+    alert('👁️ Otro móvil está apuntando este partido.\n\nSi necesitas apuntar tú, pulsa "Tomar el control" arriba.');
+}
+
+// Normaliza nombres para compararlos: sin tildes, sin mayúsculas, sin signos
+function normalizarNombre(s) {
+    return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function tokensNombre(s) {
+    return normalizarNombre(s).split(' ').filter(w => w.length > 1);
+}
+function rfafDe(nombre) {
+    const n = normalizarNombre(nombre);
+    const j = [...PLANTILLA_BASE, ...STAFF_TECNICO].find(x => normalizarNombre(x.n) === n);
+    return j ? (j.rfaf || '') : '';
+}
+
+// Empareja un nombre leído (captura RFAF o acta) con un candidato de la plantilla.
+// Si hay más de un candidato posible devuelve null (queda "sin asignar").
+// candidatos: [{ ref, n, rfaf }]
+function buscarNombreSeguro(nombre, candidatos, dorsal) {
+    const limpio = (nombre || '').replace(/\(RFAF:[^)]*\)/i, '');
+    const t = tokensNombre(limpio);
+    if (!t.length) return null;
+    const clave = t.slice().sort().join(' ');
+    // Si hay varios posibles, el dorsal (si se conoce) decide
+    const unico = arr => {
+        if (arr.length === 1) return arr[0].ref;
+        if (arr.length > 1 && dorsal !== undefined && dorsal !== null && String(dorsal).trim() !== '') {
+            const porDorsal = arr.filter(c => String(c.d ?? '').trim() === String(dorsal).trim());
+            if (porDorsal.length === 1) return porDorsal[0].ref;
+        }
+        return null;
+    };
+    let m = candidatos.filter(c => c.rfaf && tokensNombre(c.rfaf).sort().join(' ') === clave);
+    if (m.length) return unico(m);
+    m = candidatos.filter(c => tokensNombre(c.n).sort().join(' ') === clave);
+    if (m.length) return unico(m);
+    m = candidatos.filter(c => {
+        if (!c.rfaf) return false;
+        const r = tokensNombre(c.rfaf);
+        return r.every(w => t.includes(w)) || (t.length >= 2 && t.every(w => r.includes(w)));
+    });
+    if (m.length) return unico(m);
+    m = candidatos.filter(c => { const a = tokensNombre(c.n); return a.length >= 2 && a.every(w => t.includes(w)); });
+    return unico(m);
+}
+
+// Aviso informativo abajo (no saca al usuario de su pantalla)
+function avisoInfo(msg) {
+    let el = document.getElementById('avisoInfo');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'avisoInfo';
+        el.style.cssText = 'position:fixed;left:14px;right:14px;bottom:70px;z-index:960;background:#1F3A5F;color:#fff;border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,0.35);';
+        el.innerHTML = '<span style="flex:1;"></span><button style="background:#3498db;color:#fff;border:none;border-radius:12px;padding:6px 12px;font-weight:bold;cursor:pointer;">OK</button>';
+        document.body.appendChild(el);
+    }
+    el.querySelector('span').textContent = msg;
+    el.querySelector('button').onclick = () => el.remove();
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.remove(), 20000);
+}
+
+// <select> con la plantilla y el staff, para asignar a mano un nombre que no se ha reconocido
+function selectorJugador(id, nombres) {
+    const esc = x => String(x).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    return `<select id="${id}" style="width:100%;margin-top:6px;background:#3D4250;color:#fff;border:1px solid #545B6B;border-radius:8px;padding:6px;">
+        <option value="">— Sin asignar (no se suma) —</option>
+        ${nombres.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join('')}
+    </select>`;
+}
+
+// Fecha del partido para CSV/Excel: la de la convocatoria; si no hay, la de hoy
+function fechaPartidoTexto() {
+    const f = window._exportArchivo ? (window._exportArchivo.config?.fecha || window._exportArchivo.fechaCierre || '')
+                                    : (document.getElementById('fechaPartido')?.value || '');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(f)) { const [y, m, d] = f.split('-'); return `${d}/${m}/${y}`; }
+    if (f) return f;
+    const hoy = new Date();
+    return `${hoy.getDate().toString().padStart(2,'0')}/${(hoy.getMonth()+1).toString().padStart(2,'0')}/${hoy.getFullYear()}`;
+}
+
+// Lista de nombres oficiales para los prompts de la IA
+function plantillaParaIA() {
+    return PLANTILLA_BASE.filter(j => !j.n.startsWith('Filial')).map(j => j.rfaf || j.n).join('; ');
+}
+function staffParaIA(conRol) {
+    return STAFF_TECNICO.map(j => (j.rfaf || j.n) + (conRol ? ` (${j.rol})` : '')).join('; ');
+}
+
+// Banner de "continuar" de la pantalla inicial, según lo guardado
+window.refrescarBannerGuardado = function() {
+    const banner = document.getElementById('bannerAutoSave');
+    const txt = document.getElementById('bannerAutoSaveText');
+    if (!banner || !txt) return;
+    const p = localStorage.getItem(`${NOMBRE_EQUIPO}_partido_final`);
+    const c = localStorage.getItem(`${NOMBRE_EQUIPO}_convocatoria`);
+    if (p) {
+        banner.style.display = 'block';
+        txt.textContent = soloLectura() ? '👁️ Partido en curso en otro móvil' : '⚽ Partido guardado detectado';
+    } else if (c) {
+        try {
+            const g = JSON.parse(c);
+            banner.style.display = 'block';
+            txt.textContent = g.pantalla === 'pOnce' ? '⚡ Selección de 11 guardada' : '📋 Convocatoria guardada';
+        } catch (e) { banner.style.display = 'none'; }
+    } else {
+        banner.style.display = 'none';
+    }
+};
 
 // ===== VARIABLES GLOBALES =====
 let rolGelves = 'L';
@@ -308,9 +494,19 @@ window.cambiarRol = function(rol) {
 };
 
 window.irAConvocatoria = function(datosGuardados) {
+    // Si ya hay una convocatoria guardada (de este u otro móvil) se parte de ella, no de cero
+    if (!datosGuardados) {
+        try {
+            const g = JSON.parse(localStorage.getItem(`${NOMBRE_EQUIPO}_convocatoria`) || 'null');
+            if (g && g.jugadores) datosGuardados = g;
+        } catch (e) {}
+    }
     let html = '<table>';
+    const listaG = datosGuardados && datosGuardados.jugadores ? datosGuardados.jugadores : null;
+    const listaConIds = !!(listaG && listaG.some(x => x && x.id));
     PLANTILLA_BASE.forEach((j, i) => {
-        const g = datosGuardados && datosGuardados.jugadores ? datosGuardados.jugadores[i] : null;
+        // Se recupera por id del jugador de Scout; los guardados antiguos (sin id) por posición
+        const g = listaG ? (listaConIds ? (j.id ? (listaG.find(x => x && x.id === j.id) || null) : null) : listaG[i]) : null;
         const checked = g ? g.chk : true;
         const dorsal = g ? g.num : j.d;
         const nombre = g ? g.nom : j.n;
@@ -374,12 +570,13 @@ window.guardarConfigAuto = function() {
     const existente = JSON.parse(localStorage.getItem(clave) || 'null') || {};
     existente.config = leerConfigPartido();
     existente.pantalla = existente.pantalla || 'pConvocatoria';
-    localStorage.setItem(clave, JSON.stringify(existente));
+    guardarLocalSync('convocatoria', JSON.stringify(existente));
 };
 
 window.guardarConvocatoriaAuto = function() {
     const clave = `${NOMBRE_EQUIPO}_convocatoria`;
     const jugadores = PLANTILLA_BASE.map((j, i) => ({
+        id: j.id || null,
         chk: document.getElementById(`chk_${i}`)?.checked ?? true,
         num: document.getElementById(`num_${i}`)?.value ?? j.d,
         nom: document.getElementById(`nom_${i}`)?.value ?? j.n
@@ -392,7 +589,7 @@ window.guardarConvocatoriaAuto = function() {
             nom: document.getElementById(`nomx_${i}`)?.value ?? ''
         });
     }
-    localStorage.setItem(clave, JSON.stringify({
+    guardarLocalSync('convocatoria', JSON.stringify({
         config: leerConfigPartido(),
         jugadores,
         extras,
@@ -405,7 +602,7 @@ window.guardarOnceAuto = function() {
     const existente = JSON.parse(localStorage.getItem(clave) || 'null') || {};
     existente.pantalla = 'pOnce';
     existente.once = convocados.map((j, i) => document.getElementById(`once_${i}`)?.checked ?? false);
-    localStorage.setItem(clave, JSON.stringify(existente));
+    guardarLocalSync('convocatoria', JSON.stringify(existente));
 };
 
 window.continuarGuardado = function() {
@@ -543,6 +740,7 @@ window.actualizarContadorOnce = function() {
 };
 
 window.iniciarPartido = function() {
+    if (window.fbSync && !window.fbSync.puedeIniciarPartido()) return;
     enCampo = [];
     convocados.forEach(j => {
         j.goles = 0;
@@ -565,7 +763,7 @@ window.iniciarPartido = function() {
     }
     actualizarNombresEquipos();
     mostrarPantalla('pPartido');
-    localStorage.removeItem(`${NOMBRE_EQUIPO}_convocatoria`);
+    borrarLocalSync('convocatoria');
     guardarAuto();
 };
 
@@ -660,6 +858,7 @@ window.siguienteFase = function() {
         enCampo = [];
         fase = 4;
         clearInterval(intervaloReloj);
+        guardarAuto();          // para que los demás móviles vean el partido terminado
         finalizarPartido();
         return;
     }
@@ -1265,15 +1464,25 @@ window.volverAlPartido = function() {
 window.nuevoPartido = function() {
     let modal = crearModal("⚠️ NUEVO PARTIDO");
     modal.innerHTML += `
-        <p style="text-align:center; color:#aaa; margin:15px 0;">Se perderán todos los datos del partido actual.</p>
+        <p style="text-align:center; color:#aaa; margin:15px 0;">${textoConfirmarNuevo()}</p>
         <div class="btn-group">
             <button class="btn btn-neutral" style="flex:1;" onclick="cerrarModal()">CANCELAR</button>
             <button class="btn btn-peligro" style="flex:1;" onclick="confirmarNuevoPartido()">BORRAR Y EMPEZAR</button>
         </div>`;
 };
 
-window.confirmarNuevoPartido = function() {
+function textoConfirmarNuevo() {
+    return localStorage.getItem(`${NOMBRE_EQUIPO}_partido_final`)
+        ? 'El partido se guarda en 📂 Partidos jugados y se cierra en todos los móviles.'
+        : 'Se borra la convocatoria guardada en todos los móviles.';
+}
+
+window.confirmarNuevoPartido = function(desdeOtroMovil) {
     cerrarModal();
+    if (desdeOtroMovil !== true) {
+        if (soloLectura()) { avisoSoloLectura(); return; }
+        if (window.fbSync) window.fbSync.nuevoPartido();   // archiva el partido en la nube y lo cierra
+    }
     localStorage.removeItem(`${NOMBRE_EQUIPO}_partido_final`);
     localStorage.removeItem(`${NOMBRE_EQUIPO}_convocatoria`);
     // Reset completo sin recargar página (compatible con móvil/archivo local)
@@ -1303,7 +1512,7 @@ window.confirmarNuevoPartido = function() {
 window.reiniciarTodo = function() {
     let modal = crearModal("⚠️ NUEVO PARTIDO");
     modal.innerHTML += `
-        <p style="text-align:center; color:#aaa; margin:15px 0;">Se perderán todos los datos del partido actual.</p>
+        <p style="text-align:center; color:#aaa; margin:15px 0;">${textoConfirmarNuevo()}</p>
         <div class="btn-group">
             <button class="btn btn-neutral" style="flex:1;" onclick="cerrarModal()">CANCELAR</button>
             <button class="btn btn-peligro" style="flex:1;" onclick="confirmarNuevoPartido()">BORRAR Y EMPEZAR</button>
@@ -1312,6 +1521,7 @@ window.reiniciarTodo = function() {
 
 // ===== AUTO GUARDADO =====
 function guardarAuto() {
+    if (soloLectura()) return;   // en modo lectura no se escribe nada
     const arbitro = document.getElementById('nombreArbitro')?.value || '';
     const notasArb = document.getElementById('notasArbitro')?.value || '';
     const data = {
@@ -1323,9 +1533,10 @@ function guardarAuto() {
         eventos, golesL, golesV, fase, tiempoInicio, duracion1T, minutoFinal, minutoFin1T,
         rival: document.getElementById('nombreRival').value,
         arbitro,
-        notasArbitro: notasArb
+        notasArbitro: notasArb,
+        config: leerConfigPartido()   // fecha, tipo, lugar... (para el histórico y el Excel)
     };
-    localStorage.setItem(`${NOMBRE_EQUIPO}_partido_final`, JSON.stringify(data));
+    guardarLocalSync('partido_final', JSON.stringify(data));
     document.getElementById('bannerAutoSave').style.display = 'block';
 }
 
@@ -1356,6 +1567,7 @@ window.recuperarPartido = function() {
         tiempoInicio = data.tiempoInicio || 0;
     }
     
+    if(data.config) aplicarConfigPartido(data.config);
     if(data.rival) document.getElementById('nombreRival').value = data.rival;
     if(data.arbitro) document.getElementById('nombreArbitro').value = data.arbitro;
     if(data.notasArbitro) document.getElementById('notasArbitro').value = data.notasArbitro;
@@ -1376,6 +1588,7 @@ window.recuperarPartido = function() {
     
     mostrarPantalla('pPartido');
     document.getElementById('bannerAutoSave').style.display = 'none';
+    if (fase === 4) finalizarPartido();
 };
 
 // ===== EXPORTAR CSV =====
@@ -1392,8 +1605,7 @@ window.exportarCSV = function() {
     let csv = `PARTIDO: ${rolGelves === 'L' ? NOMBRE_EQUIPO : rival} vs ${rolGelves === 'V' ? NOMBRE_EQUIPO : rival}\n`;
 
     // Fecha automática del día del partido
-    const hoy = new Date();
-    const fechaStr = `${hoy.getDate().toString().padStart(2,'0')}/${(hoy.getMonth()+1).toString().padStart(2,'0')}/${hoy.getFullYear()}`;
+    const fechaStr = fechaPartidoTexto();
     csv += `FECHA: ${fechaStr}\n`;
     
     let arbitro = document.getElementById('nombreArbitro')?.value?.trim() || '';
@@ -1401,7 +1613,7 @@ window.exportarCSV = function() {
     // Fallback: leer del localStorage si los campos están vacíos
     if(!arbitro || !notasArb) {
         try {
-            const saved = JSON.parse(localStorage.getItem(`${NOMBRE_EQUIPO}_partido_final`) || '{}');
+            const saved = window._exportArchivo || JSON.parse(localStorage.getItem(`${NOMBRE_EQUIPO}_partido_final`) || '{}');
             if(!arbitro && saved.arbitro) arbitro = saved.arbitro;
             if(!notasArb && saved.notasArbitro) notasArb = saved.notasArbitro;
         } catch(err) {}
@@ -1730,8 +1942,8 @@ window.analizarRfaf = async function() {
     try {
         const base64 = await fileToBase64(input.files[0]);
         const mediaType = input.files[0].type || 'image/jpeg';
-        const plantilla = PLANTILLA_BASE.filter(j => !j.n.startsWith('Filial')).map(j => j.n).join(', ');
-        const staff = STAFF_TECNICO.map(j => j.n).join(', ');
+        const plantilla = plantillaParaIA();
+        const staff = staffParaIA(false);
         const system = `Eres un asistente que extrae sanciones de capturas de rfaf.es. Responde ÚNICAMENTE con JSON válido sin backticks.`;
         const user = `Analiza esta captura del RFAF. El formato tiene columnas: Nombre (equipo + apellidos, nombre), Tipo.Lic, Artículo, Motivo Sanción.
 
@@ -1744,7 +1956,7 @@ Plantilla ${NOMBRE_EQUIPO}: ${plantilla}
 Staff ${NOMBRE_EQUIPO}: ${staff}
 
 Devuelve JSON exacto:
-{"sanciones":[{"nombre":"apellidos nombre tal como aparece en la plantilla","tipo":"amarilla|acumulacion|suspension","partidos":número}]}`;
+{"sanciones":[{"nombre":"nombre completo EXACTAMENTE como aparece escrito en la captura, sin adaptarlo","tipo":"amarilla|acumulacion|suspension","partidos":número}]}`;
         const resp = await llamarClaude(base64, mediaType, system, user);
         ocrRfafData = JSON.parse(resp.replace(/```json|```/g,'').trim());
         const lista = document.getElementById('ocrRfafLista');
@@ -1776,131 +1988,117 @@ Devuelve JSON exacto:
     } catch(err) { alert('Error: ' + err.message); }
     finally { btn.innerText = '🔍 ANALIZAR CON IA'; btn.disabled = false; }
 };
-window.aplicarSancionesRfaf = function() {
+window.aplicarSancionesRfaf = async function() {
     if (!ocrRfafData?.sanciones) return;
-    const data = getSanciones();
 
-    function buscar(nombre) {
-        const n = nombre.toLowerCase().trim();
-        const todos = [...PLANTILLA_BASE, ...STAFF_TECNICO.map(j=>({n:j.n}))];
-        return todos.find(j=>j.n.toLowerCase()===n) ||
-               todos.find(j=>{ const p=j.n.toLowerCase().split(' '); return p.length>1&&p.every(w=>n.includes(w)); }) ||
-               todos.find(j=>{ const p=n.split(' ').filter(w=>w.length>3); return p.length>0&&p.every(w=>j.n.toLowerCase().includes(w)); });
-    }
-
-    // Comparar RFAF con datos actuales — buscar diferencias
-    const diferencias = [];
-    const sinEncontrar = [];
-
-    ocrRfafData.sanciones.forEach(s => {
-        const j = buscar(s.nombre);
-        if (!j || !data[j.n]) { sinEncontrar.push(s.nombre); return; }
-
-        const actual = data[j.n];
-        const amarillasRfaf = s.tipo === 'amarilla' ? (actual.amarillas || 0) + 1 : (actual.amarillas || 0);
-        const sancionRfaf   = s.tipo !== 'amarilla' ? s.partidos || 1 : (actual.sancionado || 0);
-
-        // Detectar diferencia en amarillas
-        if (s.tipo === 'amarilla' && actual.amarillas !== undefined) {
-            // El RFAF muestra el total acumulado, no el incremento
-            // Si hay diferencia entre lo que tenemos y lo que dice el RFAF
-        }
-
-        diferencias.push({
-            nombre: j.n,
-            tipo: s.tipo,
-            partidos: s.partidos || 0,
-            actualAmarillas: actual.amarillas || 0,
-            actualSancion: actual.sancionado || 0,
-            rfafAmarillas: s.tipo === 'amarilla' ? (actual.amarillas || 0) + 1 : (actual.amarillas || 0),
-            rfafSancion: s.tipo !== 'amarilla' ? s.partidos || 1 : (actual.sancionado || 0),
-            hayDiferencia: true,
-            data: data,
-            key: j.n
-        });
-    });
-
-    cerrarOcrRfaf();
-
-    if (diferencias.length === 0 && sinEncontrar.length === 0) {
-        alert('✅ Todo coincide. No hay diferencias entre el RFAF y los datos actuales.');
+    // 1) ¿De qué jornada es la captura? (para no aplicarla dos veces y respetar el orden)
+    let actual = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '1');
+    const v = prompt('¿De qué jornada es esta captura de la RFAF?', Math.max(1, actual - 1));
+    if (v === null) return;
+    const jCaptura = parseInt(v);
+    if (!jCaptura || jCaptura < 1) { alert('Escribe un número de jornada válido.'); return; }
+    if (jCaptura > actual) {
+        alert(`La próxima jornada por jugar es la ${actual}, así que no puede haber captura de la jornada ${jCaptura}.\n\nRevisa el número o corrige la jornada tocando "Jornada ${actual}".`);
         return;
     }
+    if (jCaptura === actual) {
+        // Orden guiado: primero se marca la jornada como jugada, después se aplica la captura
+        if (!confirm(`La jornada ${jCaptura} todavía no está marcada como jugada.\n\n¿Registrar ahora "Jornada jugada" y después aplicar la captura?`)) return;
+        const ok = await jornadaJugada(true);
+        if (!ok) return;
+        actual = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '1');
+    }
+    const capturas = JSON.parse(localStorage.getItem(`${NOMBRE_EQUIPO}_capturas`) || '{}');
+    if (capturas[jCaptura]) {
+        const c = capturas[jCaptura];
+        alert(`ℹ️ La captura de la jornada ${jCaptura} ya se aplicó${c.nombre ? ' (' + c.nombre + (c.fecha ? ', ' + c.fecha : '') + ')' : ''}.\n\nNo se vuelve a sumar para no contar las amarillas dos veces.`);
+        return;
+    }
+    window._rfafJornada = jCaptura;
 
-    // Mostrar modal de comparación
+    function buscar(nombre) {
+        // Emparejamiento por nombre oficial RFAF; si hay duda, queda sin asignar
+        const candidatos = [
+            ...PLANTILLA_BASE.filter(j => !j.n.startsWith('Filial')).map(j => ({ ref: j, n: j.n, rfaf: j.rfaf })),
+            ...STAFF_TECNICO.map(j => ({ ref: { n: j.n }, n: j.n, rfaf: j.rfaf }))
+        ];
+        return buscarNombreSeguro(nombre, candidatos);
+    }
+
+    // 2) Filas de la captura: reconocidas (con casilla) y sin reconocer (con desplegable)
+    const data = getSanciones();
+    const filas = ocrRfafData.sanciones.map(s => {
+        const j = buscar(s.nombre);
+        return { s, key: (j && data[j.n]) ? j.n : null };
+    });
+    if (!filas.length) { alert('✅ La captura no tiene sanciones de tu equipo.'); return; }
+    window._rfafFilas = filas;
+
+    const efecto = s => s.tipo === 'amarilla' ? '🟨 +1 amarilla' : `🔴 ${s.partidos || 1} partido${(s.partidos || 1) > 1 ? 's' : ''} de sanción`;
+    const escH = x => String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const nombres = [...PLANTILLA_BASE.filter(j => !j.n.startsWith('Filial')).map(j => j.n), ...STAFF_TECNICO.map(j => j.n)];
+
     const modal = document.createElement('div');
     modal.className = 'modal';
     modal.style.cssText = 'display:flex; flex-direction:column; padding:20px; overflow-y:auto;';
     modal.innerHTML = `
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
-            <h2 style="color:#f39c12; margin:0;">⚠️ COMPARACIÓN RFAF</h2>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+            <h2 style="color:#f39c12; margin:0;">📋 RFAF · Jornada ${jCaptura}</h2>
             <button onclick="this.closest('.modal').remove()" style="background:#4A505C; border:none; color:white; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer;">✕</button>
         </div>
-        <p style="color:#aaa; font-size:13px; margin-bottom:15px;">El RFAF indica diferencias respecto a tus datos. Decide qué aplicar:</p>
-        <div id="rfaf-diff-lista" style="flex:1; overflow-y:auto; margin-bottom:15px;"></div>
-        <div style="display:flex; gap:8px;">
-            <button onclick="this.closest('.modal').remove()" class="secondary-btn" style="flex:1;">CERRAR SIN CAMBIOS</button>
-            <button onclick="aplicarDiferenciasRfaf()" class="btn btn-exito" style="flex:2;">✅ APLICAR SELECCIONADAS</button>
+        <p style="color:#aaa; font-size:13px; margin-bottom:12px;">Revisa y aplica. Los nombres sin reconocer se asignan a mano con el desplegable.</p>
+        <div style="flex:1; overflow-y:auto; margin-bottom:12px;">
+            ${filas.map((f, i) => {
+                const est = f.key ? data[f.key] : null;
+                return `
+                <div style="background:${f.key ? '#3D4250' : '#2c1a1a'}; border-radius:10px; padding:12px; margin-bottom:10px; border:1px solid ${f.key ? '#f39c12' : '#e74c3c'};">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        ${f.key ? `<input type="checkbox" id="diff_${i}" checked style="width:20px; height:20px; accent-color:#2ecc71;">` : ''}
+                        <div style="flex:1;">
+                            <div style="font-weight:bold; font-size:15px;">${f.key ? escH(f.key) : '⚠️ ' + escH(f.s.nombre)}</div>
+                            <div style="font-size:12px; color:#aaa;">${f.key ? 'RFAF: ' + escH(f.s.nombre) + ' · ' : 'Sin reconocer · '}${efecto(f.s)}</div>
+                            ${est ? `<div style="font-size:12px; color:#888;">Ahora: 🟨 ${est.amarillas || 0} · 🔴 ${est.sancionado || 0}</div>` : ''}
+                        </div>
+                    </div>
+                    ${f.key ? '' : selectorJugador('rfafAsig_' + i, nombres)}
+                </div>`;
+            }).join('')}
         </div>
-    `;
+        <div style="display:flex; gap:8px;">
+            <button onclick="this.closest('.modal').remove()" class="btn btn-neutral" style="flex:1;">CERRAR SIN CAMBIOS</button>
+            <button onclick="aplicarDiferenciasRfaf()" class="btn btn-exito" style="flex:2;">✅ APLICAR</button>
+        </div>`;
+    cerrarOcrRfaf();
     document.body.appendChild(modal);
-
-    const lista = document.getElementById('rfaf-diff-lista');
-
-    diferencias.forEach((d, idx) => {
-        const div = document.createElement('div');
-        div.style.cssText = 'background:#3D4250; border-radius:10px; padding:12px; margin-bottom:10px; border:1px solid #f39c12;';
-        div.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-                <input type="checkbox" id="diff_${idx}" checked style="width:20px; height:20px; accent-color:#2ecc71;">
-                <span style="font-weight:bold; font-size:15px;">${d.nombre}</span>
-            </div>
-            <div style="font-size:12px; color:#aaa; display:flex; gap:20px;">
-                <div>
-                    <div style="color:#888; margin-bottom:2px;">TUS DATOS</div>
-                    <div>🟨 Amarillas: <strong style="color:#f1c40f;">${d.actualAmarillas}</strong></div>
-                    <div>🔴 Sanción: <strong style="color:#e74c3c;">${d.actualSancion}</strong></div>
-                </div>
-                <div style="border-left:1px solid #545B6B; padding-left:20px;">
-                    <div style="color:#888; margin-bottom:2px;">RFAF INDICA</div>
-                    <div>🟨 Amarillas: <strong style="color:#f1c40f;">${d.rfafAmarillas}</strong></div>
-                    <div>🔴 Sanción: <strong style="color:#e74c3c;">${d.rfafSancion}</strong></div>
-                </div>
-            </div>
-        `;
-        lista.appendChild(div);
-    });
-
-    if (sinEncontrar.length > 0) {
-        const div = document.createElement('div');
-        div.style.cssText = 'background:#2c1a1a; border-radius:10px; padding:12px; font-size:12px; color:#e74c3c;';
-        div.innerHTML = `⚠️ No encontrados en plantilla: ${sinEncontrar.join(', ')}`;
-        lista.appendChild(div);
-    }
-
-    // Guardar diferencias para aplicarlas
-    window._rfafDiferencias = diferencias;
-    window._rfafData = data;
 };
 
 window.aplicarDiferenciasRfaf = function() {
-    const diffs = window._rfafDiferencias;
-    const data  = window._rfafData;
-    if (!diffs) return;
+    const filas = window._rfafFilas;
+    if (!filas) return;
+    const data = getSanciones();   // datos frescos (por si otro móvil ha cambiado algo mientras tanto)
     let aplicadas = 0;
-    diffs.forEach((d, idx) => {
-        const cb = document.getElementById('diff_' + idx);
-        if (cb?.checked) {
-            data[d.key].amarillas  = d.rfafAmarillas;
-            data[d.key].sancionado = d.rfafSancion;
-            if (d.rfafSancion > 0 && !data[d.key].motivo) data[d.key].motivo = d.tipo === 'roja' ? 'roja' : 'acumulacion';
-            aplicadas++;
+    filas.forEach((f, i) => {
+        const key = f.key ? (document.getElementById('diff_' + i)?.checked ? f.key : null)
+                          : (document.getElementById('rfafAsig_' + i)?.value || null);
+        if (!key || !data[key]) return;
+        const s = f.s;
+        if (s.tipo === 'amarilla') {
+            data[key].amarillas = (data[key].amarillas || 0) + 1;
+        } else {
+            data[key].sancionado = s.partidos || 1;
+            if (!data[key].motivo) data[key].motivo = s.tipo === 'roja' ? 'roja' : 'acumulacion';
         }
+        aplicadas++;
     });
-    localStorage.setItem(`${NOMBRE_EQUIPO}_sanciones`, JSON.stringify(data));
+    guardarLocalSync('sanciones', JSON.stringify(data));
+    // Se apunta que la captura de esta jornada ya está aplicada
+    const capturas = JSON.parse(localStorage.getItem(`${NOMBRE_EQUIPO}_capturas`) || '{}');
+    capturas[window._rfafJornada] = { nombre: window.fbSync?.miNombre?.() || '', fecha: new Date().toLocaleDateString('es-ES') };
+    guardarLocalSync('capturas', JSON.stringify(capturas));
+    window._rfafFilas = null;
     document.querySelectorAll('.modal').forEach(m => m.remove());
     cargarPantallaSanciones();
-    alert(`✅ ${aplicadas} corrección${aplicadas !== 1 ? 'es' : ''} aplicada${aplicadas !== 1 ? 's' : ''}.`);
+    alert(`✅ ${aplicadas} sanci${aplicadas !== 1 ? 'ones aplicadas' : 'ón aplicada'} (jornada ${window._rfafJornada}).`);
 };
 
 // ── OCR ACTA ──────────────────────────────────────────────────────────────────
@@ -1933,15 +2131,15 @@ window.analizarActa = async function() {
     try {
         const base64 = await fileToBase64(input.files[0]);
         const mediaType = input.files[0].type || 'image/jpeg';
-        const plantilla = PLANTILLA_BASE.filter(j=>!j.n.startsWith('Filial')).map(j=>j.n).join(', ');
-        const staff = STAFF_TECNICO.map(j=>`${j.n} (${j.rol})`).join(', ');
+        const plantilla = plantillaParaIA();
+        const staff = staffParaIA(true);
         const system = `Eres un asistente que extrae tarjetas de actas de partidos de fútbol. Responde ÚNICAMENTE con JSON válido sin backticks.`;
         const user = `Analiza esta acta de partido y extrae las tarjetas (amarillas y rojas) de jugadores Y STAFF del equipo ${NOMBRE_EQUIPO}.
 Jugadores ${NOMBRE_EQUIPO}: ${plantilla}
 Staff ${NOMBRE_EQUIPO}: ${staff}
-IMPORTANTE: Devuelve el nombre EXACTAMENTE como aparece en las listas. Si no encuentras coincidencia clara ponlo en no_identificados.
+IMPORTANTE: Devuelve el nombre EXACTAMENTE como aparece escrito en el acta, sin adaptarlo ni corregirlo. Incluye solo personas de ${NOMBRE_EQUIPO}. Si no puedes leer bien un nombre, ponlo en no_identificados.
 Devuelve JSON exacto:
-{"tarjetas":[{"nombre":"nombre exacto de la lista","tipo":"AMARILLA|ROJA","minuto":número_o_null}],"no_identificados":["nombre tal como aparece en el acta"]}`;
+{"tarjetas":[{"nombre":"nombre exacto tal como aparece en el acta","dorsal":número_o_null,"tipo":"AMARILLA|ROJA","minuto":número_o_null}],"no_identificados":["nombre tal como aparece en el acta"]}`;
         const resp = await llamarClaude(base64, mediaType, system, user);
         ocrActaData = JSON.parse(resp.replace(/```json|```/g,'').trim());
         const lista = document.getElementById('ocrActaLista');
@@ -1976,66 +2174,110 @@ Devuelve JSON exacto:
 };
 window.aplicarTarjetasActa = function() {
     if (!ocrActaData?.tarjetas) return;
-    function buscarJugador(nombre) {
-        const n = nombre.toLowerCase().trim();
-        const todos = [
-            ...convocados,
-            ...STAFF_TECNICO.map(j=>({name:j.n, num:'-', esStaff:true}))
+    function buscarJugador(nombre, dorsal) {
+        // Emparejamiento por nombre oficial RFAF; si hay duda decide el dorsal; si no, queda sin asignar
+        const candidatos = [
+            ...convocados.map(j => ({ ref: j, n: j.name, rfaf: rfafDe(j.name), d: j.num })),
+            ...STAFF_TECNICO.map(j => ({ ref: { name: j.n, num: '-', esStaff: true }, n: j.n, rfaf: j.rfaf, d: '' }))
         ];
-        return todos.find(j=>j.name.toLowerCase()===n) ||
-               todos.find(j=>{ const p=j.name.toLowerCase().split(' '); return p.length>1&&p.every(w=>n.includes(w)); }) ||
-               todos.find(j=>{ const p=n.split(' ').filter(w=>w.length>3); return p.length>0&&p.every(w=>j.name.toLowerCase().includes(w)); }) ||
-               null;
+        return buscarNombreSeguro(nombre, candidatos, dorsal);
     }
-    let ok=0, nok=[];
+    let ok = 0;
+    const noReconocidas = [];
     const dataSanciones = getSanciones();
 
     ocrActaData.tarjetas.forEach(t => {
-        const jug = buscarJugador(t.nombre);
-        if (jug && !jug.esStaff) {
-            const j = convocados.find(c=>c.name===jug.name);
-            if (j) {
-                if (t.tipo==='AMARILLA') {
-                    j.amarillas=(j.amarillas||0)+1;
-                    registrarEvento('AMARILLA',rolGelves,j.name,'',t.minuto||obtenerMinutoActual());
-                    // Actualizar también sanciones acumuladas
-                    if (dataSanciones[j.name]) {
-                        dataSanciones[j.name].amarillas=(dataSanciones[j.name].amarillas||0)+1;
-                        // Comprobar si llega a acumulación (5 amarillas = sanción)
-                        if (dataSanciones[j.name].amarillas >= 5 && dataSanciones[j.name].sancionado === 0) {
-                            dataSanciones[j.name].sancionado = 1;
-                            dataSanciones[j.name].motivo = 'acumulacion';
-                        }
-                    }
-                } else {
-                    j.rojas=(j.rojas||0)+1;
-                    registrarEvento('ROJA',rolGelves,j.name,'',t.minuto||obtenerMinutoActual());
-                    // Roja directa = 1 partido de sanción
-                    if (dataSanciones[j.name]) {
-                        dataSanciones[j.name].sancionado=(dataSanciones[j.name].sancionado||0)+1;
-                        dataSanciones[j.name].motivo='roja';
-                    }
-                }
-                ok++;
-            }
-        } else if (jug?.esStaff) {
-            registrarEvento(t.tipo,rolGelves,jug.name+' (staff)','',t.minuto||obtenerMinutoActual());
-            // Actualizar sanciones del staff también
-            if (dataSanciones[jug.name]) {
-                if (t.tipo==='AMARILLA') dataSanciones[jug.name].amarillas=(dataSanciones[jug.name].amarillas||0)+1;
-                else { dataSanciones[jug.name].sancionado=(dataSanciones[jug.name].sancionado||0)+1; dataSanciones[jug.name].motivo='roja'; }
-            }
-            ok++;
-        } else nok.push(t.nombre);
+        const jug = buscarJugador(t.nombre, t.dorsal);
+        if (jug && aplicarTarjetaActa(jug, t, dataSanciones)) ok++;
+        else noReconocidas.push(t);
     });
 
     // Guardar sanciones actualizadas
-    localStorage.setItem(`${NOMBRE_EQUIPO}_sanciones`, JSON.stringify(dataSanciones));
+    guardarLocalSync('sanciones', JSON.stringify(dataSanciones));
 
     cerrarOcrActa(); actualizarTimeline(); guardarAuto();
-    let msg = `✅ ${ok} tarjeta${ok!==1?'s':''} aplicada${ok!==1?'s':''} al partido y a sanciones.`;
-    if (nok.length) msg += `\n\n⚠️ No encontrados:\n${nok.join(', ')}\nAñádelos manualmente.`;
-    alert(msg);
+    const msg = `✅ ${ok} tarjeta${ok!==1?'s':''} aplicada${ok!==1?'s':''} al partido y a sanciones.`;
+    if (!noReconocidas.length) { alert(msg); return; }
+
+    // Nombres no reconocidos: se eligen a mano aquí mismo
+    window._actaNoReconocidas = noReconocidas;
+    const nombres = [...convocados.map(j => j.name), ...STAFF_TECNICO.map(j => j.n)];
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = 'display:flex; flex-direction:column; padding:20px; overflow-y:auto;';
+    modal.innerHTML = `
+        <h2 style="color:#f39c12; margin:0 0 6px;">⚠️ Tarjetas sin asignar</h2>
+        <p style="color:#aaa; font-size:13px; margin-bottom:12px;">${msg}<br>Estos nombres del acta no se han podido reconocer con seguridad. Elige a quién corresponden:</p>
+        <div style="flex:1; overflow-y:auto; margin-bottom:12px;">
+            ${noReconocidas.map((t, i) => `
+            <div style="background:#3D4250; border-radius:10px; padding:10px; margin-bottom:8px;">
+                <div style="font-weight:bold;">${t.tipo === 'AMARILLA' ? '🟨' : '🟥'} ${String(t.nombre).replace(/</g,'&lt;')}${t.dorsal ? ' · dorsal ' + t.dorsal : ''}${t.minuto ? " · min. " + t.minuto + "'" : ''}</div>
+                ${selectorJugador('actaAsig_' + i, nombres)}
+            </div>`).join('')}
+        </div>
+        <div style="display:flex; gap:8px;">
+            <button class="btn btn-neutral" style="flex:1;" onclick="this.closest('.modal').remove()">NO APLICAR</button>
+            <button class="btn btn-exito" style="flex:2;" onclick="aplicarActaAsignadas()">✅ APLICAR ASIGNADAS</button>
+        </div>`;
+    document.body.appendChild(modal);
+};
+
+// Aplica una tarjeta del acta al partido y a sanciones. Devuelve true si se aplicó.
+function aplicarTarjetaActa(jug, t, dataSanciones) {
+    if (jug && !jug.esStaff) {
+        const j = convocados.find(c=>c.name===jug.name);
+        if (!j) return false;
+        if (t.tipo==='AMARILLA') {
+            j.amarillas=(j.amarillas||0)+1;
+            registrarEvento('AMARILLA',rolGelves,j.name,'',t.minuto||obtenerMinutoActual());
+            // Actualizar también sanciones acumuladas
+            if (dataSanciones[j.name]) {
+                dataSanciones[j.name].amarillas=(dataSanciones[j.name].amarillas||0)+1;
+                // Comprobar si llega a acumulación (5 amarillas = sanción)
+                if (dataSanciones[j.name].amarillas >= 5 && dataSanciones[j.name].sancionado === 0) {
+                    dataSanciones[j.name].sancionado = 1;
+                    dataSanciones[j.name].motivo = 'acumulacion';
+                }
+            }
+        } else {
+            j.rojas=(j.rojas||0)+1;
+            registrarEvento('ROJA',rolGelves,j.name,'',t.minuto||obtenerMinutoActual());
+            // Roja directa = 1 partido de sanción
+            if (dataSanciones[j.name]) {
+                dataSanciones[j.name].sancionado=(dataSanciones[j.name].sancionado||0)+1;
+                dataSanciones[j.name].motivo='roja';
+            }
+        }
+        return true;
+    }
+    if (jug?.esStaff) {
+        registrarEvento(t.tipo,rolGelves,jug.name+' (staff)','',t.minuto||obtenerMinutoActual());
+        // Actualizar sanciones del staff también
+        if (dataSanciones[jug.name]) {
+            if (t.tipo==='AMARILLA') dataSanciones[jug.name].amarillas=(dataSanciones[jug.name].amarillas||0)+1;
+            else { dataSanciones[jug.name].sancionado=(dataSanciones[jug.name].sancionado||0)+1; dataSanciones[jug.name].motivo='roja'; }
+        }
+        return true;
+    }
+    return false;
+}
+
+window.aplicarActaAsignadas = function() {
+    const lista = window._actaNoReconocidas || [];
+    const dataSanciones = getSanciones();
+    let ok = 0;
+    lista.forEach((t, i) => {
+        const nombre = document.getElementById('actaAsig_' + i)?.value;
+        if (!nombre) return;
+        const esStaff = STAFF_TECNICO.some(s => s.n === nombre);
+        const jug = esStaff ? { name: nombre, num: '-', esStaff: true } : convocados.find(c => c.name === nombre);
+        if (jug && aplicarTarjetaActa(jug, t, dataSanciones)) ok++;
+    });
+    guardarLocalSync('sanciones', JSON.stringify(dataSanciones));
+    actualizarTimeline(); guardarAuto();
+    document.querySelectorAll('.modal').forEach(m => m.remove());
+    window._actaNoReconocidas = null;
+    alert(`✅ ${ok} tarjeta${ok!==1?'s':''} más aplicada${ok!==1?'s':''}.`);
 };
 
 // ── OCR RIVALES ───────────────────────────────────────────────────────────────
@@ -2045,7 +2287,7 @@ window.abrirOcrRivales = function() {
     document.getElementById('btnAnalizarRivales').style.display = 'none';
     document.getElementById('ocrRivalesLabel').innerText = '📁 Pulsa para seleccionar imagen';
     document.getElementById('ocrRivalesInput').value = '';
-    const jornadaActual = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '24');
+    const jornadaActual = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '1');
     document.getElementById('inputJornadaRivales').value = jornadaActual;
     renderHistorialRivales();
     renderSancionadosPendientes();
@@ -2053,7 +2295,7 @@ window.abrirOcrRivales = function() {
 };
 
 window.borrarTodoHistorialRivales = function() {
-    localStorage.removeItem(`${NOMBRE_EQUIPO}_rivales`);
+    borrarLocalSync('rivales');
     renderHistorialRivales();
     renderSancionadosPendientes();
 };
@@ -2063,7 +2305,7 @@ window.renderSancionadosPendientes = function() {
     if (!cont) return;
     cont.innerHTML = '';
 
-    const jornadaActual = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '24');
+    const jornadaActual = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '1');
     const historial = JSON.parse(localStorage.getItem(`${NOMBRE_EQUIPO}_rivales`) || '{}');
 
     if (Object.keys(historial).length === 0) {
@@ -2218,7 +2460,7 @@ Si no hay sancionados devuelve jornadas como array vacío.`;
             jornadasGuardadas.push(j.jornada || '?');
         });
 
-        localStorage.setItem(`${NOMBRE_EQUIPO}_rivales`, JSON.stringify(historial));
+        guardarLocalSync('rivales', JSON.stringify(historial));
 
         // ── MOSTRAR RESULTADOS ───────────────────────────────────────────────
         // Mostrar todas las jornadas encontradas
@@ -2325,7 +2567,7 @@ function renderHistorialRivales() {
         del.onclick = (e) => {
             e.stopPropagation();
             delete historial[key];
-            localStorage.setItem(`${NOMBRE_EQUIPO}_rivales`, JSON.stringify(historial));
+            guardarLocalSync('rivales', JSON.stringify(historial));
             renderHistorialRivales();
             renderSancionadosPendientes();
         };
@@ -2355,89 +2597,7 @@ window.onload = function() {
         if (el && el.textContent.trim().toUpperCase() === 'GELVES') el.textContent = NOMBRE_EQUIPO;
     });
 
-    // ── DATOS INICIALES SANCIONES RIVALES ────────────────────────────────────
-    // Se cargan solo si no hay datos previos guardados
-    if (!localStorage.getItem(`${NOMBRE_EQUIPO}_rivales`)) {
-        const datosIniciales = {
-            "21": {
-                jornada: 21, fecha: "08/03/2026",
-                equipos: [
-                    { equipo: "A.D. SAN JOSE", sancionados: [
-                        { jugador: "RIVERO FALISTOCO, NICOLAS", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]},
-                    { equipo: "BURGUILLOS C.D.", sancionados: [
-                        { jugador: "CARMONA MERINO, IVAN", partidos: 1, motivo: "Acumulación de amonestaciones" },
-                        { jugador: "LOPEZ RODRIGUEZ, MANUEL", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]},
-                    { equipo: "C.D. MONITORES GERENA", sancionados: [
-                        { jugador: "MIRANDA ORTIZ, ALVARO", partidos: 2, motivo: "Conducta violenta al margen del juego" },
-                        { jugador: "FERNANDEZ MARTINEZ, MARCOS", partidos: 1, motivo: "Acumulación de amonestaciones" },
-                        { jugador: "MARQUEZ MENDEZ, DAVID", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]},
-                    { equipo: "C.D. VALENCINA F.C.", sancionados: [
-                        { jugador: "SUAREZ CARREIRA, ANDRES", partidos: 1, motivo: "Menospreciar árbitro" }
-                    ]},
-                    { equipo: "CORIA C.F.", sancionados: [
-                        { jugador: "MENA CASTRO, CARLOS", partidos: 1, motivo: "Doble amonestación" }
-                    ]},
-                    { equipo: "GUILLENA C.F.", sancionados: [
-                        { jugador: "ROMERO PAYAN, ANTONIO", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]},
-                    { equipo: "LORA C.F.", sancionados: [
-                        { jugador: "GOMEZ DELGADO, MIGUEL", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]},
-                    { equipo: "U.D. TOMARES A", sancionados: [
-                        { jugador: "CASTILLO ROMERO, MANUEL", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]}
-                ]
-            },
-            "22": {
-                jornada: 22, fecha: "22/02/2026",
-                equipos: [
-                    { equipo: "ATCO. ALGABEÑO", sancionados: [
-                        { jugador: "DIAZ ACUÑA, JOSE ANTONIO", partidos: 2, motivo: "Conducta violenta al margen del juego" }
-                    ]},
-                    { equipo: "BURGUILLOS C.D.", sancionados: [
-                        { jugador: "RIOS MARTIN, MANUEL", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]},
-                    { equipo: "CASTILLEJA C.F.", sancionados: [
-                        { jugador: "MARISCAL LOPEZ, FERNANDO", partidos: 1, motivo: "Doble amonestación y consiguiente expulsión" }
-                    ]},
-                    { equipo: "J.D. BORMUJOS", sancionados: [
-                        { jugador: "ARJONA FERNANDEZ, FABIO", partidos: 2, motivo: "Conducta violenta al margen del juego" }
-                    ]},
-                    { equipo: "LORA C.F.", sancionados: [
-                        { jugador: "GARRIDO CAIRO, HUGO", partidos: 2, motivo: "Insultar a un contrario" },
-                        { jugador: "MACHUCA IGLESIAS, MARTIN", partidos: 4, motivo: "Agresión a otro (1ª ocasión Art.73)" },
-                        { jugador: "PAREDES EUSO, RUBEN", partidos: 1, motivo: "Ofender/menospreciar/provocar al árbitro" }
-                    ]},
-                    { equipo: "UMBRETE C.F.", sancionados: [
-                        { jugador: "LLORENTE CALERO, PEDRO", partidos: 1, motivo: "Acumulación de amonestaciones" },
-                        { jugador: "RODAS GUTIERREZ, JESUS", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]}
-                ]
-            },
-            "23": {
-                jornada: 23, fecha: "08/03/2026",
-                equipos: [
-                    { equipo: "A.D. SAN JOSE", sancionados: [
-                        { jugador: "RIVERO FALISTOCO, NICOLAS", partidos: 1, motivo: "Doble amonestación y consiguiente expulsión" }
-                    ]},
-                    { equipo: "ATCO. ALGABEÑO", sancionados: [
-                        { jugador: "GENIZ BENCANO, DAVID", partidos: 1, motivo: "Menospreciar árbitro" },
-                        { jugador: "GOMEZ SORIANO, ALEJANDRO", partidos: 4, motivo: "Agresión a otro (3ª ocasión Art.73)" }
-                    ]},
-                    { equipo: "GUILLENA C.F.", sancionados: [
-                        { jugador: "DUQUE BARROSO, FRANCISCO JOSE", partidos: 1, motivo: "Conducta contraria al buen orden deportivo" }
-                    ]},
-                    { equipo: "U.D. TOMARES A (staff)", sancionados: [
-                        { jugador: "LUQUE MUÑOZ, JESUS", partidos: 1, motivo: "Protestar al árbitro" }
-                    ]}
-                ]
-            }
-        };
-        localStorage.setItem(`${NOMBRE_EQUIPO}_rivales`, JSON.stringify(datosIniciales));
-    }
+    // (Datos iniciales de rivales de la temporada pasada eliminados: se empieza de cero)
     // ─────────────────────────────────────────────────────────────────────────
     if(localStorage.getItem(`${NOMBRE_EQUIPO}_partido_final`)) {
         document.getElementById('bannerAutoSave').style.display = 'block';
@@ -2472,13 +2632,12 @@ window.exportarExcel = async function() {
     let arbitro = document.getElementById('nombreArbitro')?.value?.trim() || '';
     let notas   = document.getElementById('notasArbitro')?.value?.trim() || '';
     try {
-        const saved = JSON.parse(localStorage.getItem(`${NOMBRE_EQUIPO}_partido_final`) || '{}');
+        const saved = window._exportArchivo || JSON.parse(localStorage.getItem(`${NOMBRE_EQUIPO}_partido_final`) || '{}');
         if(!arbitro && saved.arbitro) arbitro = saved.arbitro;
         if(!notas && saved.notasArbitro) notas = saved.notasArbitro;
     } catch(e) {}
 
-    const hoy = new Date();
-    const fecha = `${hoy.getDate().toString().padStart(2,'0')}/${(hoy.getMonth()+1).toString().padStart(2,'0')}/${hoy.getFullYear()}`;
+    const fecha = fechaPartidoTexto();
 
     // ── PALETA ──────────────────────────────────────────────────────────────
     const AZ_OSC  = 'FF1A3A5C';
@@ -2716,45 +2875,23 @@ window.exportarExcel = async function() {
 };
 
 // ===== MÓDULO SANCIONES =====
-const SANCIONES_VERSION = 6;
-const SANCIONES_INICIALES = {
-    "Antunez":       { amarillas: 4, sancionado: 0 },
-    "Alberto Lopez": { amarillas: 3, sancionado: 0 },
-    "Jesus Ramos":   { amarillas: 3, sancionado: 0 },
-    "Isaac":         { amarillas: 2, sancionado: 0 },
-    "Manuel":        { amarillas: 1, sancionado: 0 },
-    "Saul":          { amarillas: 2, sancionado: 0 },
-    "Manuel Ortega":        { amarillas: 1, sancionado: 0 },
-    "Robert":        { amarillas: 1, sancionado: 0 },
-    "Carlos Molina":        { amarillas: 2, sancionado: 0 },
-    "Ramiro":        { amarillas: 4, sancionado: 1, motivo: 'acumulacion' },
-    "Hugo":          { amarillas: 1, sancionado: 0 },
-    "Samuel":        { amarillas: 2, sancionado: 0 },
-    "Vargas":        { amarillas: 2, sancionado: 0 },
-    "Marcos":        { amarillas: 2, sancionado: 1, motivo: 'roja' },
-    "Martin":        { amarillas: 1, sancionado: 0 },
-    "Jose Carlos Pozas":         { amarillas: 2, sancionado: 0 },
-    "Alvaro":        { amarillas: 1, sancionado: 0 },
-    "David Sanchez Cruz":  { amarillas: 2, sancionado: 0 },
-    "Guillermo Fasmil":        { amarillas: 0, sancionado: 0 },
-    "Juande":        { amarillas: 0, sancionado: 0 },
-    "Aitor":         { amarillas: 0, sancionado: 0 },
-    "Jesus":         { amarillas: 0, sancionado: 0 },
-    "Mario Lama":          { amarillas: 0, sancionado: 0 },
-    "Lucas":         { amarillas: 0, sancionado: 0 },
-    // Staff técnico
-    "David Mesa":        { amarillas: 0, sancionado: 0 },
-    "Antonio Pinto":     { amarillas: 0, sancionado: 0 },
-    "Alberto Delegado":  { amarillas: 0, sancionado: 0 },
-};
+const SANCIONES_VERSION = 7;
+// Temporada nueva: todos a cero. Los datos reales viven en Firestore (sanciones/<club>).
+const SANCIONES_INICIALES = {};
 
 function getSanciones() {
+    let data = null;
     try {
         const raw = localStorage.getItem(`${NOMBRE_EQUIPO}_sanciones`);
         const ver = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_sanciones_ver`) || '0');
-        if (raw && ver >= SANCIONES_VERSION) return JSON.parse(raw);
+        if (raw && ver >= SANCIONES_VERSION) data = JSON.parse(raw);
     } catch(e) {}
-    return resetearSanciones();
+    if (!data) data = resetearSanciones();
+    // Todos los jugadores y el staff tienen ficha (a cero si no hay datos)
+    [...PLANTILLA_BASE, ...STAFF_TECNICO].forEach(j => {
+        if (j.n && !j.n.startsWith('Filial') && !data[j.n]) data[j.n] = { amarillas: 0, sancionado: 0, motivo: '' };
+    });
+    return data;
 }
 
 function resetearSanciones() {
@@ -2791,7 +2928,7 @@ window.guardarSanciones = function() {
             };
         }
     });
-    localStorage.setItem(`${NOMBRE_EQUIPO}_sanciones`, JSON.stringify(data));
+    guardarLocalSync('sanciones', JSON.stringify(data));
     const btn = document.querySelector('#pSanciones button[onclick="guardarSanciones()"]');
     if(btn) {
         const orig = btn.innerText;
@@ -2809,12 +2946,13 @@ function semaforo(amarillas, sancionado) {
 }
 
 window.cargarPantallaSanciones = function() {
+    if (window.fbSync) window.fbSync.aplicarSancionesPendientes(false);
     const data = getSanciones();
     const hoy = new Date();
     const esJueves = hoy.getDay() === 4;
     const avisoVisto = localStorage.getItem(`${NOMBRE_EQUIPO}_aviso_sanciones_` + hoy.toDateString());
     document.getElementById('avisoPendiente').style.display = (esJueves && !avisoVisto) ? 'block' : 'none';
-    const jornada = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '24');
+    const jornada = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '1');
     const jorEl = document.getElementById('jornadaLabel');
     if(jorEl) jorEl.innerText = 'Jornada ' + jornada;
 
@@ -2917,7 +3055,7 @@ window.cambiarSancion = function(nombre, delta) {
 
 window.guardarMotivoCard = function(nombre, motivo) {
     const data = getSanciones();
-    if(data[nombre]) { data[nombre].motivo = motivo; localStorage.setItem(`${NOMBRE_EQUIPO}_sanciones`, JSON.stringify(data)); }
+    if(data[nombre]) { data[nombre].motivo = motivo; guardarLocalSync('sanciones', JSON.stringify(data)); }
 };
 
 function refrescarCard(nombre) {
@@ -2976,8 +3114,16 @@ window.filtrarSanciones = function(filtro) {
     }
 };
 
-window.jornadaJugada = function() {
-    if(!confirm('¿Confirmas que se ha jugado la jornada?\n\n· Los sancionados descontarán 1 partido\n· Acumulación cumplida → amarillas a 0\n· Roja/doble amarilla cumplida → amarillas se mantienen')) return;
+window.jornadaJugada = async function(sinConfirmar) {
+    if(sinConfirmar !== true && !confirm('¿Confirmas que se ha jugado la jornada?\n\n· Los sancionados descontarán 1 partido\n· Acumulación cumplida → amarillas a 0\n· Roja/doble amarilla cumplida → amarillas se mantienen')) return;
+
+    let jornada = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '1');
+    if (window.fbSync) {
+        // Reserva la jornada en la nube: si otro móvil ya la registró, no se descuenta dos veces
+        const r = await window.fbSync.reservarJornada(jornada);
+        if (!r.ok) { alert(r.msg); cargarPantallaSanciones(); return false; }
+        window.fbSync.aplicarSancionesPendientes(false);   // partir de los datos más recientes
+    }
 
     const data = getSanciones();
     const todos = [...PLANTILLA_BASE.map(j=>j.n), ...STAFF_TECNICO.map(j=>j.n)];
@@ -3000,10 +3146,9 @@ window.jornadaJugada = function() {
         }
     });
 
-    let jornada = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '24');
     jornada++;
-    localStorage.setItem(`${NOMBRE_EQUIPO}_jornada`, jornada);
-    localStorage.setItem(`${NOMBRE_EQUIPO}_sanciones`, JSON.stringify(data));
+    localStorage.setItem(`${NOMBRE_EQUIPO}_jornada`, jornada);   // en la nube ya la ha subido reservarJornada
+    guardarLocalSync('sanciones', JSON.stringify(data));
 
     cargarPantallaSanciones();
 
@@ -3017,13 +3162,93 @@ window.jornadaJugada = function() {
     if(procesados.length > 0) {
         setTimeout(() => alert('Sanciones actualizadas:\n\n' + procesados.join('\n')), 100);
     }
+    return true;
 };
 
 window.confirmarResetSanciones = function() {
-    if(!confirm('¿Resetear todos los datos de sanciones a los valores iniciales del código? Se perderán los cambios guardados.')) return;
+    if(!confirm('¿Poner a cero las sanciones de toda la plantilla? Se borra también en los demás móviles.')) return;
     resetearSanciones();
+    if (window.fbSync) window.fbSync.resetSanciones();
     cargarPantallaSanciones();
-    alert('✅ Datos reseteados a los valores del código.');
+    alert('✅ Sanciones puestas a cero.');
+};
+
+// ===== HISTÓRICO DE PARTIDOS =====
+window.abrirHistorico = async function() {
+    mostrarPantalla('pHistorico');
+    const cont = document.getElementById('listaHistorico');
+    cont.innerHTML = '<p style="color:#aaa; text-align:center;">⏳ Cargando…</p>';
+    if (!window.fbSync) { cont.innerHTML = '<p style="color:#aaa; text-align:center;">Inicia sesión para ver los partidos.</p>'; return; }
+    let lista = [];
+    try { lista = await window.fbSync.listarArchivados(); }
+    catch (e) { cont.innerHTML = `<p style="color:#e74c3c; text-align:center;">No se pudieron cargar los partidos: ${e.message}</p>`; return; }
+    window._historico = lista;
+    if (!lista.length) { cont.innerHTML = '<p style="color:#aaa; text-align:center;">Todavía no hay partidos archivados. Se guardan aquí al pulsar NUEVO PARTIDO.</p>'; return; }
+    const escH = x => String(x ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const admin = window.fbSync.esAdmin();
+    cont.innerHTML = lista.map((p, i) => `
+        <div style="background:#363B47; border-radius:15px; padding:12px; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; gap:8px; align-items:baseline;">
+                <span style="font-weight:bold; font-size:15px;">${escH(p.titulo)}</span>
+                <span style="color:#f1c40f; font-weight:bold; font-size:18px; white-space:nowrap;">${escH(p.resultado)}</span>
+            </div>
+            <div style="color:#aaa; font-size:12px; margin:4px 0 10px;">${escH(p.fechaTexto)} · ${escH(p.tipo || 'Liga')}${p.cerradoPor ? ' · cerrado por ' + escH(p.cerradoPor) : ''}</div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn" style="flex:2; background:#1F6AA5; margin:0; padding:10px;" onclick="exportarArchivado(${i}, 'excel')">📊 Excel</button>
+                <button class="btn btn-exito" style="flex:1; margin:0; padding:10px;" onclick="exportarArchivado(${i}, 'csv')">📥 CSV</button>
+                ${admin ? `<button class="btn btn-peligro" style="flex:0 0 auto; width:auto; margin:0; padding:10px 14px;" onclick="borrarArchivado(${i})">🗑️</button>` : ''}
+            </div>
+        </div>`).join('');
+};
+
+// Genera el Excel/CSV de un partido archivado sin tocar el partido actual
+window.exportarArchivado = async function(i, formato) {
+    const p = (window._historico || [])[i];
+    if (!p) return;
+    let data;
+    try { data = JSON.parse(p.partido); } catch (e) { alert('Datos del partido dañados.'); return; }
+    // Copia del estado actual para restaurarlo después
+    const copia = { rolGelves, rolRival, convocados, enCampo, eventos, golesL, golesV, fase, tiempoInicio, duracion1T, minutoFinal, minutoFin1T,
+        rivalDom: document.getElementById('nombreRival').value,
+        arbitroDom: document.getElementById('nombreArbitro')?.value || '',
+        notasDom: document.getElementById('notasArbitro')?.value || '' };
+    try {
+        rolGelves = data.rolGelves || 'L'; rolRival = data.rolRival || (rolGelves === 'L' ? 'V' : 'L');
+        convocados = (data.convocados || []).map(j => ({ ...j, intervalos: j.intervalos || [] }));
+        enCampo = []; eventos = data.eventos || [];
+        golesL = data.golesL || 0; golesV = data.golesV || 0; fase = data.fase || 4;
+        duracion1T = data.duracion1T || ''; minutoFinal = data.minutoFinal || 90; minutoFin1T = data.minutoFin1T || 45;
+        document.getElementById('nombreRival').value = data.rival || p.rival || 'RIVAL';
+        if (document.getElementById('nombreArbitro')) document.getElementById('nombreArbitro').value = data.arbitro || '';
+        if (document.getElementById('notasArbitro')) document.getElementById('notasArbitro').value = data.notasArbitro || '';
+        window._exportArchivo = { ...data, fechaCierre: p.fechaCierre || '' };
+        if (formato === 'csv') exportarCSV(); else await exportarExcel();
+    } catch (e) {
+        alert('No se pudo generar el archivo: ' + e.message);
+    } finally {
+        window._exportArchivo = null;
+        ({ rolGelves, rolRival, convocados, enCampo, eventos, golesL, golesV, fase, tiempoInicio, duracion1T, minutoFinal, minutoFin1T } = copia);
+        document.getElementById('nombreRival').value = copia.rivalDom;
+        if (document.getElementById('nombreArbitro')) document.getElementById('nombreArbitro').value = copia.arbitroDom;
+        if (document.getElementById('notasArbitro')) document.getElementById('notasArbitro').value = copia.notasDom;
+    }
+};
+
+window.borrarArchivado = async function(i) {
+    const p = (window._historico || [])[i];
+    if (!p || !confirm(`¿Borrar del histórico "${p.titulo}" (${p.fechaTexto})?\n\nNo se puede deshacer.`)) return;
+    try { await window.fbSync.borrarArchivado(p.id); abrirHistorico(); }
+    catch (e) { alert('No se pudo borrar: ' + e.message); }
+};
+
+window.editarJornada = function() {
+    const actual = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '1');
+    const v = prompt('Jornada actual:', actual);
+    if (v === null) return;
+    const n = parseInt(v);
+    if (!n || n < 1) { alert('Escribe un número de jornada válido.'); return; }
+    guardarLocalSync('jornada', String(n));
+    cargarPantallaSanciones();
 };
 
 window.ocultarAvisoSanciones = function() {
@@ -3093,12 +3318,22 @@ window.ocultarAvisoSanciones = function() {
 
 
 <!-- Pantalla Sanciones -->
+<!-- Pantalla Partidos jugados (histórico) -->
+<div id="pHistorico" class="pantalla">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <button class="btn btn-neutral" style="padding:10px 20px; width:auto;" onclick="window.mostrarPantalla('pConfig')">⬅️ VOLVER</button>
+        <h3 style="margin:0; color:#5DADE2;">📂 PARTIDOS JUGADOS</h3>
+    </div>
+    <div id="listaHistorico" style="flex:1; overflow-y:auto;"></div>
+</div>
+
 <div id="pSanciones" class="pantalla">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
         <button class="btn btn-neutral" style="padding:10px 20px;" onclick="window.mostrarPantalla('pConfig')">⬅️ VOLVER</button>
         <div style="text-align:center;">
             <h3 style="margin:0; color:#8e44ad;">📋 SANCIONES</h3>
-            <span id="jornadaLabel" style="color:#aaa; font-size:12px;"></span>
+            <span id="jornadaLabel" style="color:#aaa; font-size:12px; text-decoration:underline dotted; cursor:pointer;" onclick="editarJornada()" title="Toca para corregir la jornada"></span>
+            <div id="sancEnUso" style="color:#f39c12; font-size:11px; margin-top:2px; display:none;"></div>
         </div>
         <div style="display:flex; flex-direction:column; gap:4px;">
             <button class="btn" style="background:#8e44ad; padding:8px 12px; font-size:12px;" onclick="guardarSanciones()">💾 GUARDAR</button>
@@ -3234,7 +3469,11 @@ window.ocultarAvisoSanciones = function() {
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import {
+        getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+        doc, getDoc, setDoc, updateDoc, collection, query, where, getDocs,
+        onSnapshot, runTransaction, writeBatch, serverTimestamp, deleteDoc, deleteField
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCoK9OFm9Y9kzqP2vUfmruJtBPdad8CbCo",
@@ -3246,11 +3485,117 @@ window.ocultarAvisoSanciones = function() {
     };
     const fbApp = initializeApp(firebaseConfig);
     const fbAuth = getAuth(fbApp);
-    const fbDb = getFirestore(fbApp);
+    // Caché persistente: se puede apuntar sin cobertura y se sube al volver la señal
+    let fbDb;
+    try {
+        fbDb = initializeFirestore(fbApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+    } catch (e) {
+        fbDb = getFirestore(fbApp);
+    }
 
-    const CLUB_CORTO = "Camino Viejo";              // nombre corto de este club (para la clave de caché local)
-    const CLUB_FALLBACK = "Camino Viejo";           // se usa solo si el perfil del usuario no tiene club (p.ej. admin)
+    const CLUB_CORTO = "Camino Viejo";              // nombre corto de este club (clave de caché local)
+    const CLUB_FALLBACK = "Camino Viejo";           // se usa si el perfil del usuario no tiene club (p.ej. admin)
+    const CLUB_SYNC = CLUB_CORTO;                   // valor del campo "club" en Firestore (igual que en Scout)
+    const CLUB_KEY = normalizarNombre(CLUB_SYNC).replace(/ /g, '-');   // "camino-viejo"
 
+    // ===== NOMBRES RFAF INICIALES =====
+    // Solo se usan para rellenar el campo "Nombre en RFAF" de los jugadores de Scout que lo
+    // tengan vacío. Después se corrige desde la ficha del jugador en Scout.
+    const RFAF_INICIAL = [
+        [["adriano segura gomez", "adriano segura", "adriano"], "Segura Gomez, Adriano"],
+        [["miguel romero", "miguel romero segura"], "Miguel Romero Segura"],
+        [["rodrigo vargas", "rodrigo vargas garcia"], "Vargas Garcia, Rodrigo"],
+        [["alberto lopez", "alberto lopez basterra"], "Lopez Basterra, Alberto"],
+        [["joaquin morera", "joaquin morera valentin gamazo"], "Morera Valentin-gamazo, Joaquin"],
+        [["hugo cabrera", "hugo cabrera echeverria"], "Cabrera Echeverria, Hugo"],
+        [["queco", "francisco ayuso", "francisco ayuso clavijo"], "Ayuso Clavijo, Francisco"],
+        [["victor rodriguez", "victor mejias", "victor mejias rodriguez"], "Mejias Rodriguez, Victor"],
+        [["pablo bernal", "pablo bernal diaz"], "Bernal Diaz, Pablo"],
+        [["guille ocana", "guillermo ocana", "guillermo ocana martinez"], "Guillermo Ocaña Martinez"],
+        [["samuel", "samuel becerra", "samuel becerra arribas"], "Becerra Arribas, Samuel"],
+        [["robert pinto", "robert", "robert antonio pinto romero"], "Robert Antonio Pinto Romero"],
+        [["guille salazar", "guillermo salazar", "guillermo salazar romero"], "Salazar Romero, Guillermo"],
+        [["mario flores", "mario flores martin"], "Flores Martin, Mario"],
+        [["dani guerrero", "daniel guerrero", "daniel guerrero martin"], "Daniel Guerrero Martin"],
+        [["oscar aguilar", "oscar aguilar santaella"], "Aguilar Santaella, Oscar"],
+        [["alvaro roman", "alvaro roman diez"], "Roman Diez, Alvaro"],
+        [["pablo aguilar", "pablo aguilar santaella"], "Aguilar Santaella, Pablo"],
+        [["nico abad", "nicolas abad", "nicolas abad jurado"], "Abad Jurado, Nicolas"],
+        [["diego garcia", "diego garcia sousa"], "Diego Garcia Sousa"],
+        [["jorge", "jorge aguilera", "jorge aguilera calvo"], "Jorge Aguilera Calvo"],
+        [["lucas", "lucas dodera", "lucas dodera de mello"], "Dodera De Mello, Lucas"],
+        [["pablo monge", "monge", "pablo monge ruiz"], "Monge Ruiz, Pablo"]
+    ];
+    function rfafInicial(nombreScout) {
+        const n = normalizarNombre(nombreScout);
+        const f = RFAF_INICIAL.find(([alias]) => alias.includes(n));
+        return f ? f[1] : '';
+    }
+
+    // ===== UTILIDADES =====
+    const LK = sufijo => `${NOMBRE_EQUIPO}_${sufijo}`;
+    let deviceId = localStorage.getItem('scout_device_id');
+    if (!deviceId) {
+        deviceId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+        localStorage.setItem('scout_device_id', deviceId);
+    }
+    let usuario = null;
+    let miNombre = '';          // nombre del perfil de Scout ("Admin" para el admin)
+    let soyAdmin = false;
+    let presenciaTimer = null;  // marca "En uso por" mientras la pantalla Sanciones está abierta
+    let remotoPartido;          // undefined = aún sin datos de la nube · null = no hay partido abierto
+    let remotoSanc;             // igual, para sanciones/jornada/rivales
+    let sancPendiente = null;   // sanciones recibidas mientras la pantalla Sanciones está abierta
+    let yoCierroPartido = false;
+    let pendienteSubida = {};   // cambios hechos antes de recibir la nube
+    let unsubPartido = null, unsubSanc = null;
+
+    const refPartido = () => doc(fbDb, "partidos", `activo_${CLUB_KEY}`);
+    const refSanc = () => doc(fbDb, "sanciones", CLUB_KEY);
+    const pantallaActiva = () => document.querySelector('.pantalla.active')?.id || '';
+
+    function meta() {
+        return {
+            updatedAt: serverTimestamp(),
+            updatedBy: usuario.uid,
+            updatedEmail: usuario.email || '',
+            updatedNombre: miNombre,
+            updatedDevice: deviceId
+        };
+    }
+    const nombreDe = (nombre, email) => nombre || email || 'otro móvil';
+
+    function aviso(msg, esAviso) {
+        let el = document.getElementById('avisoPlantilla');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'avisoPlantilla';
+            el.style.cssText = 'position:fixed;bottom:14px;left:14px;right:14px;z-index:600;padding:10px 16px;border-radius:12px;font-size:13px;text-align:center;color:#fff;';
+            document.body.appendChild(el);
+        }
+        el.style.background = esAviso ? '#4A3030' : '#1A6B3A';
+        el.textContent = msg;
+        clearTimeout(el._t);
+        el._t = setTimeout(() => { el.remove(); }, 5000);
+    }
+    const errorNube = e => aviso('⚠️ No se pudo guardar en la nube: ' + (e?.message || e), true);
+
+    // Aviso con botón para recargar datos que han cambiado en otro móvil
+    function avisoRecargar(msg, accion) {
+        let el = document.getElementById('avisoRemoto');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'avisoRemoto';
+            el.innerHTML = '<span style="flex:1;"></span><button>Recargar</button>';
+            document.body.appendChild(el);
+        }
+        el.querySelector('span').textContent = msg;
+        el.querySelector('button').onclick = () => { el.remove(); accion(); };
+        clearTimeout(el._t);
+        el._t = setTimeout(() => { el.remove(); }, 20000);
+    }
+
+    // ===== PLANTILLA DESDE SCOUT =====
     function rosterCacheKey() { return `${CLUB_CORTO}_plantilla_cache`; }
 
     function cargarPlantillaDeCache() {
@@ -3264,54 +3609,511 @@ window.ocultarAvisoSanciones = function() {
     }
     cargarPlantillaDeCache();
 
-    function avisoPlantilla(msg, esAviso) {
-        let el = document.getElementById('avisoPlantilla');
-        if (!el) {
-            el = document.createElement('div');
-            el.id = 'avisoPlantilla';
-            el.style.cssText = 'position:fixed;bottom:14px;left:14px;right:14px;z-index:600;padding:10px 16px;border-radius:12px;font-size:13px;text-align:center;color:#fff;';
-            document.body.appendChild(el);
-        }
-        el.style.background = esAviso ? '#4A3030' : '#1A6B3A';
-        el.textContent = msg;
-        clearTimeout(el._t);
-        el._t = setTimeout(() => { el.remove(); }, 5000);
-    }
-
     async function cargarPlantillaDesdeFirestore(clubName) {
         try {
             const q = query(collection(fbDb, "jugadores"), where("club", "==", clubName));
             const snap = await getDocs(q);
             const jugadores = [];
+            const rellenar = [];
             snap.forEach(docSnap => {
                 const data = docSnap.data();
                 if (data.tipo === "posible") return; // excluir capturas rápidas sin completar
-                jugadores.push({ d: data.dorsal || 0, n: data.name || "Sin nombre" });
+                let rfaf = (data.nombreRFAF || '').trim();
+                if (!rfaf) {
+                    rfaf = rfafInicial(data.name);
+                    if (rfaf) rellenar.push({ id: docSnap.id, rfaf });
+                }
+                jugadores.push({ id: docSnap.id, d: data.dorsal || 0, n: data.name || "Sin nombre", rfaf });
             });
+            // Orden fijo (alfabético) para que todos los móviles vean la misma lista
+            jugadores.sort((a, b) => a.n.localeCompare(b.n, 'es'));
             if (jugadores.length) {
                 window.PLANTILLA_BASE = jugadores;
                 localStorage.setItem(rosterCacheKey(), JSON.stringify(jugadores));
-                avisoPlantilla(`✅ Plantilla actualizada desde Scout (${jugadores.length} jugadores)`, false);
+                aviso(`✅ Plantilla actualizada desde Scout (${jugadores.length} jugadores)`, false);
             } else {
-                avisoPlantilla("⚠️ Scout no tiene jugadores para este club. Usando la plantilla guardada en este dispositivo.", true);
+                aviso("⚠️ Scout no tiene jugadores para este club. Usando la plantilla guardada en este dispositivo.", true);
             }
+            // Primera vez: guarda en Scout el nombre RFAF de los que no lo tienen
+            rellenar.forEach(r => {
+                updateDoc(doc(fbDb, "jugadores", r.id), { nombreRFAF: r.rfaf }).catch(() => {});
+            });
         } catch (e) {
-            avisoPlantilla("⚠️ Sin conexión. Usando la plantilla guardada en este dispositivo.", true);
+            aviso("⚠️ Sin conexión. Usando la plantilla guardada en este dispositivo.", true);
         }
     }
 
+    // ===== SANCIONES: conversión nombre (pantalla) <-> id de jugador (nube) =====
+    const idStaff = n => 'staff_' + normalizarNombre(n).replace(/ /g, '_');
+    function idDeNombre(nombre) {
+        const j = (window.PLANTILLA_BASE || []).find(x => x.n === nombre && x.id);
+        if (j) return j.id;
+        const s = STAFF_TECNICO.find(x => x.n === nombre);
+        return s ? idStaff(s.n) : null;
+    }
+    const limpiar = e => ({ amarillas: parseInt(e?.amarillas) || 0, sancionado: parseInt(e?.sancionado) || 0, motivo: e?.motivo || '' });
+    const igual = (a, b) => JSON.stringify(limpiar(a)) === JSON.stringify(limpiar(b));
+
+    // Nombres de la pantalla que tienen id en la nube
+    function nombresSincronizables() {
+        return [
+            ...(window.PLANTILLA_BASE || []).filter(j => j.id).map(j => [j.n, j.id]),
+            ...STAFF_TECNICO.map(s => [s.n, idStaff(s.n)])
+        ];
+    }
+    function sancRemotoALocal(jugadoresNube) {
+        const out = {};
+        nombresSincronizables().forEach(([n, id]) => { out[n] = limpiar(jugadoresNube[id]); });
+        return out;
+    }
+    function leerSancLocal() {
+        try { return JSON.parse(localStorage.getItem(LK('sanciones')) || '{}') || {}; } catch (e) { return {}; }
+    }
+    function sancIguales(remotoLocal, local) {
+        return nombresSincronizables().every(([n]) => igual(remotoLocal[n], local[n]));
+    }
+    function escribirSancLocal(remotoLocal) {
+        const local = leerSancLocal();
+        nombresSincronizables().forEach(([n]) => { local[n] = limpiar(remotoLocal[n]); });
+        localStorage.setItem(LK('sanciones'), JSON.stringify(local));
+        localStorage.setItem(LK('sanciones_ver'), SANCIONES_VERSION);
+    }
+
+    // ===== SUBIDAS A LA NUBE =====
+    function soyLector(d) {
+        return !!(d && d.estado === 'en_juego' && d.editorDevice && d.editorDevice !== deviceId);
+    }
+
+    function subirConvocatoria(valor) {
+        const d = remotoPartido;
+        if (soyLector(d)) return;   // hay un partido en juego en otro móvil: no se toca
+        if (valor === null) {
+            if (d) updateDoc(refPartido(), { convocatoria: null, ...meta() }).catch(errorNube);
+            return;
+        }
+        const datos = { club: CLUB_SYNC, convocatoria: valor, ...meta() };
+        if (!d || !d.partido) datos.estado = 'preparacion';
+        setDoc(refPartido(), datos, { merge: true }).catch(errorNube);
+    }
+
+    function subirPartido(valor) {
+        const d = remotoPartido;
+        if (soyLector(d)) { aviso('👁️ Modo lectura: otro móvil está apuntando el partido.', true); return; }
+        if (valor === null) return;
+        let fase = 0;
+        try { fase = JSON.parse(valor).fase; } catch (e) {}
+        setDoc(refPartido(), {
+            club: CLUB_SYNC,
+            partido: valor,
+            estado: fase === 4 ? 'finalizado' : 'en_juego',
+            editorUid: usuario.uid,
+            editorEmail: usuario.email || '',
+            editorNombre: miNombre,
+            editorDevice: deviceId,
+            ...meta()
+        }, { merge: true }).catch(errorNube);
+    }
+
+    function subirSanciones(valor, anterior) {
+        let nuevo = {}, prev = {};
+        try { nuevo = JSON.parse(valor || '{}') || {}; } catch (e) {}
+        try { prev = JSON.parse(anterior || '{}') || {}; } catch (e) {}
+        // Solo se suben los jugadores que han cambiado (así no se pisan cambios de otros móviles)
+        const cambios = {};
+        new Set([...Object.keys(nuevo), ...Object.keys(prev)]).forEach(n => {
+            if (!igual(nuevo[n], prev[n])) {
+                const id = idDeNombre(n);
+                if (id) cambios[id] = limpiar(nuevo[n]);
+            }
+        });
+        if (!Object.keys(cambios).length) return;
+        setDoc(refSanc(), { club: CLUB_SYNC, jugadores: cambios, cambiadoPor: miNombre, cambiadoDevice: deviceId, updatedAt: serverTimestamp() }, { merge: true }).catch(errorNube);
+    }
+
+    // ===== RECEPCIÓN DESDE LA NUBE =====
+    function actualizarModo() {
+        const d = remotoPartido;
+        const lector = soyLector(d);
+        document.body.classList.toggle('solo-lectura', lector);
+        const t = document.getElementById('barraLecturaTexto');
+        if (t) t.textContent = lector ? `👁️ Solo lectura · apunta ${nombreDe(d.editorNombre, d.editorEmail)}` : '';
+        window.refrescarBannerGuardado();
+    }
+
+    function aplicarPartidoRemoto(d, primera) {
+        const conv = d ? (d.convocatoria || null) : null;
+        const part = d ? (d.partido || null) : null;
+        const convLocal = localStorage.getItem(LK('convocatoria'));
+        const partLocal = localStorage.getItem(LK('partido_final'));
+        const deOtro = !d || d.updatedDevice !== deviceId;
+        const activa = pantallaActiva();
+        if (!deOtro && !primera) return;   // es el eco de lo que acaba de escribir este móvil
+
+        // Partido cerrado (o archivado) desde otro móvil
+        if (!d) {
+            if (yoCierroPartido) { yoCierroPartido = false; return; }
+            if (partLocal || convLocal) {
+                const enPartido = activa === 'pPartido' || activa === 'pResumen';
+                if (enPartido || activa === 'pConvocatoria' || activa === 'pOnce') {
+                    window.confirmarNuevoPartido(true);   // limpia y vuelve al inicio (el aviso con nombre llega aparte)
+                } else {
+                    localStorage.removeItem(LK('partido_final'));
+                    localStorage.removeItem(LK('convocatoria'));
+                }
+            }
+            return;
+        }
+
+        if (part !== partLocal) {
+            if (part) localStorage.setItem(LK('partido_final'), part);
+            else localStorage.removeItem(LK('partido_final'));
+            if (part && (activa === 'pPartido' || activa === 'pResumen')) window.recuperarPartido();
+        }
+        if (conv !== convLocal) {
+            if (conv) localStorage.setItem(LK('convocatoria'), conv);
+            else localStorage.removeItem(LK('convocatoria'));
+            if (conv && !part && (activa === 'pConvocatoria' || activa === 'pOnce')) {
+                avisoRecargar(`📋 ${nombreDe(d.updatedNombre, d.updatedEmail)} ha cambiado la convocatoria`, () => window.continuarGuardado());
+            }
+        }
+    }
+
+    function onPartido(snap) {
+        const existe = snap.exists();
+        // Si la caché aún no sabe nada, se espera a la respuesta del servidor
+        if (remotoPartido === undefined && !existe && snap.metadata.fromCache) return;
+        const d = existe ? snap.data() : null;
+        const primera = remotoPartido === undefined;
+        remotoPartido = d;
+        if (primera) {
+            const yaMigrado = localStorage.getItem(LK('fs_migrado')) === '1';
+            localStorage.setItem(LK('fs_migrado'), '1');
+            const part = localStorage.getItem(LK('partido_final'));
+            const conv = localStorage.getItem(LK('convocatoria'));
+            // Subir lo local si: es la primera vez de este móvil y la nube está vacía,
+            // o se ha editado en los segundos antes de conectar (y no hay partido de otro en juego)
+            const subirLocal = (!d && !yaMigrado) || (Object.keys(pendienteSubida).length && !soyLector(d));
+            pendienteSubida = {};
+            if (subirLocal && (part || conv)) {
+                if (part) subirPartido(part);
+                else subirConvocatoria(conv);
+                actualizarModo();
+                return;
+            }
+        }
+        aplicarPartidoRemoto(d, primera);
+        actualizarModo();
+    }
+
+    function onSanciones(snap) {
+        const existe = snap.exists();
+        if (remotoSanc === undefined && !existe && snap.metadata.fromCache) return;
+        const d = existe ? snap.data() : null;
+        const primera = remotoSanc === undefined;
+        remotoSanc = d;
+        if (!d) {
+            if (primera) {
+                setDoc(refSanc(), {
+                    club: CLUB_SYNC,
+                    jornada: parseInt(localStorage.getItem(LK('jornada')) || '1') || 1,
+                    jugadores: {},
+                    rivales: localStorage.getItem(LK('rivales')) || '{}',
+                    createdAt: serverTimestamp()
+                }, { merge: true }).catch(errorNube);
+            }
+            return;
+        }
+        // Jornada
+        if (d.jornada && String(d.jornada) !== localStorage.getItem(LK('jornada'))) {
+            localStorage.setItem(LK('jornada'), d.jornada);
+            const lbl = document.getElementById('jornadaLabel');
+            if (lbl) lbl.innerText = 'Jornada ' + d.jornada;
+        }
+        // Rivales sancionados
+        if (typeof d.rivales === 'string' && d.rivales !== localStorage.getItem(LK('rivales'))) {
+            localStorage.setItem(LK('rivales'), d.rivales);
+        }
+        // Capturas RFAF ya aplicadas (por jornada)
+        const capt = JSON.stringify(d.capturas || {});
+        if (capt !== (localStorage.getItem(LK('capturas')) || '{}')) localStorage.setItem(LK('capturas'), capt);
+        // Quién tiene abierta la pantalla Sanciones
+        if (primera && presenciaTimer) marcarPresencia(true);
+        pintarEnUso();
+        // Aviso de partido cerrado desde otro móvil
+        const uc = d.ultimoCierre;
+        if (uc && uc.ts && uc.device !== deviceId && String(uc.ts) !== localStorage.getItem(LK('cierre_visto'))) {
+            localStorage.setItem(LK('cierre_visto'), String(uc.ts));
+            if (Date.now() - uc.ts < 10 * 60 * 1000) {
+                window.avisoInfo(`ℹ️ ${uc.nombre || 'Otro móvil'} ha cerrado el partido${uc.rival ? ' contra ' + uc.rival : ''}. Queda guardado en 📂 Partidos jugados.`);
+            }
+        }
+        // Sanciones de la plantilla
+        const remotoLocal = sancRemotoALocal(d.jugadores || {});
+        if (sancIguales(remotoLocal, leerSancLocal())) return;
+        if (pantallaActiva() === 'pSanciones') {
+            // No se repinta para no perder lo que se está editando: se avisa
+            sancPendiente = remotoLocal;
+            const quien = d.cambiadoDevice && d.cambiadoDevice !== deviceId ? (d.cambiadoPor || 'Otro móvil') : 'Otro móvil';
+            avisoRecargar(`📋 ${quien} ha cambiado las sanciones`, () => aplicarSancionesPendientes(true));
+        } else {
+            escribirSancLocal(remotoLocal);
+        }
+    }
+
+    // ===== "EN USO POR" EN LA PANTALLA SANCIONES =====
+    function marcarPresencia(activa) {
+        if (!usuario || remotoSanc === undefined) return;
+        if (activa) {
+            setDoc(refSanc(), { club: CLUB_SYNC, enUso: { [deviceId]: { nombre: miNombre, ts: Date.now() } } }, { merge: true }).catch(() => {});
+        } else if (remotoSanc) {
+            updateDoc(refSanc(), { [`enUso.${deviceId}`]: deleteField() }).catch(() => {});
+        }
+    }
+    function gestionarPresencia() {
+        const enSanciones = pantallaActiva() === 'pSanciones' && document.visibilityState !== 'hidden';
+        if (enSanciones && !presenciaTimer) {
+            marcarPresencia(true);
+            presenciaTimer = setInterval(() => marcarPresencia(true), 60000);
+        } else if (!enSanciones && presenciaTimer) {
+            clearInterval(presenciaTimer);
+            presenciaTimer = null;
+            marcarPresencia(false);
+        }
+        pintarEnUso();
+    }
+    function pintarEnUso() {
+        const el = document.getElementById('sancEnUso');
+        if (!el) return;
+        const uso = (remotoSanc && remotoSanc.enUso) || {};
+        const ahora = Date.now();
+        // Se considera "en uso" si ese móvil ha dado señal en los últimos 2,5 minutos
+        const otros = [...new Set(Object.entries(uso)
+            .filter(([dev, v]) => dev !== deviceId && v && ahora - (v.ts || 0) < 150000)
+            .map(([, v]) => v.nombre || 'otro móvil'))];
+        el.style.display = otros.length ? 'block' : 'none';
+        el.textContent = otros.length ? '✏️ En uso por ' + otros.join(', ') : '';
+    }
+    const mostrarPantallaOriginal = window.mostrarPantalla;
+    window.mostrarPantalla = function(id) {
+        mostrarPantallaOriginal(id);
+        gestionarPresencia();
+    };
+    document.addEventListener('visibilitychange', gestionarPresencia);
+    setInterval(pintarEnUso, 30000);
+
+    function aplicarSancionesPendientes(repintar) {
+        if (sancPendiente) {
+            escribirSancLocal(sancPendiente);
+            sancPendiente = null;
+        }
+        if (repintar && pantallaActiva() === 'pSanciones') window.cargarPantallaSanciones();
+    }
+
+    // ===== API PARA EL RESTO DE LA APP =====
+    window.fbSync = {
+        subir(sufijo, valor, anterior) {
+            if (!usuario) return;
+            if (sufijo === 'convocatoria' || sufijo === 'partido_final') {
+                if (remotoPartido === undefined) { pendienteSubida[sufijo] = true; return; }   // se sube al conectar
+                if (sufijo === 'convocatoria') subirConvocatoria(valor);
+                else subirPartido(valor);
+                return;
+            }
+            if (remotoSanc === undefined) return;
+            if (sufijo === 'sanciones') subirSanciones(valor, anterior);
+            else if (sufijo === 'jornada') {
+                setDoc(refSanc(), { club: CLUB_SYNC, jornada: parseInt(valor) || 1, updatedAt: serverTimestamp() }, { merge: true }).catch(errorNube);
+            } else if (sufijo === 'capturas') {
+                let mapa = {};
+                try { mapa = JSON.parse(valor || '{}') || {}; } catch (e) {}
+                setDoc(refSanc(), { club: CLUB_SYNC, capturas: mapa, updatedAt: serverTimestamp() }, { merge: true }).catch(errorNube);
+            } else if (sufijo === 'rivales') {
+                setDoc(refSanc(), { club: CLUB_SYNC, rivales: valor || '{}', updatedAt: serverTimestamp() }, { merge: true }).catch(errorNube);
+            }
+        },
+
+        puedeIniciarPartido() {
+            const d = remotoPartido;
+            if (d && d.partido && d.estado === 'en_juego' && d.editorDevice !== deviceId) {
+                alert(`⚠️ Ya hay un partido en juego que está apuntando ${nombreDe(d.editorNombre, d.editorEmail)}.\n\nVuelve al inicio y pulsa CONTINUAR para verlo.`);
+                return false;
+            }
+            if (usuario && d && d.partido && d.estado === 'finalizado') {
+                // Partido anterior terminado pero sin cerrar: se archiva antes de empezar el nuevo
+                const batch = writeBatch(fbDb);
+                batch.set(doc(collection(fbDb, "partidos")), datosArchivo(d));
+                batch.update(refPartido(), { partido: null, estado: 'preparacion', ...meta() });
+                batch.commit().catch(errorNube);
+            }
+            return true;
+        },
+
+        async tomarControl() {
+            const d = remotoPartido;
+            if (!usuario || !d) return;
+            if (!confirm(`¿Tomar el control del partido?\n\n${nombreDe(d.editorNombre, d.editorEmail)} pasará a modo lectura y serás tú quien apunte.`)) return;
+            try {
+                await updateDoc(refPartido(), {
+                    editorUid: usuario.uid,
+                    editorEmail: usuario.email || '',
+                    editorNombre: miNombre,
+                    editorDevice: deviceId,
+                    ...meta()
+                });
+            } catch (e) {
+                alert('⚠️ No se pudo tomar el control. Necesitas conexión.\n' + e.message);
+            }
+        },
+
+        // Archiva el partido en la colección "partidos" y deja el club sin partido abierto
+        nuevoPartido() {
+            const d = remotoPartido;
+            if (!usuario || !d) return;
+            yoCierroPartido = true;
+            const batch = writeBatch(fbDb);
+            if (d.partido) {
+                const arch = datosArchivo(d);
+                batch.set(doc(collection(fbDb, "partidos")), arch);
+                // Aviso para los demás móviles (lo reciben por el documento de sanciones)
+                batch.set(refSanc(), { club: CLUB_SYNC, ultimoCierre: { nombre: miNombre, rival: arch.rival, ts: Date.now(), device: deviceId } }, { merge: true });
+            }
+            batch.delete(refPartido());
+            batch.commit().catch(errorNube);
+        },
+
+        async reservarJornada(esperada) {
+            if (!usuario) return { ok: false, msg: 'Inicia sesión para registrar la jornada.' };
+            try {
+                const res = await runTransaction(fbDb, async tx => {
+                    const s = await tx.get(refSanc());
+                    const actual = s.exists() ? (parseInt(s.data().jornada) || 1) : esperada;
+                    if (actual !== esperada) return { ok: false, actual };
+                    if (s.exists()) tx.update(refSanc(), { jornada: esperada + 1, cambiadoPor: miNombre, cambiadoDevice: deviceId, updatedAt: serverTimestamp() });
+                    else tx.set(refSanc(), { club: CLUB_SYNC, jornada: esperada + 1, jugadores: {}, rivales: '{}', createdAt: serverTimestamp() });
+                    return { ok: true };
+                });
+                if (!res.ok) {
+                    localStorage.setItem(LK('jornada'), res.actual);
+                    return { ok: false, msg: `ℹ️ Otro móvil ya registró esa jornada. Ahora estáis en la jornada ${res.actual}.` };
+                }
+                localStorage.setItem(LK('jornada'), esperada + 1);
+                return { ok: true };
+            } catch (e) {
+                return { ok: false, msg: '⚠️ Necesitas conexión para registrar la jornada jugada.\n' + e.message };
+            }
+        },
+
+        resetSanciones() {
+            if (!usuario) return;
+            if (remotoSanc) updateDoc(refSanc(), { jugadores: {}, cambiadoPor: miNombre, cambiadoDevice: deviceId, updatedAt: serverTimestamp() }).catch(errorNube);
+            else setDoc(refSanc(), { club: CLUB_SYNC, jugadores: {}, updatedAt: serverTimestamp() }, { merge: true }).catch(errorNube);
+        },
+
+        aplicarSancionesPendientes,
+
+        miNombre: () => miNombre,
+        esAdmin: () => soyAdmin,
+
+        async listarArchivados() {
+            const snap = await getDocs(query(collection(fbDb, "partidos"), where("club", "==", CLUB_SYNC)));
+            const out = [];
+            snap.forEach(ds => {
+                const x = ds.data();
+                if (x.estado === 'archivado' && x.partido) out.push(resumenArchivado(ds.id, x));
+            });
+            out.sort((a, b) => b.orden - a.orden);
+            return out;
+        },
+
+        async borrarArchivado(id) {
+            if (!soyAdmin) throw new Error('Solo el admin puede borrar partidos del histórico.');
+            await deleteDoc(doc(fbDb, "partidos", id));
+        }
+    };
+
+    // Datos que se guardan al archivar un partido
+    function datosArchivo(d) {
+        let p = {};
+        try { p = JSON.parse(d.partido) || {}; } catch (e) {}
+        const cfg = p.config || {};
+        return {
+            club: CLUB_SYNC,
+            estado: 'archivado',
+            rival: p.rival || cfg.rival || '',
+            fecha: cfg.fecha || '',
+            tipo: cfg.tipo || '',
+            golesL: p.golesL || 0,
+            golesV: p.golesV || 0,
+            partido: d.partido,
+            convocatoria: d.convocatoria || null,
+            cerradoAt: serverTimestamp(),
+            cerradoPor: usuario.email || '',
+            cerradoPorNombre: miNombre
+        };
+    }
+
+    // Resumen de un partido archivado para la lista del histórico
+    function resumenArchivado(id, x) {
+        let p = {};
+        try { p = JSON.parse(x.partido) || {}; } catch (e) {}
+        const cfg = p.config || {};
+        const rival = x.rival || p.rival || 'RIVAL';
+        const rol = p.rolGelves || 'L';
+        const local = rol === 'L' ? NOMBRE_EQUIPO : rival;
+        const visitante = rol === 'L' ? rival : NOMBRE_EQUIPO;
+        const cerrado = x.cerradoAt && typeof x.cerradoAt.toMillis === 'function' ? x.cerradoAt.toMillis()
+                      : (typeof x.cerradoAt === 'number' ? x.cerradoAt : 0);
+        const fechaCierre = cerrado ? new Date(cerrado).toISOString().slice(0, 10) : '';
+        const fecha = cfg.fecha || x.fecha || fechaCierre;
+        const fechaTexto = /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? fecha.split('-').reverse().join('/') : (fecha || 'Sin fecha');
+        return {
+            id, rival, partido: x.partido, fechaCierre, fechaTexto,
+            titulo: `${local} vs ${visitante}`,
+            resultado: `${p.golesL ?? x.golesL ?? 0} - ${p.golesV ?? x.golesV ?? 0}`,
+            tipo: cfg.tipo || x.tipo || '',
+            cerradoPor: x.cerradoPorNombre || x.cerradoPor || '',
+            orden: (Date.parse(fecha) || cerrado || 0)
+        };
+    }
+
+    // ===== ARRANQUE =====
     async function iniciarConUsuario(user) {
+        usuario = user;
         let club = CLUB_FALLBACK;
         try {
             const perfilSnap = await getDoc(doc(fbDb, "usuarios", user.uid));
-            if (perfilSnap.exists() && perfilSnap.data().club) club = perfilSnap.data().club;
+            if (perfilSnap.exists()) {
+                const p = perfilSnap.data();
+                soyAdmin = p.admin === true;
+                miNombre = soyAdmin ? 'Admin' : (p.nombre || '');
+                // El admin no tiene club propio: usa el de este archivo
+                if (p.club && !soyAdmin && p.club !== 'Admin') club = p.club;
+            }
         } catch(e) {}
+        if (!miNombre) miNombre = (user.email || '').split('@')[0];
         await cargarPlantillaDesdeFirestore(club);
+        // Escuchar cambios en la nube (después de cargar la plantilla, que da los ids)
+        if (unsubPartido) unsubPartido();
+        if (unsubSanc) unsubSanc();
+        remotoPartido = undefined;
+        remotoSanc = undefined;
+        sancPendiente = null;
+        unsubPartido = onSnapshot(refPartido(), { includeMetadataChanges: true }, onPartido,
+            e => aviso('⚠️ Sin acceso al partido en la nube: ' + e.message, true));
+        unsubSanc = onSnapshot(refSanc(), { includeMetadataChanges: true }, onSanciones,
+            e => aviso('⚠️ Sin acceso a las sanciones en la nube: ' + e.message, true));
     }
 
     onAuthStateChanged(fbAuth, (user) => {
         document.getElementById('loginOverlay').style.display = user ? 'none' : 'flex';
         if (user) iniciarConUsuario(user);
+        else {
+            usuario = null;
+            if (unsubPartido) unsubPartido();
+            if (unsubSanc) unsubSanc();
+            unsubPartido = unsubSanc = null;
+            document.body.classList.remove('solo-lectura');
+        }
     });
 
     document.getElementById('loginSubmitPartido').addEventListener('click', async () => {
