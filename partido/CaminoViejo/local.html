@@ -1881,6 +1881,17 @@ function fileToBase64(file) {
     });
 }
 
+// Extrae el JSON de la respuesta de la IA aunque venga con texto o ``` alrededor
+function extraerJSON(texto) {
+    const t = String(texto || '').replace(/```json|```/g, '').trim();
+    try { return JSON.parse(t); } catch (e) {}
+    const ini = t.indexOf('{'), fin = t.lastIndexOf('}');
+    if (ini !== -1 && fin > ini) {
+        try { return JSON.parse(t.slice(ini, fin + 1)); } catch (e) {}
+    }
+    throw new Error('La IA no devolvió datos válidos. Respuesta: ' + t.slice(0, 200));
+}
+
 async function llamarClaude(base64, mediaType, systemPrompt, userPrompt) {
     const apiKey = getApiKey();
     if (!apiKey) {
@@ -1904,7 +1915,7 @@ async function llamarClaude(base64, mediaType, systemPrompt, userPrompt) {
             body: JSON.stringify({
                 model: modelo,
                 max_tokens: 4000,
-                system: systemPrompt,
+                system: systemPrompt + ' Tu respuesta debe empezar por { y terminar por }, sin ningún texto antes ni después.',
                 messages: [{ role: 'user', content: [
                     { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
                     { type: 'text', text: userPrompt }
@@ -1971,7 +1982,7 @@ Staff ${NOMBRE_EQUIPO}: ${staff}
 Devuelve JSON exacto:
 {"sanciones":[{"nombre":"nombre completo EXACTAMENTE como aparece escrito en la captura, sin adaptarlo","tipo":"amarilla|acumulacion|suspension","partidos":número}]}`;
         const resp = await llamarClaude(base64, mediaType, system, user);
-        ocrRfafData = JSON.parse(resp.replace(/```json|```/g,'').trim());
+        ocrRfafData = extraerJSON(resp);
         const lista = document.getElementById('ocrRfafLista');
         lista.innerHTML = '';
         if (ocrRfafData.sanciones?.length > 0) {
@@ -2154,7 +2165,7 @@ IMPORTANTE: Devuelve el nombre EXACTAMENTE como aparece escrito en el acta, sin 
 Devuelve JSON exacto:
 {"tarjetas":[{"nombre":"nombre exacto tal como aparece en el acta","dorsal":número_o_null,"tipo":"AMARILLA|ROJA","minuto":número_o_null}],"no_identificados":["nombre tal como aparece en el acta"]}`;
         const resp = await llamarClaude(base64, mediaType, system, user);
-        ocrActaData = JSON.parse(resp.replace(/```json|```/g,'').trim());
+        ocrActaData = extraerJSON(resp);
         const lista = document.getElementById('ocrActaLista');
         lista.innerHTML = '';
         if (ocrActaData.tarjetas?.length > 0) {
@@ -2449,8 +2460,7 @@ Si no hay sancionados devuelve jornadas como array vacío.`;
 
         let datos;
         try {
-            const limpio = resp.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
-            datos = JSON.parse(limpio);
+            datos = extraerJSON(resp);
         } catch(parseErr) {
             alert('Error parseando respuesta:\n' + resp.substring(0, 300));
             return;
