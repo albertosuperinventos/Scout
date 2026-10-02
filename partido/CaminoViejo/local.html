@@ -2022,7 +2022,7 @@ window.aplicarSancionesRfaf = async function() {
     const jCaptura = parseInt(v);
     if (!jCaptura || jCaptura < 1) { alert('Escribe un número de jornada válido.'); return; }
     if (jCaptura > actual) {
-        alert(`La próxima jornada por jugar es la ${actual}, así que no puede haber captura de la jornada ${jCaptura}.\n\nRevisa el número o corrige la jornada tocando "Jornada ${actual}".`);
+        alert(`La próxima jornada por jugar es la ${actual}, así que no puede haber captura de la jornada ${jCaptura}.\n\nRevisa el número o corrige la jornada tocando "Próxima jornada: ${actual}".`);
         return;
     }
     if (jCaptura === actual) {
@@ -2312,7 +2312,7 @@ window.abrirOcrRivales = function() {
     document.getElementById('ocrRivalesLabel').innerText = '📁 Pulsa para seleccionar imagen';
     document.getElementById('ocrRivalesInput').value = '';
     const jornadaActual = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '1');
-    document.getElementById('inputJornadaRivales').value = jornadaActual;
+    document.getElementById('inputJornadaRivales').value = Math.max(1, jornadaActual - 1);   // la captura es de la última jugada
     renderHistorialRivales();
     renderSancionadosPendientes();
     document.getElementById('modalOcrRivales').style.display = 'flex';
@@ -2363,20 +2363,21 @@ window.renderSancionadosPendientes = function() {
     // Calcular pendientes para la próxima jornada
     const pendientes = Object.values(mapa).filter(s => {
         if (!s.jornadaRegistro) return false; // sin jornada no se puede calcular
-        const cumplidos = jornadaActual - s.jornadaRegistro;
+        // jornadaActual = próxima por jugar; las jugadas desde la captura son (jornadaActual - 1) - jornadaRegistro
+        const cumplidos = (jornadaActual - 1) - s.jornadaRegistro;
         s.pendientes = s.partidos - cumplidos;
         return s.pendientes > 0;
     }).sort((a, b) => b.pendientes - a.pendientes);
 
     if (pendientes.length === 0) {
-        cont.innerHTML = `<p style="color:#2ecc71; font-size:13px; text-align:center;">✅ No hay sancionados pendientes para la jornada ${jornadaActual + 1}</p>`;
+        cont.innerHTML = `<p style="color:#2ecc71; font-size:13px; text-align:center;">✅ No hay sancionados pendientes para la jornada ${jornadaActual}</p>`;
         return;
     }
 
     // Cabecera
     const cab = document.createElement('div');
     cab.style.cssText = 'color:#888; font-size:11px; margin-bottom:8px; text-align:center;';
-    cab.innerText = `Jornada actual: ${jornadaActual} → Sancionados para J${jornadaActual + 1}`;
+    cab.innerText = `Sancionados para la próxima jornada (J${jornadaActual})`;
     cont.appendChild(cab);
 
     // Agrupar por equipo
@@ -2977,7 +2978,7 @@ window.cargarPantallaSanciones = function() {
     document.getElementById('avisoPendiente').style.display = (esJueves && !avisoVisto) ? 'block' : 'none';
     const jornada = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '1');
     const jorEl = document.getElementById('jornadaLabel');
-    if(jorEl) jorEl.innerText = 'Jornada ' + jornada;
+    if(jorEl) jorEl.innerText = 'Próxima jornada: ' + jornada;
 
     let html = '';
     const EXCLUIR_SANCIONES = ['Abraham'];
@@ -3177,7 +3178,7 @@ window.jornadaJugada = async function(sinConfirmar) {
 
     const btn = document.querySelector('#pSanciones button[onclick="jornadaJugada()"]');
     if(btn) {
-        btn.innerText = '✅ JORNADA ' + jornada + ' REGISTRADA';
+        btn.innerText = '✅ JORNADA ' + (jornada - 1) + ' REGISTRADA';
         btn.style.background = '#2ecc71';
         setTimeout(() => { btn.innerText = '✅ JORNADA JUGADA'; btn.style.background = '#27ae60'; }, 2000);
     }
@@ -3266,7 +3267,7 @@ window.borrarArchivado = async function(i) {
 
 window.editarJornada = function() {
     const actual = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '1');
-    const v = prompt('Jornada actual:', actual);
+    const v = prompt('Próxima jornada por jugar:', actual);
     if (v === null) return;
     const n = parseInt(v);
     if (!n || n < 1) { alert('Escribe un número de jornada válido.'); return; }
@@ -3850,7 +3851,7 @@ window.ocultarAvisoSanciones = function() {
         if (d.jornada && String(d.jornada) !== localStorage.getItem(LK('jornada'))) {
             localStorage.setItem(LK('jornada'), d.jornada);
             const lbl = document.getElementById('jornadaLabel');
-            if (lbl) lbl.innerText = 'Jornada ' + d.jornada;
+            if (lbl) lbl.innerText = 'Próxima jornada: ' + d.jornada;
         }
         // Rivales sancionados
         if (typeof d.rivales === 'string' && d.rivales !== localStorage.getItem(LK('rivales'))) {
