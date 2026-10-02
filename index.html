@@ -503,6 +503,12 @@
             <label>🔢 Dorsal</label>
             <input type="number" id="playerDorsal" placeholder="Ej: 7" min="0" max="99">
         </div>
+        <!-- Nombre oficial en la RFAF (para leer capturas de sanciones y actas en Partido) -->
+        <div class="campo">
+            <label>🪪 Nombre en RFAF</label>
+            <input type="text" id="playerNombreRFAF" placeholder="Ej: Aguilar Santaella, Pablo" autocomplete="off">
+            <div style="font-size:.72rem;color:var(--muted);margin-top:4px;">Escríbelo tal como aparece en rfaf.es</div>
+        </div>
         <!-- Marca de "posible" (captura rápida) -->
         <div class="campo" id="quickFlagWrap" style="display:none;background:#FFF9E6;border:1.5px solid #F5B800;border-radius:14px;padding:10px 14px;">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;color:#8A6800;">
@@ -1362,6 +1368,7 @@
             document.getElementById("playerTeam").value = p.team || "";
             document.getElementById("playerPhone").value = p.phone || "";
             document.getElementById("playerDorsal").value = p.dorsal || "";
+            document.getElementById("playerNombreRFAF").value = p.nombreRFAF || "";
             document.getElementById("playerNumCap").value = p.numCaptaciones || "";
             document.getElementById("playerTactica").value = p.tactica || "";
             document.getElementById("playerTecnica").value = p.tecnica || "";
@@ -1390,6 +1397,7 @@
             document.getElementById("playerCategory").value = "Cadete"; document.getElementById("playerTeam").value = "";
             document.getElementById("playerPhone").value = ""; document.getElementById("playerNumCap").value = "";
             document.getElementById("playerDorsal").value = "";
+            document.getElementById("playerNombreRFAF").value = "";
             document.getElementById("quickFlagWrap").style.display = "none";
             document.getElementById("playerEsPosible").checked = false;
             document.getElementById("playerTactica").value = ""; document.getElementById("playerTecnica").value = ""; document.getElementById("playerFisico").value = "";
@@ -1503,6 +1511,7 @@
             team: document.getElementById("playerTeam").value.trim(),
             phone: document.getElementById("playerPhone").value.trim(),
             dorsal: document.getElementById("playerDorsal").value.trim(),
+            nombreRFAF: document.getElementById("playerNombreRFAF").value.trim(),
             tipo: document.getElementById("playerEsPosible").checked ? "posible" : "",
             numCaptaciones: document.getElementById("playerNumCap").value,
             positions, foot: document.querySelector('input[name="foot"]:checked')?.value,
