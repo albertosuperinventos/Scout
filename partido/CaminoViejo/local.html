@@ -800,8 +800,54 @@ function actualizarReloj() {
         `${minutos.toString().padStart(2,'0')}:${segundos.toString().padStart(2,'0')}`;
 }
 
-window.siguienteFase = function() {
-    const minActual = obtenerMinutoActual();
+// ===== FIN DE PARTE: modal para corregir el minuto (por si se olvidó parar el reloj) =====
+function minimoFinParte() {
+    // No se puede cerrar la parte antes del último evento de esa parte ni antes de que entrara alguien
+    let m = fase === 3 ? 45 : 0;
+    eventos.forEach(e => {
+        const deEstaParte = e.parte !== undefined ? e.parte === fase : (fase === 1 || e.min >= 45);
+        if (deEstaParte && e.min > m) m = e.min;
+    });
+    convocados.forEach(j => { if (j.activo && j.entradaActual !== null && j.entradaActual > m) m = j.entradaActual; });
+    return m;
+}
+
+function pedirMinutoFinParte() {
+    const sugerido = obtenerMinutoActual();
+    const minimo = minimoFinParte();
+    const titulo = fase === 1 ? '⏹️ FIN 1ª PARTE' : '⏹️ FIN DEL PARTIDO';
+    const pregunta = fase === 1 ? '¿Cuántos minutos se han jugado en la 1ª parte?' : '¿En qué minuto ha terminado el partido?';
+    const modal = crearModal(titulo);
+    modal.innerHTML += `
+        <p style="text-align:center; color:#5B6573; margin:10px 0 4px;">${pregunta}</p>
+        <p style="text-align:center; color:#64748B; font-size:13px; margin:0 0 10px;">El reloj marca ${sugerido}'. Cámbialo si se olvidó pararlo.</p>
+        <input type="number" id="minFinParte" value="${Math.max(sugerido, minimo)}" min="${minimo}" max="150" inputmode="numeric"
+               style="text-align:center; font-size:32px; font-weight:bold; color:#9A6B00;">
+        <p id="minFinParteError" style="text-align:center; color:#e74c3c; font-size:13px; min-height:18px; margin:4px 0;"></p>
+        <div class="btn-group">
+            <button class="btn btn-neutral" style="flex:1;" onclick="cerrarModal()">CANCELAR</button>
+            <button class="btn btn-exito" style="flex:2;" onclick="confirmarFinParte()">✅ CONFIRMAR</button>
+        </div>`;
+}
+
+window.confirmarFinParte = function() {
+    if (fase !== 1 && fase !== 3) { cerrarModal(); return; }
+    const v = parseInt(document.getElementById('minFinParte')?.value);
+    const minimo = minimoFinParte();
+    const err = document.getElementById('minFinParteError');
+    if (isNaN(v) || v > 150) { err.innerText = 'Escribe un minuto válido.'; return; }
+    if (v < minimo) {
+        err.innerText = `No puede ser antes del ${minimo}': hay un cambio o evento apuntado en ese minuto. Edítalo o bórralo primero.`;
+        return;
+    }
+    cerrarModal();
+    siguienteFase(v);
+};
+
+window.siguienteFase = function(minConfirmado) {
+    // Al cerrar una parte se pide primero el minuto real
+    if ((fase === 1 || fase === 3) && typeof minConfirmado !== 'number') { pedirMinutoFinParte(); return; }
+    const minActual = typeof minConfirmado === 'number' ? minConfirmado : obtenerMinutoActual();
     
     if(fase === 0) {
         fase = 1;
@@ -819,12 +865,13 @@ window.siguienteFase = function() {
                     fin: minActual,
                     mins: minutosJugados
                 });
+                j.entradaActual = null;   // en el descanso no corre su tiempo; al empezar la 2ª parte entra en el 45
             }
         });
         
         fase = 2;
         clearInterval(intervaloReloj);
-        duracion1T = "1T: " + document.getElementById('reloj').innerText;
+        duracion1T = "1T: " + minActual.toString().padStart(2,'0') + ":00";
         document.getElementById('infoExtra').innerText = duracion1T;
         actualizarReloj();
     } 
@@ -849,7 +896,8 @@ window.siguienteFase = function() {
                 j.intervalos.push({
                     inicio: j.entradaActual,
                     fin: minutoFinal,
-                    mins: minutosJugados
+                    mins: minutosJugados,
+                    cierreFinal: true   // tramo cerrado por "Finalizar partido" (se deshace si se reabre)
                 });
                 j.entradaActual = null;
                 j.activo = false;
@@ -901,7 +949,7 @@ window.toggleCambios = function() {
 function registrarEvento(tipo, equipo, jugador, extra = "", minManual = null) {
     let min = minManual !== null ? minManual : obtenerMinutoActual();
     let id = Date.now() + Math.random();
-    eventos.push({ id, min, tipo, equipo, jugador, extra });
+    eventos.push({ id, min, tipo, equipo, jugador, extra, parte: fase });
     actualizarMarcador();
     actualizarTimeline();
     guardarAuto();
@@ -1314,17 +1362,28 @@ window.mostrarCambio = function() {
                 btnSuplente.onclick = () => {
                     let minuto = obtenerMinutoActual();
                     
-                    let minutosJugados = minuto - (j.entradaActual || 0);
-                    j.intervalos.push({
-                        inicio: j.entradaActual,
-                        fin: minuto,
-                        mins: minutosJugados
-                    });
+                    if (fase === 1 || fase === 3) {
+                        // Con el balón en juego: se cierra el tramo del que sale
+                        let minutosJugados = minuto - (j.entradaActual || 0);
+                        j.intervalos.push({
+                            inicio: j.entradaActual,
+                            fin: minuto,
+                            mins: minutosJugados
+                        });
+                        suplente.entradaActual = minuto;
+                    } else if (fase === 0) {
+                        // Antes de empezar: cambio en el once, el que entra pasa a titular
+                        suplente.titular = true;
+                        j.titular = false;
+                        suplente.entradaActual = 0;
+                    } else {
+                        // Descanso: el que sale ya tiene cerrada su 1ª parte; el que entra empieza en el 45
+                        suplente.entradaActual = null;
+                    }
                     j.activo = false;
                     j.entradaActual = null;
                     
                     suplente.activo = true;
-                    suplente.entradaActual = minuto;
                     
                     enCampo = convocados.filter(x => x.activo);
                     
@@ -1442,15 +1501,18 @@ window.volverAlPartido = function() {
         // mirando quién tenía entradaActual != null justo antes del final
         // Lo más fiable: marcar como activos los que jugaron en 2ª parte
         // y no fueron sustituidos (su último intervalo termina en minutoFinal)
+        // Los que estaban en el campo al finalizar tienen como último tramo el de cierre:
+        // se quita ese tramo y siguen jugando desde su minuto de entrada, sin crear tramos nuevos.
+        const marcados = convocados.some(j => j.intervalos.some(x => x.cierreFinal));
         enCampo = convocados.filter(j => {
             if(j.intervalos.length === 0) return false;
             const ultimo = j.intervalos[j.intervalos.length - 1];
-            return ultimo.fin === minutoFinal;
+            return marcados ? !!ultimo.cierreFinal : ultimo.fin === minutoFinal;
         });
-        // Reactivarlos para que aparezcan en los controles
         enCampo.forEach(j => {
+            const ultimo = j.intervalos.pop();
             j.activo = true;
-            j.entradaActual = minutoFinal;
+            j.entradaActual = ultimo.inicio;
         });
         if(intervaloReloj) clearInterval(intervaloReloj);
         intervaloReloj = setInterval(actualizarReloj, 500);
@@ -2779,6 +2841,14 @@ window.exportarExcel = async function() {
             periodos, totalMins
         ]);
         row.height = 18;
+        // Min.Total suma los "(n min)" de Periodos: si se edita un tramo, el total se recalcula
+        const rn = row.number;
+        row.getCell(4).value = {
+            // (compatible con cualquier Excel, LibreOffice y Google Sheets: busca cada "(" y suma el número que sigue)
+            formula: `SUM(IFERROR((MID(I${rn},ROW(INDIRECT("1:300")),1)="(")*MID(I${rn},ROW(INDIRECT("1:300"))+1,FIND(" ",I${rn}&" ",ROW(INDIRECT("1:300")))-ROW(INDIRECT("1:300"))-1),0))`,
+            result: totalMins, shareType: 'array', ref: `D${rn}`
+        };
+        row.getCell(10).value = { formula: `D${rn}`, result: totalMins };
 
         const rolBg = rolJug === 'Titular' ? 'FF1ABC9C' : rolJug === 'Suplente' ? 'FFE67E22' : bg;
         const bgs = [bg, bg, rolBg,bg,
