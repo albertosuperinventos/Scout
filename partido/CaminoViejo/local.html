@@ -2537,13 +2537,25 @@ Si no hay sancionados devuelve jornadas como array vacío.`;
         const jornadas = datos.jornadas || [{ jornada: jornada, equipos: datos.equipos || [] }];
 
         jornadas.forEach(j => {
-            const jornadaKey = j.jornada || ('sin-jornada-' + Date.now());
-            historial[jornadaKey] = {
-                jornada: j.jornada,
+            // Si la IA no ve la jornada en la captura (p.ej. un trozo de la página), se usa la escrita arriba
+            const num = parseInt(j.jornada) || jornada;
+            const previo = historial[num] && Array.isArray(historial[num].equipos) ? historial[num].equipos : [];
+            // Varias capturas de la misma jornada se suman (no se sustituyen); los repetidos se quitan
+            const equipos = previo.map(eq => ({ equipo: eq.equipo, sancionados: [...(eq.sancionados || [])] }));
+            (j.equipos || []).forEach(eq => {
+                let destino = equipos.find(x => x.equipo === eq.equipo);
+                if (!destino) { destino = { equipo: eq.equipo, sancionados: [] }; equipos.push(destino); }
+                (eq.sancionados || []).forEach(sx => {
+                    const i = destino.sancionados.findIndex(x => x.jugador === sx.jugador);
+                    if (i === -1) destino.sancionados.push(sx); else destino.sancionados[i] = sx;
+                });
+            });
+            historial[num] = {
+                jornada: num,
                 fecha: new Date().toLocaleDateString('es-ES'),
-                equipos: j.equipos || []
+                equipos
             };
-            jornadasGuardadas.push(j.jornada || '?');
+            if (!jornadasGuardadas.includes(num)) jornadasGuardadas.push(num);
         });
 
         guardarLocalSync('rivales', JSON.stringify(historial));
