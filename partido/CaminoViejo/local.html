@@ -65,6 +65,15 @@
             flex-direction: column;
             gap: 10px;
         }
+        /* Convocatoria: fila entera táctil; los no convocados en gris y tachados */
+        #listaConvocatoria tr.fila-conv { cursor: pointer; }
+        #listaConvocatoria tr.fila-conv.fuera td { opacity: 0.45; }
+        #listaConvocatoria tr.fila-conv.fuera .nombre-input { text-decoration: line-through; }
+        .barra-voz { display:flex; align-items:center; gap:8px; margin:0 0 10px; flex-wrap:wrap; }
+        .barra-voz .contador { flex:1; font-weight:bold; color:#1F6AA5; }
+        .barra-voz button { border:none; border-radius:20px; padding:8px 12px; font-weight:bold; font-size:13px; cursor:pointer; color:#fff; }
+        .once-item .dorsal-once { width:56px; min-width:56px; margin:0 12px 0 0; padding:6px; text-align:center; font-weight:bold; color:#9A6B00; border-radius:12px; }
+        .once-item { cursor: pointer; }
         .once-item {
             display: flex;
             align-items: center;
@@ -185,7 +194,13 @@
 
 <!-- Pantalla Convocatoria -->
 <div id="pConvocatoria" class="pantalla">
-    <h3>📋 CONVOCATORIA (edita dorsales y nombres)</h3>
+    <h3>📋 CONVOCATORIA</h3>
+    <div class="barra-voz">
+        <span class="contador" id="contadorConv">Convocados: 0</span>
+        <button style="background:#2ecc71;" onclick="convocarTodos()">✅ Todos</button>
+        <button style="background:#8e44ad;" onclick="dictarListaVoz('conv')">🎤 VOZ</button>
+    </div>
+    <p style="color:#64748B; font-size:12px; margin:-4px 0 8px;">Toca un jugador para quitarlo o volver a ponerlo. Los dorsales se ponen en el 11 inicial.</p>
     <div id="listaConvocatoria" style="flex: 1; overflow-y: auto; margin-bottom: 15px;"></div>
     <button class="btn" style="background:#25D366;" onclick="compartirConvocatoriaWhatsApp()">📲 ENVIAR CONVOCATORIA POR WHATSAPP</button>
     <button class="btn btn-primario" onclick="irAOnce()">➡️ SELECCIONAR 11</button>
@@ -199,6 +214,12 @@
         <span id="contadorNum" style="font-size:22px; line-height:1;">0</span>
         <span style="font-size:9px; opacity:0.85;">/ 11</span>
     </div>
+    <div class="barra-voz">
+        <button style="background:#8e44ad;" onclick="dictarListaVoz('once')">🎤 TITULARES</button>
+        <button style="background:#6c3483;" onclick="dictarListaVoz('dorsales')">🎤 DORSALES</button>
+    </div>
+    <p style="color:#64748B; font-size:12px; margin:-4px 0 6px;">Toca un jugador para marcarlo titular. Escribe aquí los dorsales del partido.</p>
+    <p id="avisoDorsales" style="color:#e74c3c; font-size:13px; margin:0 0 6px; display:none;"></p>
     <div id="listaOnce" class="once-container" style="flex: 1; overflow-y: auto; margin-bottom: 15px;"></div>
     <button class="btn btn-exito" id="btnIniciar" onclick="iniciarPartido()" disabled>⚽ INICIAR PARTIDO</button>
 </div>
@@ -557,9 +578,8 @@ window.irAConvocatoria = function(datosGuardados) {
         const dorsal = g ? g.num : j.d;
         const nombre = g ? g.nom : j.n;
         html += `
-            <tr>
-                <td style="width: 50px;"><input type="checkbox" id="chk_${i}" ${checked ? 'checked' : ''} style="transform: scale(1.3);" onchange="guardarConvocatoriaAuto()"></td>
-                <td style="width: 80px;"><input type="number" id="num_${i}" value="${escH(dorsal)}" class="dorsal-input" onchange="guardarConvocatoriaAuto()"></td>
+            <tr class="fila-conv" onclick="tocarFilaConv(event, 'chk_${i}')">
+                <td style="width: 50px;"><input type="checkbox" id="chk_${i}" ${checked ? 'checked' : ''} style="transform: scale(1.3);" onchange="cambioConvocatoria()"><input type="hidden" id="num_${i}" value="${escH(dorsal)}"></td>
                 <td><input type="text" id="nom_${i}" value="${escH(nombre)}" class="nombre-input" onchange="guardarConvocatoriaAuto()">${marcaSancionConvocatoria(j.n)}</td>
             </tr>
         `;
@@ -573,9 +593,8 @@ window.irAConvocatoria = function(datosGuardados) {
         const dorsal = e ? e.num : '';
         const nombre = e ? e.nom : '';
         html += `
-            <tr>
-                <td style="width: 50px;"><input type="checkbox" id="chkx_${i}" ${checked ? 'checked' : ''} style="transform: scale(1.3);" onchange="guardarConvocatoriaAuto()"></td>
-                <td style="width: 80px;"><input type="number" id="numx_${i}" value="${escH(dorsal)}" class="dorsal-input" onchange="guardarConvocatoriaAuto()"></td>
+            <tr class="fila-conv" onclick="tocarFilaConv(event, 'chkx_${i}')">
+                <td style="width: 50px;"><input type="checkbox" id="chkx_${i}" ${checked ? 'checked' : ''} style="transform: scale(1.3);" onchange="cambioConvocatoria()"><input type="hidden" id="numx_${i}" value="${escH(dorsal)}"></td>
                 <td><input type="text" id="nomx_${i}" value="${escH(nombre)}" placeholder="Nombre Cadete B" class="nombre-input" onchange="guardarConvocatoriaAuto()"></td>
             </tr>
         `;
@@ -583,7 +602,36 @@ window.irAConvocatoria = function(datosGuardados) {
     html += '</table>';
     document.getElementById('listaConvocatoria').innerHTML = html;
     mostrarPantalla('pConvocatoria');
+    pintarConvocatoria();
     guardarConvocatoriaAuto();
+};
+
+// Gris/tachado para los no convocados y contador
+function pintarConvocatoria() {
+    let n = 0;
+    document.querySelectorAll('#listaConvocatoria tr.fila-conv').forEach(tr => {
+        const chk = tr.querySelector('input[type=checkbox]');
+        const nom = tr.querySelector('.nombre-input');
+        const vacio = chk.id.startsWith('chkx_') && !(nom && nom.value.trim());
+        tr.classList.toggle('fuera', !chk.checked);
+        if (chk.checked && !vacio) n++;
+    });
+    const c = document.getElementById('contadorConv');
+    if (c) c.textContent = `Convocados: ${n}`;
+}
+window.cambioConvocatoria = function() { pintarConvocatoria(); guardarConvocatoriaAuto(); };
+// Tocar en cualquier parte de la fila (menos al escribir el nombre) marca/desmarca
+window.tocarFilaConv = function(ev, idChk) {
+    const t = ev.target;
+    if (t.tagName === 'INPUT' && (t.type === 'text' || t.type === 'checkbox')) return;
+    const chk = document.getElementById(idChk);
+    if (!chk) return;
+    chk.checked = !chk.checked;
+    cambioConvocatoria();
+};
+window.convocarTodos = function() {
+    PLANTILLA_BASE.forEach((j, i) => { const c = document.getElementById(`chk_${i}`); if (c) c.checked = true; });
+    cambioConvocatoria();
 };
 
 // ===== AUTOGUARDADO CONVOCATORIA (día antes del partido) =====
@@ -648,6 +696,13 @@ window.guardarOnceAuto = function() {
     const existente = JSON.parse(localStorage.getItem(clave) || 'null') || {};
     existente.pantalla = 'pOnce';
     existente.once = convocados.map((j, i) => document.getElementById(`once_${i}`)?.checked ?? false);
+    // Dorsales puestos en el 11 inicial
+    convocados.forEach(j => {
+        const m = (j.srcNum || '').match(/^num(x?)_(\d+)$/);
+        if (!m) return;
+        const lista = m[1] ? existente.extras : existente.jugadores;
+        if (lista && lista[+m[2]]) lista[+m[2]].num = j.num;
+    });
     guardarLocalSync('convocatoria', JSON.stringify(existente));
 };
 
@@ -714,6 +769,7 @@ window.irAOnce = function() {
             let nombre = document.getElementById(`nom_${i}`)?.value || PLANTILLA_BASE[i].n;
             
             convocados.push({
+                srcNum: `num_${i}`,
                 num: dorsal,
                 name: nombre,
                 goles: 0,
@@ -731,6 +787,7 @@ window.irAOnce = function() {
         const nombreExtra = document.getElementById(`nomx_${i}`)?.value.trim();
         if(document.getElementById(`chkx_${i}`)?.checked && nombreExtra) {
             convocados.push({
+                srcNum: `numx_${i}`,
                 num: document.getElementById(`numx_${i}`)?.value || '',
                 name: nombreExtra,
                 goles: 0,
@@ -748,9 +805,9 @@ window.irAOnce = function() {
     let html = '';
     convocados.forEach((j, i) => {
         html += `
-            <div class="once-item">
+            <div class="once-item" onclick="tocarFilaOnce(event, ${i})">
                 <input type="checkbox" id="once_${i}" onchange="actualizarContadorOnce(); guardarOnceAuto();">
-                <span class="dorsal">${escH(j.num)}</span>
+                <input type="number" inputmode="numeric" id="dor_${i}" class="dorsal-once" value="${escH(String(j.num) === '0' ? '' : j.num)}" placeholder="nº" onchange="cambiarDorsalOnce(${i}, this.value)">
                 <span>${escH(j.name)}</span>
             </div>
         `;
@@ -758,7 +815,40 @@ window.irAOnce = function() {
     document.getElementById('listaOnce').innerHTML = html;
     mostrarPantalla('pOnce');
     actualizarContadorOnce();
+    revisarDorsales();
 };
+
+window.tocarFilaOnce = function(ev, i) {
+    const t = ev.target;
+    if (t.tagName === 'INPUT') return;
+    const c = document.getElementById(`once_${i}`);
+    if (!c) return;
+    c.checked = !c.checked;
+    actualizarContadorOnce();
+    guardarOnceAuto();
+};
+// El dorsal del 11 inicial es el del partido: se guarda también en la convocatoria
+window.cambiarDorsalOnce = function(i, v) {
+    const j = convocados[i];
+    if (!j) return;
+    j.num = String(v || '').trim();
+    const src = j.srcNum && document.getElementById(j.srcNum);
+    if (src) src.value = j.num;
+    revisarDorsales();
+    guardarOnceAuto();
+};
+function revisarDorsales() {
+    const vistos = {}, rep = [];
+    convocados.forEach(j => {
+        const d = String(j.num || '').trim();
+        if (!d || d === '0') return;
+        if (vistos[d]) rep.push(`${d} (${vistos[d]} y ${j.name})`); else vistos[d] = j.name;
+    });
+    const el = document.getElementById('avisoDorsales');
+    if (!el) return;
+    el.style.display = rep.length ? 'block' : 'none';
+    el.textContent = rep.length ? '⚠️ Dorsal repetido: ' + rep.join(' · ') : '';
+}
 
 window.actualizarContadorOnce = function() {
     let count = 0;
@@ -1647,6 +1737,175 @@ function camposJugadorVoz(a) {
     if (a.tipo === 'fuerajuego' && !a.favor) return [['jugador', '👤 Jugador (opcional)', enCampo, true]];
     return [];
 }
+
+// ===== VOZ EN CONVOCATORIA Y 11 INICIAL =====
+const VOZ_RELLENO = ['y', 'e', 'a', 'al', 'el', 'la', 'los', 'las', 'con', 'quita', 'quitar', 'quitame', 'fuera', 'convoca', 'convocar', 'convocados',
+    'titulares', 'titular', 'once', 'dorsal', 'dorsales', 'numero', 'lleva', 'pon', 'ponle', 'tambien', 'mas', 'coma',
+    'anade', 'anadir', 'anademe', 'mete', 'meter', 'metes', 'agrega', 'agregar', 'saca', 'sacar', 'tambien', 'solo', 'son', 'van', 'juegan', 'juega', 'el', 'del', 'de', 'que'];
+const VOZ_NUMEROS = { uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12, trece: 13,
+    catorce: 14, quince: 15, dieciseis: 16, diecisiete: 17, dieciocho: 18, diecinueve: 19, veinte: 20, veintiuno: 21, veintidos: 22, veintitres: 23 };
+
+// Candidatos de cada pantalla: { key, name, rfaf, num }
+function candidatosVoz(modo) {
+    if (modo === 'conv') {
+        const out = PLANTILLA_BASE.map((j, i) => ({ key: `chk_${i}`, name: document.getElementById(`nom_${i}`)?.value || j.n, rfaf: j.rfaf || '' }));
+        for (let i = 0; i < EXTRA_CADETE_B; i++) {
+            const n = document.getElementById(`nomx_${i}`)?.value.trim();
+            if (n) out.push({ key: `chkx_${i}`, name: n, rfaf: '' });
+        }
+        return out;
+    }
+    return convocados.map((j, i) => ({ key: i, name: j.name, rfaf: rfafDe(j.name), num: String(j.num || '') }));
+}
+
+// Saca de la frase la lista de jugadores (y dorsales). Devuelve [{ c, opciones, texto, num }]
+function extraerListaVoz(texto, cands, modo) {
+    const tok = normalizarNombre(texto).split(' ').filter(Boolean).map(w => VOZ_NUMEROS[w] !== undefined && !(modo === 'once' && w === 'once') ? String(VOZ_NUMEROS[w]) : w);
+    const palabras = c => [...new Set(tokensNombre(c.name).concat(tokensNombre(c.rfaf)))];
+    const casa = (w, ps) => ps.includes(w) || (w.length >= 4 && ps.some(x => x.length >= 4 && distanciaPal(w, x) <= 1));
+    const out = [];
+    let i = 0;
+    while (i < tok.length) {
+        const w = tok[i];
+        if (/^\d{1,2}$/.test(w)) {
+            if (modo === 'dorsales' && out.length && out[out.length - 1].num === undefined) out[out.length - 1].num = w;
+            else if (modo === 'once') {
+                const c = cands.filter(x => x.num && x.num !== '0' && x.num === w);
+                out.push({ c: c.length === 1 ? c[0] : null, opciones: c.length > 1 ? c : cands, texto: 'nº ' + w });
+            }
+            i++; continue;
+        }
+        if (VOZ_RELLENO.includes(w) || w.length < 2) { i++; continue; }
+        let hecho = false;
+        for (let len = 3; len >= 1 && !hecho; len--) {
+            const span = tok.slice(i, i + len);
+            if (span.length < len || span.some(x => /^\d+$/.test(x) || VOZ_RELLENO.includes(x))) continue;
+            const m = cands.filter(c => span.every(x => casa(x, palabras(c))));
+            if (m.length === 1 || (m.length > 1 && len === 1)) {
+                out.push({ c: m.length === 1 ? m[0] : null, opciones: m.length > 1 ? m : cands, texto: span.join(' ') });
+                i += len; hecho = true;
+            }
+        }
+        if (!hecho) { if (w.length >= 3) out.push({ c: null, opciones: cands, texto: w }); i++; }
+    }
+    // Sin repetidos
+    const vistos = new Set();
+    return out.filter(x => !x.c || (vistos.has(x.c.key) ? false : (vistos.add(x.c.key), true)));
+}
+
+function escucharVoz(titulo, ayuda, alTexto) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('⚠️ Este navegador no permite dictar. Usa Chrome en el móvil.'); return; }
+    const rec = new SR();
+    rec.lang = 'es-ES';
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    const modal = crearModal(titulo);
+    modal.innerHTML += `<p style="text-align:center; color:#5B6573; margin:10px 0;">${ayuda}</p>
+        <div style="text-align:center; font-size:48px;">🎙️</div>
+        <button class="btn btn-neutral" onclick="cerrarModal()">CANCELAR</button>`;
+    let hecho = false;
+    rec.onresult = ev => { hecho = true; alTexto(ev.results[0][0].transcript || ''); };
+    rec.onerror = ev => {
+        hecho = true; cerrarModal();
+        alert('🎤 ' + (ev.error === 'network' ? 'Sin conexión: el dictado necesita internet.' : ev.error === 'not-allowed' ? 'Permiso de micrófono denegado.' : ev.error === 'no-speech' ? 'No se ha oído nada.' : 'Error: ' + ev.error));
+    };
+    rec.onend = () => { if (!hecho) cerrarModal(); };
+    try { rec.start(); } catch (e) { cerrarModal(); alert('🎤 No se pudo iniciar el micrófono: ' + e.message); }
+}
+
+window.dictarListaVoz = function(modo, seguir) {
+    if (!seguir) window._vozLista = { modo, items: [], quitar: false };
+    const ayuda = modo === 'conv' ? 'Di nombres: <i>"Hugo, Pablo Bernal, Queco…"</i> o <i>"quita a Hugo y Lucas"</i>'
+        : modo === 'once' ? 'Di los titulares por nombre o dorsal: <i>"1, 4, Hugo, Pablo Bernal…"</i>'
+        : 'Di nombre y dorsal: <i>"Lucas 1, Hugo 10, Pablo Bernal 9…"</i>';
+    escucharVoz('🎤 Escuchando…', ayuda, texto => {
+        const L = window._vozLista;
+        if (/\bquit|\bfuera\b/.test(normalizarNombre(texto))) L.quitar = true;
+        L.texto = ((L.texto || '') + ' · ' + texto).replace(/^ · /, '');
+        const nuevos = extraerListaVoz(texto, candidatosVoz(modo), modo);
+        nuevos.forEach(n => { if (!n.c || !L.items.some(x => x.c && x.c.key === n.c.key)) L.items.push(n); });
+        revisarListaVoz();
+    });
+};
+
+function revisarListaVoz() {
+    const L = window._vozLista;
+    const titulo = L.modo === 'conv' ? '🎤 Convocatoria' : L.modo === 'once' ? '🎤 Titulares' : '🎤 Dorsales';
+    const modal = crearModal(titulo);
+    const reconocidos = L.items.filter(x => x.c).length;
+    let html = `<p style="text-align:center; color:#64748B; font-size:13px; margin:6px 0;">Has dicho: "<i>${escH(L.texto)}</i>"</p>
+        <p style="text-align:center; font-weight:bold; margin:6px 0 10px;">${reconocidos} jugador${reconocidos !== 1 ? 'es' : ''}${L.modo === 'once' ? (reconocidos === 11 ? ' ✅' : ' (deben ser 11)') : ''}</p>
+        <div style="max-height:45vh; overflow-y:auto;">`;
+    L.items.forEach((x, k) => {
+        html += `<div style="display:flex; gap:6px; align-items:center; margin-bottom:6px; background:${x.c ? '#FFFFFF' : '#FDECEA'}; border-radius:12px; padding:4px 8px;">
+            <span style="font-size:18px;">${x.c ? '✅' : '❓'}</span>
+            <select id="vozL_${k}" style="flex:1; margin:0; padding:8px;">
+                <option value="">${x.c ? '— Quitar de la lista —' : `❓ "${escH(x.texto)}" — elige o deja vacío`}</option>
+                ${x.opciones.map(c => `<option value="${escH(String(c.key))}" ${x.c && c.key === x.c.key ? 'selected' : ''}>${escH(c.name)}</option>`).join('')}
+            </select>
+            ${L.modo === 'dorsales' ? `<input type="number" inputmode="numeric" id="vozN_${k}" value="${escH(x.num || '')}" placeholder="nº" style="width:64px; margin:0; padding:8px; text-align:center;">` : ''}
+        </div>`;
+    });
+    html += `</div>
+        <button class="btn" style="background:#8e44ad; margin-top:8px;" onclick="leerSeleccionVoz(); dictarListaVoz('${L.modo}', true)">🎤 SEGUIR DICTANDO</button>`;
+    if (L.modo === 'conv') {
+        html += L.quitar
+            ? `<button class="btn btn-peligro" onclick="aplicarListaVoz('quitar')">➖ QUITAR ESTOS</button>`
+            : `<button class="btn btn-exito" onclick="aplicarListaVoz('solo')">✅ CONVOCAR SOLO ESTOS</button>
+               <button class="btn btn-primario" onclick="aplicarListaVoz('anadir')">➕ AÑADIR A LOS MARCADOS</button>`;
+    } else if (L.modo === 'once') html += `<button class="btn btn-exito" onclick="aplicarListaVoz('once')">✅ MARCAR COMO TITULARES</button>`;
+    else html += `<button class="btn btn-exito" onclick="aplicarListaVoz('dorsales')">✅ APLICAR DORSALES</button>`;
+    html += `<button class="btn btn-neutral" onclick="cerrarModal()">CANCELAR</button>`;
+    modal.innerHTML += html;
+}
+
+// Recoge lo elegido en los desplegables (antes de seguir dictando o aplicar)
+window.leerSeleccionVoz = function() {
+    const L = window._vozLista;
+    if (!L) return;
+    const cands = candidatosVoz(L.modo);
+    L.items.forEach((x, k) => {
+        const sel = document.getElementById('vozL_' + k);
+        if (sel) x.c = sel.value === '' ? null : (cands.find(c => String(c.key) === sel.value) || null);
+        const n = document.getElementById('vozN_' + k);
+        if (n) x.num = n.value.trim();
+    });
+};
+
+window.aplicarListaVoz = function(accion) {
+    leerSeleccionVoz();
+    const L = window._vozLista;
+    const elegidos = L.items.filter(x => x.c);
+    if (accion === 'solo' || accion === 'anadir' || accion === 'quitar') {
+        const claves = new Set(elegidos.map(x => x.c.key));
+        candidatosVoz('conv').forEach(c => {
+            const chk = document.getElementById(c.key);
+            if (!chk) return;
+            if (accion === 'solo') chk.checked = claves.has(c.key);
+            else if (accion === 'anadir' && claves.has(c.key)) chk.checked = true;
+            else if (accion === 'quitar' && claves.has(c.key)) chk.checked = false;
+        });
+        cerrarModal();
+        cambioConvocatoria();
+    } else if (accion === 'once') {
+        const claves = new Set(elegidos.map(x => x.c.key));
+        convocados.forEach((j, i) => { const c = document.getElementById(`once_${i}`); if (c) c.checked = claves.has(i); });
+        cerrarModal();
+        actualizarContadorOnce();
+        guardarOnceAuto();
+    } else if (accion === 'dorsales') {
+        const sinNum = elegidos.filter(x => !x.num);
+        if (sinNum.length && !confirm(`Sin dorsal: ${sinNum.map(x => x.c.name).join(', ')}.\n\n¿Aplicar el resto?`)) return;
+        elegidos.filter(x => x.num).forEach(x => {
+            const inp = document.getElementById(`dor_${x.c.key}`);
+            if (inp) inp.value = x.num;
+            cambiarDorsalOnce(x.c.key, x.num);
+        });
+        cerrarModal();
+    }
+    window._vozLista = null;
+};
 
 window.dictarPorVoz = function() {
     if (soloLectura()) { avisoSoloLectura(); return; }
