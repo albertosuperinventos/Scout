@@ -179,7 +179,6 @@
         <button class="btn btn-neutral" id="btnVisitante" style="flex: 1;" onclick="cambiarRol('V')">VISITANTE</button>
     </div>
     <button class="btn btn-primario" onclick="irAConvocatoria()">➡️ CONTINUAR</button>
-    <button id="btnSanciones" class="btn" style="background:#8e44ad; margin-top:8px;" onclick="window.mostrarPantalla('pSanciones'); window.cargarPantallaSanciones()">📋 SANCIONES</button>
     <button class="btn" style="background:#1F6AA5; margin-top:8px;" onclick="abrirHistorico()">📂 PARTIDOS JUGADOS</button>
 
 </div>
@@ -519,6 +518,17 @@ function cerrarPartidoTerminado() {
     actualizarBotonFase();
 }
 
+// Aviso en la convocatoria: sancionado o a una amarilla de la sanción
+function marcaSancionConvocatoria(nombre) {
+    try {
+        const est = getSanciones()[nombre];
+        if (!est) return '';
+        const sem = semaforo(est.amarillas, est.sancionado);
+        if (sem.filtro !== 'rojo' && sem.filtro !== 'naranja') return '';
+        return `<div style="color:${sem.color}; font-size:11px; margin:2px 0 0 10px;">${sem.icon} ${sem.label}</div>`;
+    } catch (e) { return ''; }
+}
+
 window.irAConvocatoria = function(datosGuardados) {
     if (!datosGuardados) cerrarPartidoTerminado();
     // Si ya hay una convocatoria guardada (de este u otro móvil) se parte de ella, no de cero
@@ -541,7 +551,7 @@ window.irAConvocatoria = function(datosGuardados) {
             <tr>
                 <td style="width: 50px;"><input type="checkbox" id="chk_${i}" ${checked ? 'checked' : ''} style="transform: scale(1.3);" onchange="guardarConvocatoriaAuto()"></td>
                 <td style="width: 80px;"><input type="number" id="num_${i}" value="${dorsal}" class="dorsal-input" onchange="guardarConvocatoriaAuto()"></td>
-                <td><input type="text" id="nom_${i}" value="${nombre}" class="nombre-input" onchange="guardarConvocatoriaAuto()"></td>
+                <td><input type="text" id="nom_${i}" value="${nombre}" class="nombre-input" onchange="guardarConvocatoriaAuto()">${marcaSancionConvocatoria(j.n)}</td>
             </tr>
         `;
     });
@@ -2172,12 +2182,12 @@ Devuelve JSON exacto:
     } catch(err) { alert('Error: ' + err.message); }
     finally { btn.innerText = '🔍 ANALIZAR CON IA'; btn.disabled = false; }
 };
-window.aplicarSancionesRfaf = async function() {
+window.aplicarSancionesRfaf = async function(jornadaConocida) {
     if (!ocrRfafData?.sanciones) return;
 
     // 1) ¿De qué jornada es la captura? (para no aplicarla dos veces y respetar el orden)
     let actual = parseInt(localStorage.getItem(`${NOMBRE_EQUIPO}_jornada`) || '1');
-    const v = prompt('¿De qué jornada es esta captura de la RFAF?', Math.max(1, actual - 1));
+    const v = jornadaConocida ? String(jornadaConocida) : prompt('¿De qué jornada es esta captura de la RFAF?', Math.max(1, actual - 1));
     if (v === null) return;
     const jCaptura = parseInt(v);
     if (!jCaptura || jCaptura < 1) { alert('Escribe un número de jornada válido.'); return; }
@@ -2627,13 +2637,29 @@ Si no hay sancionados devuelve jornadas como array vacío.`;
             return;
         }
 
-        // ── GUARDAR EN LOCALSTORAGE ──────────────────────────────────────────
-        const historial = JSON.parse(localStorage.getItem(`${NOMBRE_EQUIPO}_rivales`) || '{}');
-        const jornadasGuardadas = [];
-
+        // ── GUARDAR ──────────────────────────────────────────────────────────
         // Compatibilidad: si viene formato antiguo {equipos:[]} lo convertimos
         const jornadas = datos.jornadas || [{ jornada: jornada, equipos: datos.equipos || [] }];
+        const jornadasGuardadas = guardarRivalesJornadas(jornadas, jornada);
+        mostrarResultadoRivales(jornadas, jornadasGuardadas);
+    } catch(err) {
+        const msg = err.message || 'Error desconocido';
+        if (msg.includes('overloaded') || msg.includes('529')) {
+            alert('⚠️ La API está saturada. Espera 1 minuto e inténtalo de nuevo.');
+        } else if (msg.includes('image') || msg.includes('too large') || msg.includes('size') || msg.includes('pixels')) {
+            alert('⚠️ Error procesando imagen. Inténtalo de nuevo o usa una captura más pequeña.');
+        } else {
+            alert('Error al analizar: ' + msg);
+        }
+    }
+    finally { btn.innerText = '🔍 ANALIZAR CON IA'; btn.disabled = false; }
+};
 
+// Guarda sancionados rivales por jornada. Varias capturas/archivos de la misma jornada se suman.
+function guardarRivalesJornadas(jornadas, jornadaPorDefecto) {
+        const historial = JSON.parse(localStorage.getItem(`${NOMBRE_EQUIPO}_rivales`) || '{}');
+        const jornadasGuardadas = [];
+        const jornada = jornadaPorDefecto;
         jornadas.forEach(j => {
             // Si la IA no ve la jornada en la captura (p.ej. un trozo de la página), se usa la escrita arriba
             const num = parseInt(j.jornada) || jornada;
@@ -2657,7 +2683,10 @@ Si no hay sancionados devuelve jornadas como array vacío.`;
         });
 
         guardarLocalSync('rivales', JSON.stringify(historial));
+        return jornadasGuardadas;
+}
 
+function mostrarResultadoRivales(jornadas, jornadasGuardadas) {
         // ── MOSTRAR RESULTADOS ───────────────────────────────────────────────
         // Mostrar todas las jornadas encontradas
         const todasEquipos = jornadas.flatMap(j => j.equipos || []);
@@ -2677,18 +2706,130 @@ Si no hay sancionados devuelve jornadas como array vacío.`;
         document.getElementById('ocrRivalesResultado').style.display = 'block';
         renderHistorialRivales();
         renderSancionadosPendientes();
+}
 
-    } catch(err) {
-        const msg = err.message || 'Error desconocido';
-        if (msg.includes('overloaded') || msg.includes('529')) {
-            alert('⚠️ La API está saturada. Espera 1 minuto e inténtalo de nuevo.');
-        } else if (msg.includes('image') || msg.includes('too large') || msg.includes('size') || msg.includes('pixels')) {
-            alert('⚠️ Error procesando imagen. Inténtalo de nuevo o usa una captura más pequeña.');
-        } else {
-            alert('Error al analizar: ' + msg);
+// ===== PÁGINA DE SANCIONES DE LA RFAF GUARDADA (.mht / .html), SIN IA =====
+// En Chrome: menú ⋮ → Descargar (o Compartir → Guardar página). Se lee el texto tal cual.
+function decodificarPaginaRfaf(buf) {
+    const bytes = new Uint8Array(buf);
+    const latin = new TextDecoder('iso-8859-1').decode(bytes);   // para localizar cabeceras sin romper bytes
+    let ini = 0, fin = bytes.length, cte = '';
+    const m = latin.match(/boundary="?([^"\r\n;]+)"?/i);
+    if (m) {
+        const partes = latin.split('--' + m[1]);
+        let off = 0;
+        for (const parte of partes) {
+            const cab = parte.slice(0, 2000);
+            if (/content-type:\s*text\/html/i.test(cab)) {
+                const sep = parte.search(/\r?\n\r?\n/);
+                const sepLen = (parte.slice(sep).match(/^\r?\n\r?\n/) || [''])[0].length;
+                ini = off + sep + sepLen;
+                fin = off + parte.length;
+                cte = ((cab.match(/content-transfer-encoding:\s*([\w-]+)/i) || [])[1] || '').toLowerCase();
+                break;
+            }
+            off += parte.length + m[1].length + 2;
         }
     }
-    finally { btn.innerText = '🔍 ANALIZAR CON IA'; btn.disabled = false; }
+    let cuerpo = bytes.slice(ini, fin);
+    if (cte === 'quoted-printable') {
+        const t = new TextDecoder('iso-8859-1').decode(cuerpo).replace(/=\r?\n/g, '');
+        const out = [];
+        for (let i = 0; i < t.length; i++) {
+            if (t[i] === '=' && /^[0-9A-Fa-f]{2}$/.test(t.substr(i + 1, 2))) { out.push(parseInt(t.substr(i + 1, 2), 16)); i += 2; }
+            else out.push(t.charCodeAt(i) & 0xff);
+        }
+        cuerpo = new Uint8Array(out);
+    } else if (cte === 'base64') {
+        const bin = atob(new TextDecoder('iso-8859-1').decode(cuerpo).replace(/\s+/g, ''));
+        cuerpo = Uint8Array.from(bin, c => c.charCodeAt(0));
+    }
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(cuerpo); }
+    catch (e) {
+        const cs = (new TextDecoder('iso-8859-1').decode(cuerpo.slice(0, 3000)).match(/charset=["']?([\w-]+)/i) || [])[1] || 'iso-8859-15';
+        try { return new TextDecoder(cs).decode(cuerpo); } catch (e2) { return new TextDecoder('iso-8859-15').decode(cuerpo); }
+    }
+}
+
+// Devuelve [{ jornada, filas: [{ seccion, equipo, nombre, motivo }] }]
+function extraerSancionesPagina(html) {
+    const docu = new DOMParser().parseFromString(html, 'text/html');
+    const limpio = x => (x || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+    const bloques = [];
+    let actual = null;
+    docu.querySelectorAll('b, table').forEach(el => {
+        if (el.tagName === 'B') {
+            const m = limpio(el.textContent).match(/^Jornada:\s*(\d+)/i);
+            if (m) { actual = { jornada: parseInt(m[1]), filas: [] }; bloques.push(actual); }
+            return;
+        }
+        if (!actual || el.closest('table') !== el) return;
+        let seccion = '';
+        el.querySelectorAll('tr').forEach(tr => {
+            const tds = tr.querySelectorAll('td');
+            if (!tds.length) return;
+            if (tds.length === 1 || tds[0].hasAttribute('colspan')) { seccion = limpio(tds[0].textContent).toLowerCase(); return; }
+            const partes = tds[0].innerHTML.split(/<br\s*\/?>/i).map(h => limpio(new DOMParser().parseFromString(h, 'text/html').body.textContent));
+            const motivo = limpio(tds[tds.length - 1].textContent);
+            actual.filas.push({ seccion, equipo: partes[0] || '', nombre: partes[1] || '', motivo });
+        });
+    });
+    return bloques.filter(b => b.filas.length);
+}
+
+// Clasifica el motivo igual que la lectura con IA
+function tipoSancionRfaf(motivo) {
+    const m = (motivo || '').toLowerCase();
+    const n = m.match(/(\d+)\s+partidos?\s+de\s+suspensi/);
+    if (n) return { tipo: /acumulaci/.test(m) ? 'acumulacion' : 'suspension', partidos: parseInt(n[1]) };
+    if (/acumulaci/.test(m) && /suspensi/.test(m)) return { tipo: 'acumulacion', partidos: 1 };
+    if (/amonestaci/.test(m)) return { tipo: 'amarilla', partidos: 0 };
+    return null;   // multas y otros
+}
+
+window.leerPaginaRfaf = async function(input) {
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+    let bloques;
+    try { bloques = extraerSancionesPagina(decodificarPaginaRfaf(await file.arrayBuffer())); }
+    catch (e) { alert('No se pudo leer el archivo: ' + e.message); return; }
+    if (!bloques.length) {
+        alert('⚠️ No se han encontrado sanciones en el archivo.\n\nGuarda la página de "Consulta de sanciones" de rfaf.es después de pulsar Consultar.');
+        return;
+    }
+    const miEquipo = normalizarNombre(NOMBRE_EQUIPO);
+    const esMio = eq => normalizarNombre(eq).includes(miEquipo);
+    // Rivales: solo los que tienen partidos de suspensión
+    const jornadasRivales = bloques.map(b => {
+        const equipos = [];
+        b.filas.forEach(f => {
+            if (!f.nombre || /equipo/.test(f.seccion) || esMio(f.equipo)) return;
+            const t = tipoSancionRfaf(f.motivo);
+            if (!t || !t.partidos) return;
+            let eq = equipos.find(x => x.equipo === f.equipo);
+            if (!eq) { eq = { equipo: f.equipo, sancionados: [] }; equipos.push(eq); }
+            eq.sancionados.push({ jugador: f.nombre, partidos: t.partidos, motivo: f.motivo.slice(0, 80) });
+        });
+        return { jornada: b.jornada, equipos };
+    });
+    const jRiv = guardarRivalesJornadas(jornadasRivales, bloques[0].jornada);
+    const totalRiv = jornadasRivales.reduce((a, j) => a + j.equipos.reduce((x, e) => x + e.sancionados.length, 0), 0);
+    window.avisoInfo(`🔍 Rivales: ${totalRiv} sancionado${totalRiv !== 1 ? 's' : ''} guardado${totalRiv !== 1 ? 's' : ''} (jornada ${jRiv.join(', ')}).`);
+    // Camino Viejo: se aplica con la pantalla de revisión de siempre (una jornada)
+    let jornadaCV = bloques[bloques.length - 1].jornada;
+    if (bloques.length > 1) {
+        const v = prompt(`El archivo tiene varias jornadas (${bloques.map(b => b.jornada).join(', ')}).\n\n¿Cuál aplicamos a ${NOMBRE_EQUIPO}?`, jornadaCV);
+        if (v === null) return;
+        jornadaCV = parseInt(v) || jornadaCV;
+    }
+    const bloque = bloques.find(b => b.jornada === jornadaCV) || bloques[bloques.length - 1];
+    const mias = bloque.filas.filter(f => f.nombre && !/equipo/.test(f.seccion) && esMio(f.equipo))
+        .map(f => ({ f, t: tipoSancionRfaf(f.motivo) })).filter(x => x.t)
+        .map(x => ({ nombre: x.f.nombre, tipo: x.t.tipo, partidos: x.t.partidos }));
+    if (!mias.length) { alert(`✅ Jornada ${bloque.jornada}: ${NOMBRE_EQUIPO} no tiene amonestaciones ni sanciones.`); return; }
+    ocrRfafData = { sanciones: mias };
+    await window.aplicarSancionesRfaf(bloque.jornada);
 };
 
 function renderRivalesResultado(equipos, jornadas) {
@@ -2816,6 +2957,18 @@ window.onload = function() {
     }
     document.getElementById('filtroCambios').checked = true;
     actualizarNombresEquipos();
+    if (MODO_SANCIONES) {
+        document.title = `${NOMBRE_EQUIPO} · SANCIONES`;
+        mostrarPantalla('pSanciones');
+        cargarPantallaSanciones();
+    }
+};
+
+// Sanciones se abre desde el 4º botón del inicio de Scout CF (…/local.html?modo=sanciones)
+const MODO_SANCIONES = new URLSearchParams(location.search).get('modo') === 'sanciones';
+window.volverDesdeSanciones = function() {
+    if (MODO_SANCIONES) location.href = new URL('../../index.html', location.href).href;
+    else mostrarPantalla('pConfig');
 };
 
 // ===== EXPORTAR EXCEL =====
@@ -3542,7 +3695,7 @@ window.ocultarAvisoSanciones = function() {
 
 <div id="pSanciones" class="pantalla">
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
-        <button class="btn btn-neutral" style="padding:10px 20px;" onclick="window.mostrarPantalla('pConfig')">⬅️ VOLVER</button>
+        <button class="btn btn-neutral" style="padding:10px 20px;" onclick="volverDesdeSanciones()">⬅️ VOLVER</button>
         <div style="text-align:center;">
             <h3 style="margin:0; color:#8e44ad;">📋 SANCIONES</h3>
             <span id="jornadaLabel" style="color:#5B6573; font-size:12px; text-decoration:underline dotted; cursor:pointer;" onclick="editarJornada()" title="Toca para corregir la jornada"></span>
@@ -3553,6 +3706,8 @@ window.ocultarAvisoSanciones = function() {
         </div>
     </div>
     <button class="btn" style="background:#27ae60; width:100%; margin-bottom:12px; font-size:14px;" onclick="jornadaJugada()">✅ JORNADA JUGADA</button>
+    <button class="btn" style="background:#6c3483; width:100%; margin-bottom:12px; font-size:14px;" onclick="document.getElementById('inputPaginaRfaf').click()">📄 SUBIR PÁGINA RFAF (.mht) → SANCIONES Y RIVALES</button>
+    <input type="file" id="inputPaginaRfaf" accept=".mht,.mhtml,.html,.htm,multipart/related,message/rfc822,text/html" style="display:none;" onchange="leerPaginaRfaf(this)">
     <button class="btn" style="background:#8e44ad; width:100%; margin-bottom:12px; font-size:14px;" onclick="abrirOcrRfaf()">📸 SUBIR CAPTURA RFAF → EXTRAER SANCIONES</button>
     <button class="btn" style="background:#1a3a5c; width:100%; margin-bottom:12px; font-size:14px;" onclick="abrirOcrRivales()">🔍 VER SANCIONADOS RIVALES</button>
     <a href="https://www.rfaf.es/pnfg/NPcd/NFG_ConsultaSanciones?cod_primaria=5002420" target="_blank" style="display:block; background:#27ae60; color:white; text-align:center; padding:15px; border-radius:40px; font-weight:bold; font-size:14px; text-decoration:none; margin-bottom:12px; border:1px solid #D5DCE5;">🌐 VER SANCIONES EN RFAF.ES</a>
@@ -4086,7 +4241,7 @@ window.ocultarAvisoSanciones = function() {
             if (typeof reaplicarFiltroSanciones === 'function') reaplicarFiltroSanciones();
             window.scrollTo(0, y);
             const quien = d.cambiadoDevice && d.cambiadoDevice !== deviceId ? (d.cambiadoPor || 'Otro móvil') : 'Otro móvil';
-            window.avisoInfo(`📋 ${quien} ha cambiado las sanciones`);
+            if (!primera) window.avisoInfo(`📋 ${quien} ha cambiado las sanciones`);
         }
     }
 
@@ -4327,6 +4482,7 @@ window.ocultarAvisoSanciones = function() {
         } catch(e) {}
         if (!miNombre) miNombre = (user.email || '').split('@')[0];
         await cargarPlantillaDesdeFirestore(club);
+        if (pantallaActiva() === 'pSanciones') window.cargarPantallaSanciones();
         // Escuchar cambios en la nube (después de cargar la plantilla, que da los ids)
         if (unsubPartido) unsubPartido();
         if (unsubSanc) unsubSanc();

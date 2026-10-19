@@ -310,6 +310,10 @@
             <span class="home-tile-icon">⚽</span>
             <span class="home-tile-label">Partido</span>
         </button>
+        <button class="home-tile" id="tileSanciones" style="background:#5B2C83;">
+            <span class="home-tile-icon">🟥</span>
+            <span class="home-tile-label">Sanciones</span>
+        </button>
     </div>
 </div>
 
@@ -963,6 +967,9 @@
     });
     document.getElementById("tilePartido").addEventListener("click", () => {
         openPartidoModal();
+    });
+    document.getElementById("tileSanciones").addEventListener("click", () => {
+        openPartidoModal('sanciones');
     });
 
     // LOAD CLUBS
@@ -2081,12 +2088,18 @@
     }
 
     // ABRIR / CERRAR
-    function openPartidoModal() {
+    // modo 'sanciones': abre la app del partido del club directamente en la pantalla de Sanciones
+    function urlPartidoModo(url, modo) {
+        if (!modo || !url) return url;
+        try { const u = new URL(url, location.href); u.searchParams.set('modo', modo); return u.href; }
+        catch (e) { return url + (url.includes('?') ? '&' : '?') + 'modo=' + encodeURIComponent(modo); }
+    }
+    function openPartidoModal(modo) {
         const body = document.getElementById("partidoModalBody");
         const clubsConUrl = isAdmin ? allClubs : allClubs.filter(c => c.nombre.trim().toLowerCase() === (currentUserProfile?.club || "").trim().toLowerCase());
 
         if (!isAdmin && clubsConUrl.length === 1 && clubsConUrl[0].urlPartido) {
-            window.open(clubsConUrl[0].urlPartido, "_blank");
+            window.open(urlPartidoModo(clubsConUrl[0].urlPartido, modo), "_blank");
             return;
         }
 
@@ -2095,7 +2108,7 @@
         } else {
             body.innerHTML = clubsConUrl.map(c => {
                 if (c.urlPartido) {
-                    return `<a href="${esc(c.urlPartido)}" target="_blank" style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:10px;text-decoration:none;color:var(--text);font-weight:600;">🏟️ ${esc(c.nombre)} <span>▶️ Abrir</span></a>`;
+                    return `<a href="${esc(urlPartidoModo(c.urlPartido, modo))}" target="_blank" style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:10px;text-decoration:none;color:var(--text);font-weight:600;">🏟️ ${esc(c.nombre)} <span>▶️ Abrir</span></a>`;
                 }
                 return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:12px 16px;margin-bottom:10px;color:var(--muted);font-size:.85rem;">🏟️ ${esc(c.nombre)} <span>Sin app configurada</span></div>`;
             }).join("");
