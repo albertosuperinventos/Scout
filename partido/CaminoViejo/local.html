@@ -335,6 +335,13 @@ function normalizarNombre(s) {
     return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
 }
+// Texto seguro para meter en HTML (también en atributos) y como argumento en onclick="..."
+function escH(x) {
+    return String(x ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function jsArg(x) { return escH(JSON.stringify(String(x ?? ''))); }
+
 function tokensNombre(s) {
     return normalizarNombre(s).split(' ').filter(w => w.length > 1);
 }
@@ -550,8 +557,8 @@ window.irAConvocatoria = function(datosGuardados) {
         html += `
             <tr>
                 <td style="width: 50px;"><input type="checkbox" id="chk_${i}" ${checked ? 'checked' : ''} style="transform: scale(1.3);" onchange="guardarConvocatoriaAuto()"></td>
-                <td style="width: 80px;"><input type="number" id="num_${i}" value="${dorsal}" class="dorsal-input" onchange="guardarConvocatoriaAuto()"></td>
-                <td><input type="text" id="nom_${i}" value="${nombre}" class="nombre-input" onchange="guardarConvocatoriaAuto()">${marcaSancionConvocatoria(j.n)}</td>
+                <td style="width: 80px;"><input type="number" id="num_${i}" value="${escH(dorsal)}" class="dorsal-input" onchange="guardarConvocatoriaAuto()"></td>
+                <td><input type="text" id="nom_${i}" value="${escH(nombre)}" class="nombre-input" onchange="guardarConvocatoriaAuto()">${marcaSancionConvocatoria(j.n)}</td>
             </tr>
         `;
     });
@@ -566,8 +573,8 @@ window.irAConvocatoria = function(datosGuardados) {
         html += `
             <tr>
                 <td style="width: 50px;"><input type="checkbox" id="chkx_${i}" ${checked ? 'checked' : ''} style="transform: scale(1.3);" onchange="guardarConvocatoriaAuto()"></td>
-                <td style="width: 80px;"><input type="number" id="numx_${i}" value="${dorsal}" class="dorsal-input" onchange="guardarConvocatoriaAuto()"></td>
-                <td><input type="text" id="nomx_${i}" value="${nombre}" placeholder="Nombre Cadete B" class="nombre-input" onchange="guardarConvocatoriaAuto()"></td>
+                <td style="width: 80px;"><input type="number" id="numx_${i}" value="${escH(dorsal)}" class="dorsal-input" onchange="guardarConvocatoriaAuto()"></td>
+                <td><input type="text" id="nomx_${i}" value="${escH(nombre)}" placeholder="Nombre Cadete B" class="nombre-input" onchange="guardarConvocatoriaAuto()"></td>
             </tr>
         `;
     }
@@ -741,8 +748,8 @@ window.irAOnce = function() {
         html += `
             <div class="once-item">
                 <input type="checkbox" id="once_${i}" onchange="actualizarContadorOnce(); guardarOnceAuto();">
-                <span class="dorsal">${j.num}</span>
-                <span>${j.name}</span>
+                <span class="dorsal">${escH(j.num)}</span>
+                <span>${escH(j.name)}</span>
             </div>
         `;
     });
@@ -1072,8 +1079,8 @@ function actualizarTimeline() {
         let icono = ICONOS[e.tipo] || '•';
         let color = COLORES_EVENTO[e.tipo] || '#3498db';
         let html = `
-            <div class="evento" data-tipo="${e.tipo}" style="border-left-color: ${color};">
-                <span><b>${e.min}'</b> ${icono} ${e.jugador} ${e.extra || ''}</span>
+            <div class="evento" data-tipo="${escH(e.tipo)}" style="border-left-color: ${color};">
+                <span><b>${escH(e.min)}'</b> ${icono} ${escH(e.jugador)} ${escH(e.extra || '')}</span>
                 <div style="display:flex; gap:4px;">
                     <button class="btn-del" style="background:#e67e22; border:none; color:white; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:14px;" onclick="editarEvento(${e.id})">✏️</button>
                     <button class="btn-del" style="background:#e74c3c; border:none; color:white; border-radius:50%; width:30px; height:30px; cursor:pointer;" onclick="borrarEvento(${e.id})">✕</button>
@@ -1510,7 +1517,7 @@ window.mostrarCambio = function() {
 
 window.mostrarManual = function() {
     let modal = crearModal("➕ ACCIÓN MANUAL");
-    let opciones = convocados.map(j => `<option value="${j.name}">${j.num} - ${j.name}</option>`).join('');
+    let opciones = convocados.map(j => `<option value="${escH(j.name)}">${escH(j.num)} - ${escH(j.name)}</option>`).join('');
     modal.innerHTML += `
         <input type="number" id="minManual" placeholder="Minuto" value="45">
         <select id="tipoManual">
@@ -1561,7 +1568,7 @@ function finalizarPartido() {
         .forEach(e => {
             let icono = ICONOS[e.tipo] || '';
             let color = COLORES_EVENTO[e.tipo] || '#3498db';
-            let html = `<div class="evento" data-tipo="${e.tipo}" style="border-left-color: ${color};"><span><b>${e.min}'</b> ${e.jugador}</span><span>${icono}</span></div>`;
+            let html = `<div class="evento" data-tipo="${e.tipo}" style="border-left-color: ${color};"><span><b>${escH(e.min)}'</b> ${escH(e.jugador)}</span><span>${icono}</span></div>`;
             if(e.equipo === 'L') resLocal.innerHTML += html;
             else resVisit.innerHTML += html;
         });
@@ -1578,8 +1585,8 @@ function renderTitularidades() {
         const row = document.createElement('div');
         row.style.cssText = 'display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid #F4F6F9;';
         row.innerHTML = `
-            <span style="min-width:30px; color:#9A6B00; font-weight:bold; text-align:center;">${j.num}</span>
-            <span style="flex:1; font-size:14px;">${j.name}</span>
+            <span style="min-width:30px; color:#9A6B00; font-weight:bold; text-align:center;">${escH(j.num)}</span>
+            <span style="flex:1; font-size:14px;">${escH(j.name)}</span>
             <div style="display:flex; gap:6px;">
                 <button onclick="setTitular(${idx}, true)"  style="padding:5px 12px; border-radius:20px; border:none; cursor:pointer; font-weight:bold; font-size:12px; background:${j.titular ? '#3498db' : '#8A94A6'}; color:white;">TITULAR</button>
                 <button onclick="setTitular(${idx}, false)" style="padding:5px 12px; border-radius:20px; border:none; cursor:pointer; font-weight:bold; font-size:12px; background:${!j.titular && j.intervalos.length > 0 ? '#e67e22' : '#8A94A6'}; color:white;">SUPLENTE</button>
@@ -1901,12 +1908,12 @@ window.editarEvento = function(id) {
     let opcionesJugadores = '<option value="Sin asignar">Sin asignar</option>';
     convocados.forEach(j => {
         const sel = e.jugador === j.name ? 'selected' : '';
-        opcionesJugadores += `<option value="${j.name}" ${sel}>${j.num} - ${j.name}</option>`;
+        opcionesJugadores += `<option value="${escH(j.name)}" ${sel}>${escH(j.num)} - ${escH(j.name)}</option>`;
     });
     // Si el jugador actual no está en convocados (ej: "Rival", "Riv 10") añadirlo como opción seleccionada
     const enLista = convocados.some(j => j.name === e.jugador);
     if(!enLista && e.jugador !== 'Sin asignar') {
-        opcionesJugadores = `<option value="${e.jugador}" selected>${e.jugador}</option>` + opcionesJugadores;
+        opcionesJugadores = `<option value="${escH(e.jugador)}" selected>${escH(e.jugador)}</option>` + opcionesJugadores;
     }
 
     let modal = crearModal(`✏️ EDITAR: ${e.tipo} — min ${e.min}'`);
@@ -1917,7 +1924,7 @@ window.editarEvento = function(id) {
             <label style="color:#64748B; font-size:13px; display:block; margin-bottom:4px;">Jugador</label>
             <select id="editJugador" style="margin-bottom:12px;">${opcionesJugadores}</select>
             <label style="color:#64748B; font-size:13px; display:block; margin-bottom:4px;">Detalle extra</label>
-            <input type="text" id="editExtra" value="${e.extra || ''}">
+            <input type="text" id="editExtra" value="${escH(e.extra || '')}">
         </div>
         <div class="btn-group">
             <button class="btn btn-peligro" style="flex:1;" onclick="cerrarModal()">CANCELAR</button>
@@ -2159,7 +2166,7 @@ Devuelve JSON exacto:
             ocrRfafData.sanciones.forEach(s => {
                 const d = document.createElement('div');
                 d.style.cssText = 'background:#F4F6F9;border-radius:10px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;';
-                d.innerHTML = `<span style="font-weight:bold;">${s.nombre}</span><span style="color:#9A6B00;">${s.tipo} — ${s.partidos} partido${s.partidos>1?'s':''}</span>`;
+                d.innerHTML = `<span style="font-weight:bold;">${escH(s.nombre)}</span><span style="color:#9A6B00;">${s.tipo} — ${s.partidos} partido${s.partidos>1?'s':''}</span>`;
                 lista.appendChild(d);
             });
             document.getElementById('btnAplicarRfaf').style.display = 'block';
@@ -2343,7 +2350,7 @@ Devuelve JSON exacto:
                 const d = document.createElement('div');
                 d.style.cssText = 'background:#F4F6F9;border-radius:10px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;';
                 const color = t.tipo==='AMARILLA'?'#f1c40f':'#e74c3c';
-                d.innerHTML = `<span style="font-weight:bold;">${t.nombre}</span><span style="color:${color};">${t.tipo==='AMARILLA'?'🟨':'🟥'} ${t.tipo}${t.minuto?' (min. '+t.minuto+"')":''}`;
+                d.innerHTML = `<span style="font-weight:bold;">${escH(t.nombre)}</span><span style="color:${color};">${t.tipo==='AMARILLA'?'🟨':'🟥'} ${t.tipo}${t.minuto?' (min. '+t.minuto+"')":''}`;
                 lista.appendChild(d);
             });
             document.getElementById('btnAplicarActa').style.display = 'block';
@@ -2560,11 +2567,11 @@ window.renderSancionadosPendientes = function() {
     Object.entries(porEquipo).forEach(([equipo, jugadores]) => {
         const d = document.createElement('div');
         d.style.cssText = 'background:#FDECEA; border-radius:10px; padding:10px; margin-bottom:8px; border:1px solid #e74c3c55;';
-        let html = `<div style="font-weight:bold; color:#e74c3c; font-size:13px; margin-bottom:6px;">🏟️ ${equipo}</div>`;
+        let html = `<div style="font-weight:bold; color:#e74c3c; font-size:13px; margin-bottom:6px;">🏟️ ${escH(equipo)}</div>`;
         jugadores.forEach(s => {
             const color = s.pendientes >= 2 ? '#e74c3c' : '#f39c12';
             html += `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid #F5C6C1; font-size:12px;">
-                <span style="color:#334155;">${s.jugador}</span>
+                <span style="color:#334155;">${escH(s.jugador)}</span>
                 <span style="color:${color}; font-weight:bold;">🔴 ${s.pendientes} partido${s.pendientes>1?'s':''} pendiente${s.pendientes>1?'s':''}</span>
             </div>`;
         });
@@ -2851,12 +2858,12 @@ function renderRivalesResultado(equipos, jornadas) {
     equipos.forEach(eq => {
         const d = document.createElement('div');
         d.style.cssText = 'background:#FFFFFF; border-radius:12px; padding:12px; margin-bottom:10px; border:1px solid #1F6AA5;';
-        let html = `<div style="font-weight:bold; color:#1F6AA5; font-size:14px; margin-bottom:8px;">🏟️ ${eq.equipo} <span style="color:#64748B; font-size:12px;">(${eq.sancionados.length} sancionado${eq.sancionados.length>1?'s':''})</span></div>`;
+        let html = `<div style="font-weight:bold; color:#1F6AA5; font-size:14px; margin-bottom:8px;">🏟️ ${escH(eq.equipo)} <span style="color:#64748B; font-size:12px;">(${eq.sancionados.length} sancionado${eq.sancionados.length>1?'s':''})</span></div>`;
         eq.sancionados.forEach(s => {
             const color = s.partidos >= 2 ? '#e74c3c' : '#f39c12';
             html += `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid #D5DCE5; font-size:13px;">
-                <span>${s.jugador}</span>
-                <span style="color:${color}; font-weight:bold;">🔴 ${s.partidos} partido${s.partidos>1?'s':''}</span>
+                <span>${escH(s.jugador)}</span>
+                <span style="color:${color}; font-weight:bold;">🔴 ${escH(s.partidos)} partido${s.partidos>1?'s':''}</span>
             </div>`;
         });
         d.innerHTML = html;
@@ -2892,7 +2899,7 @@ function renderHistorialRivales() {
         const total = entry.equipos.reduce((a, eq) => a + eq.sancionados.length, 0);
         const btn = document.createElement('button');
         btn.style.cssText = 'width:100%; background:#FFFFFF; border:1px solid #1F6AA5; border-radius:8px; padding:10px; text-align:left; color:#1E293B; cursor:pointer; margin-bottom:6px; font-size:13px;';
-        btn.innerHTML = `<span style="color:#9A6B00; font-weight:bold;">J${entry.jornada || '?'}</span> <span style="color:#5B6573; font-size:11px;">${entry.fecha}</span> — <span style="color:#1F6AA5;">${total} sancionado${total>1?'s':''} / ${entry.equipos.length} equipos</span>`;
+        btn.innerHTML = `<span style="color:#9A6B00; font-weight:bold;">J${entry.jornada || '?'}</span> <span style="color:#5B6573; font-size:11px;">${escH(entry.fecha)}</span> — <span style="color:#1F6AA5;">${total} sancionado${total>1?'s':''} / ${entry.equipos.length} equipos</span>`;
         btn.onclick = () => {
             renderRivalesResultado(entry.equipos, entry.jornada);
             document.getElementById('ocrRivalesResultado').style.display = 'block';
@@ -3321,28 +3328,28 @@ window.cargarPantallaSanciones = function() {
         const est = data[j.n] || { amarillas: 0, sancionado: 0 };
         const sem = semaforo(est.amarillas, est.sancionado);
         html += `
-        <div id="card_${j.n.replace(/ /g,'_')}" data-filtro="${sem.filtro}" style="background:${sem.bg}; border:1px solid ${sem.color}55; border-radius:15px; padding:12px; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+        <div id="card_${escH(j.n.replace(/ /g,'_'))}" data-filtro="${sem.filtro}" style="background:${sem.bg}; border:1px solid ${sem.color}55; border-radius:15px; padding:12px; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
             <span class="sem_icon" style="font-size:24px;">${sem.icon}</span>
             <div style="flex:1;">
-                <div style="font-weight:bold; font-size:15px;">${j.n}</div>
+                <div style="font-weight:bold; font-size:15px;">${escH(j.n)}</div>
                 <div class="sem_label" style="color:${sem.color}; font-size:12px;">${sem.label}</div>
             </div>
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
                 <span style="color:#5B6573; font-size:10px;">🟨 AMARILLAS</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button onclick="cambiarAmarillas('${j.n}',-1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
-                    <span id="amar_${j.n}" style="font-size:22px;font-weight:bold;color:#9A6B00;min-width:28px;text-align:center;">${est.amarillas}</span>
-                    <button onclick="cambiarAmarillas('${j.n}',1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
+                    <button onclick="cambiarAmarillas(${jsArg(j.n)},-1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
+                    <span id="amar_${escH(j.n)}" style="font-size:22px;font-weight:bold;color:#9A6B00;min-width:28px;text-align:center;">${est.amarillas}</span>
+                    <button onclick="cambiarAmarillas(${jsArg(j.n)},1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
                 </div>
             </div>
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; margin-left:6px;">
                 <span style="color:#5B6573; font-size:10px;">🔴 SANCIÓN</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button onclick="cambiarSancion('${j.n}',-1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
-                    <span id="san_${j.n}" data-partidos="${est.sancionado}" style="font-size:22px;font-weight:bold;color:#e74c3c;min-width:28px;text-align:center;">${est.sancionado}</span>
-                    <button onclick="cambiarSancion('${j.n}',1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
+                    <button onclick="cambiarSancion(${jsArg(j.n)},-1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
+                    <span id="san_${escH(j.n)}" data-partidos="${est.sancionado}" style="font-size:22px;font-weight:bold;color:#e74c3c;min-width:28px;text-align:center;">${est.sancionado}</span>
+                    <button onclick="cambiarSancion(${jsArg(j.n)},1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
                 </div>
-                <select id="mot_${j.n}" style="margin-top:4px;background:#F4F6F9;color:#5B6573;border:1px solid #C5CDD8;border-radius:8px;font-size:10px;padding:2px 4px;display:${est.sancionado>0?'block':'none'};" onchange="guardarMotivoCard('${j.n}',this.value)">
+                <select id="mot_${escH(j.n)}" style="margin-top:4px;background:#F4F6F9;color:#5B6573;border:1px solid #C5CDD8;border-radius:8px;font-size:10px;padding:2px 4px;display:${est.sancionado>0?'block':'none'};" onchange="guardarMotivoCard(${jsArg(j.n)},this.value)">
                     <option value="acumulacion" ${(est.motivo||'')==='acumulacion'?'selected':''}>📋 Acumulación</option>
                     <option value="doble"       ${(est.motivo||'')==='doble'?'selected':''}>🟨🟨 Doble am.</option>
                     <option value="roja"        ${(est.motivo||'')==='roja'?'selected':''}>🟥 Roja directa</option>
@@ -3358,29 +3365,29 @@ window.cargarPantallaSanciones = function() {
         const est = data[j.n] || { amarillas: 0, sancionado: 0 };
         const sem = semaforo(est.amarillas, est.sancionado);
         html += `
-        <div id="card_${j.n.replace(/ /g,'_')}" data-filtro="${sem.filtro}" data-staff="1" style="background:${sem.bg}; border:1px solid ${sem.color}55; border-radius:15px; padding:12px; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+        <div id="card_${escH(j.n.replace(/ /g,'_'))}" data-filtro="${sem.filtro}" data-staff="1" style="background:${sem.bg}; border:1px solid ${sem.color}55; border-radius:15px; padding:12px; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
             <span class="sem_icon" style="font-size:24px;">${sem.icon}</span>
             <div style="flex:1;">
-                <div style="font-weight:bold; font-size:15px;">${j.n}</div>
+                <div style="font-weight:bold; font-size:15px;">${escH(j.n)}</div>
                 <div style="color:#64748B; font-size:11px;">${j.rol}</div>
                 <div class="sem_label" style="color:${sem.color}; font-size:12px;">${sem.label}</div>
             </div>
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
                 <span style="color:#5B6573; font-size:10px;">🟨 AMONEST.</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button onclick="cambiarAmarillas('${j.n}',-1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
-                    <span id="amar_${j.n}" style="font-size:22px;font-weight:bold;color:#9A6B00;min-width:28px;text-align:center;">${est.amarillas}</span>
-                    <button onclick="cambiarAmarillas('${j.n}',1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
+                    <button onclick="cambiarAmarillas(${jsArg(j.n)},-1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
+                    <span id="amar_${escH(j.n)}" style="font-size:22px;font-weight:bold;color:#9A6B00;min-width:28px;text-align:center;">${est.amarillas}</span>
+                    <button onclick="cambiarAmarillas(${jsArg(j.n)},1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
                 </div>
             </div>
             <div style="display:flex; flex-direction:column; align-items:center; gap:4px; margin-left:6px;">
                 <span style="color:#5B6573; font-size:10px;">🔴 SANCIÓN</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <button onclick="cambiarSancion('${j.n}',-1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
-                    <span id="san_${j.n}" data-partidos="${est.sancionado}" style="font-size:22px;font-weight:bold;color:#e74c3c;min-width:28px;text-align:center;">${est.sancionado}</span>
-                    <button onclick="cambiarSancion('${j.n}',1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
+                    <button onclick="cambiarSancion(${jsArg(j.n)},-1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">−</button>
+                    <span id="san_${escH(j.n)}" data-partidos="${est.sancionado}" style="font-size:22px;font-weight:bold;color:#e74c3c;min-width:28px;text-align:center;">${est.sancionado}</span>
+                    <button onclick="cambiarSancion(${jsArg(j.n)},1)" style="background:#D5DCE5;border:none;color:#1E293B;width:30px;height:30px;border-radius:50%;font-size:18px;cursor:pointer;">+</button>
                 </div>
-                <select id="mot_${j.n}" style="margin-top:4px;background:#F4F6F9;color:#5B6573;border:1px solid #C5CDD8;border-radius:8px;font-size:10px;padding:2px 4px;display:${est.sancionado>0?'block':'none'};" onchange="guardarMotivoCard('${j.n}',this.value)">
+                <select id="mot_${escH(j.n)}" style="margin-top:4px;background:#F4F6F9;color:#5B6573;border:1px solid #C5CDD8;border-radius:8px;font-size:10px;padding:2px 4px;display:${est.sancionado>0?'block':'none'};" onchange="guardarMotivoCard(${jsArg(j.n)},this.value)">
                     <option value="acumulacion" ${(est.motivo||'')==='acumulacion'?'selected':''}>📋 Acumulación</option>
                     <option value="doble"       ${(est.motivo||'')==='doble'?'selected':''}>🟨🟨 Doble am.</option>
                     <option value="roja"        ${(est.motivo||'')==='roja'?'selected':''}>🟥 Roja directa</option>
