@@ -215,7 +215,8 @@
         <div class="marcador">
             <span id="golesLocal">0</span> - <span id="golesVisitante">0</span>
         </div>
-        <div class="timer" id="reloj">00:00</div>
+        <div class="timer" id="reloj" onclick="corregirMinutoActual()" style="cursor:pointer;">00:00</div>
+        <div id="hintReloj" style="display:none; color:#64748B; font-size:11px; margin-top:4px;">✏️ Toca el reloj para corregir el minuto</div>
         <div id="infoExtra"></div>
     </div>
 
@@ -427,7 +428,10 @@ window.refrescarBannerGuardado = function() {
     const c = localStorage.getItem(`${NOMBRE_EQUIPO}_convocatoria`);
     if (p) {
         banner.style.display = 'block';
-        txt.textContent = soloLectura() ? '👁️ Partido en curso en otro móvil' : '⚽ Partido guardado detectado';
+        let terminado = false;
+        try { terminado = JSON.parse(p).fase === 4; } catch (e) {}
+        txt.textContent = soloLectura() ? '👁️ Partido en curso en otro móvil'
+            : terminado ? '✅ Último partido terminado · ya está en 📂 Partidos jugados' : '⚽ Partido guardado detectado';
     } else if (c) {
         try {
             const g = JSON.parse(c);
@@ -493,7 +497,30 @@ window.cambiarRol = function(rol) {
     actualizarNombresEquipos();
 };
 
+// Cierra el partido terminado (ya guardado en 📂 Partidos jugados) sin tocar lo escrito en la pantalla de inicio
+function cerrarPartidoTerminado() {
+    let p = null;
+    try { p = JSON.parse(localStorage.getItem(`${NOMBRE_EQUIPO}_partido_final`) || 'null'); } catch (e) {}
+    if (!p || p.fase !== 4 || soloLectura()) return;
+    if (window.fbSync) window.fbSync.nuevoPartido();
+    localStorage.removeItem(`${NOMBRE_EQUIPO}_partido_final`);
+    convocados = []; enCampo = []; eventos = [];
+    golesL = 0; golesV = 0; fase = 0;
+    tiempoInicio = 0; duracion1T = ""; minutoFinal = 90; minutoFin1T = 45;
+    if (intervaloReloj) { clearInterval(intervaloReloj); intervaloReloj = null; }
+    if (document.getElementById('nombreArbitro')) document.getElementById('nombreArbitro').value = '';
+    if (document.getElementById('notasArbitro')) document.getElementById('notasArbitro').value = '';
+    document.getElementById('golesLocal').innerText = '0';
+    document.getElementById('golesVisitante').innerText = '0';
+    document.getElementById('reloj').innerText = '00:00';
+    document.getElementById('infoExtra').innerText = '';
+    document.getElementById('timelineLocal').innerHTML = '';
+    document.getElementById('timelineVisitante').innerHTML = '';
+    actualizarBotonFase();
+}
+
 window.irAConvocatoria = function(datosGuardados) {
+    if (!datosGuardados) cerrarPartidoTerminado();
     // Si ya hay una convocatoria guardada (de este u otro móvil) se parte de ella, no de cero
     if (!datosGuardados) {
         try {
@@ -800,6 +827,62 @@ function actualizarReloj() {
         `${minutos.toString().padStart(2,'0')}:${segundos.toString().padStart(2,'0')}`;
 }
 
+// ===== CORREGIR EL MINUTO EN JUEGO (por si se olvidó dar a empezar la parte) =====
+// Ajusta el reloj y mueve los mismos minutos los eventos, cambios y entradas de la parte en curso.
+window.corregirMinutoActual = function() {
+    if (fase !== 1 && fase !== 3) return;
+    if (soloLectura()) { avisoSoloLectura(); return; }
+    const actual = obtenerMinutoActual();
+    const parte = fase === 1 ? '1ª' : '2ª';
+    const modal = crearModal(`⏱️ CORREGIR MINUTO (${parte} parte)`);
+    modal.innerHTML += `
+        <p style="text-align:center; color:#5B6573; margin:10px 0 4px;">¿Qué minuto es ahora?</p>
+        <p style="text-align:center; color:#64748B; font-size:13px; margin:0 0 10px;">El reloj marca ${actual}'. Los goles, cambios y tarjetas de esta parte se mueven los mismos minutos.</p>
+        <input type="number" id="minCorregido" value="${actual}" min="${fase === 1 ? 0 : 45}" max="150" inputmode="numeric"
+               style="text-align:center; font-size:32px; font-weight:bold; color:#9A6B00;">
+        <p id="minCorregidoError" style="text-align:center; color:#e74c3c; font-size:13px; min-height:18px; margin:4px 0;"></p>
+        <div class="btn-group">
+            <button class="btn btn-neutral" style="flex:1;" onclick="cerrarModal()">CANCELAR</button>
+            <button class="btn btn-exito" style="flex:2;" onclick="confirmarCorregirMinuto()">✅ CONFIRMAR</button>
+        </div>`;
+};
+
+window.confirmarCorregirMinuto = function() {
+    if (fase !== 1 && fase !== 3) { cerrarModal(); return; }
+    const inicioParte = fase === 1 ? 0 : 45;
+    const v = parseInt(document.getElementById('minCorregido')?.value);
+    if (isNaN(v) || v < inicioParte || v > 150) {
+        document.getElementById('minCorregidoError').innerText = `Escribe un minuto entre ${inicioParte} y 150.`;
+        return;
+    }
+    const delta = v - obtenerMinutoActual();
+    cerrarModal();
+    if (!delta) return;
+    const mover = m => Math.max(inicioParte, m + delta);
+    // Reloj
+    tiempoInicio -= delta * 60000;
+    // Eventos de esta parte
+    eventos.forEach(e => {
+        const deEstaParte = e.parte !== undefined ? e.parte === fase : (fase === 1 || e.min >= 45);
+        if (deEstaParte) e.min = mover(e.min);
+    });
+    // Tramos cerrados en esta parte (cambios) y entradas de los que entraron en esta parte
+    convocados.forEach(j => {
+        j.intervalos.forEach(x => {
+            const deEstaParte = x.parte !== undefined ? x.parte === fase : (fase === 1 || x.inicio >= 45);
+            if (!deEstaParte) return;
+            if (x.inicio !== inicioParte) x.inicio = mover(x.inicio);
+            x.fin = Math.max(x.inicio, mover(x.fin));
+            x.mins = x.fin - x.inicio;
+        });
+        if (j.activo && j.entradaActual !== null && j.entradaActual !== inicioParte) j.entradaActual = mover(j.entradaActual);
+    });
+    actualizarReloj();
+    actualizarMarcador();
+    actualizarTimeline();
+    guardarAuto();
+};
+
 // ===== FIN DE PARTE: modal para corregir el minuto (por si se olvidó parar el reloj) =====
 function minimoFinParte() {
     // No se puede cerrar la parte antes del último evento de esa parte ni antes de que entrara alguien
@@ -863,7 +946,8 @@ window.siguienteFase = function(minConfirmado) {
                 j.intervalos.push({
                     inicio: j.entradaActual,
                     fin: minActual,
-                    mins: minutosJugados
+                    mins: minutosJugados,
+                    parte: 1
                 });
                 j.entradaActual = null;   // en el descanso no corre su tiempo; al empezar la 2ª parte entra en el 45
             }
@@ -897,6 +981,7 @@ window.siguienteFase = function(minConfirmado) {
                     inicio: j.entradaActual,
                     fin: minutoFinal,
                     mins: minutosJugados,
+                    parte: 3,
                     cierreFinal: true   // tramo cerrado por "Finalizar partido" (se deshace si se reabre)
                 });
                 j.entradaActual = null;
@@ -917,6 +1002,8 @@ window.siguienteFase = function(minConfirmado) {
 function actualizarBotonFase() {
     const btn = document.getElementById('btnFase');
     const txt = document.getElementById('textoFase');
+    const hint = document.getElementById('hintReloj');
+    if (hint) hint.style.display = (fase === 1 || fase === 3) ? 'block' : 'none';
     if(fase === 1) {
         btn.innerText = "⏹️ FINALIZAR 1ª PARTE";
         txt.innerText = "⚽ 1ª PARTE";
@@ -1219,10 +1306,18 @@ function mostrarJugadoresGelves() {
 // Seleccionar tipo de ocasión
 function mostrarTipoOcasion(jugador, equipo) {
     let modal = crearModal("🔥 Tipo de ocasión");
+    // Observaciones opcionales: se guardan con la ocasión al pulsar el tipo
+    let obs = document.createElement('input');
+    obs.type = 'text';
+    obs.id = 'obsOcasion';
+    obs.placeholder = '📝 Observaciones (opcional)';
+    obs.style.margin = '6px 0 0';
+    modal.appendChild(obs);
     let grid = document.createElement('div');
     grid.className = 'grid-jugadores';
     
     const tipos = [
+        'Gol anulado',
         'Falta directa',
         'Falta al area',
         'Jugada personal',
@@ -1237,9 +1332,11 @@ function mostrarTipoOcasion(jugador, equipo) {
     tipos.forEach(tipo => {
         let btn = document.createElement('button');
         btn.className = 'btn btn-neutral';
-        btn.innerText = tipo;
+        btn.innerText = tipo === 'Gol anulado' ? '⛔ Gol anulado' : tipo;
+        if (tipo === 'Gol anulado') { btn.style.background = '#7f8c8d'; btn.style.color = '#fff'; }
         btn.onclick = () => {
-            registrarEvento('OCASION', equipo, jugador, tipo);
+            const o = (document.getElementById('obsOcasion')?.value || '').trim();
+            registrarEvento('OCASION', equipo, jugador, o ? `${tipo} · ${o}` : tipo);
             cerrarModal();
         };
         grid.appendChild(btn);
@@ -1368,7 +1465,8 @@ window.mostrarCambio = function() {
                         j.intervalos.push({
                             inicio: j.entradaActual,
                             fin: minuto,
-                            mins: minutosJugados
+                            mins: minutosJugados,
+                            parte: fase
                         });
                         suplente.entradaActual = minuto;
                     } else if (fase === 0) {
@@ -3298,7 +3396,7 @@ window.abrirHistorico = async function() {
     try { lista = await window.fbSync.listarArchivados(); }
     catch (e) { cont.innerHTML = `<p style="color:#e74c3c; text-align:center;">No se pudieron cargar los partidos: ${e.message}</p>`; return; }
     window._historico = lista;
-    if (!lista.length) { cont.innerHTML = '<p style="color:#5B6573; text-align:center;">Todavía no hay partidos archivados. Se guardan aquí al pulsar NUEVO PARTIDO.</p>'; return; }
+    if (!lista.length) { cont.innerHTML = '<p style="color:#5B6573; text-align:center;">Todavía no hay partidos archivados. Se guardan aquí al pulsar FINALIZAR PARTIDO.</p>'; return; }
     const escH = x => String(x ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
     const admin = window.fbSync.esAdmin();
     cont.innerHTML = lista.map((p, i) => `
@@ -3661,6 +3759,7 @@ window.ocultarAvisoSanciones = function() {
     let remotoSanc;             // igual, para sanciones/jornada/rivales
     let sancPendiente = null;   // sanciones recibidas mientras la pantalla Sanciones está abierta
     let yoCierroPartido = false;
+    let archivoIdLocal = null;  // documento de 📂 Partidos jugados del partido actual (se crea al finalizar)
     let pendienteSubida = {};   // cambios hechos antes de recibir la nube
     let unsubPartido = null, unsubSanc = null;
 
@@ -3816,7 +3915,7 @@ window.ocultarAvisoSanciones = function() {
         if (valor === null) return;
         let fase = 0;
         try { fase = JSON.parse(valor).fase; } catch (e) {}
-        setDoc(refPartido(), {
+        const datos = {
             club: CLUB_SYNC,
             partido: valor,
             estado: fase === 4 ? 'finalizado' : 'en_juego',
@@ -3825,7 +3924,21 @@ window.ocultarAvisoSanciones = function() {
             editorNombre: miNombre,
             editorDevice: deviceId,
             ...meta()
-        }, { merge: true }).catch(errorNube);
+        };
+        if (fase === 4) {
+            // Al finalizar se guarda ya en 📂 Partidos jugados; los cambios posteriores del resumen
+            // (titularidades, árbitro, acta, reabrir con PIN) actualizan ese mismo documento.
+            const yaArchivado = !!((d && d.archivoId) || archivoIdLocal);
+            const id = (d && d.archivoId) || archivoIdLocal || doc(collection(fbDb, "partidos")).id;
+            archivoIdLocal = id;
+            datos.archivoId = id;
+            const arch = datosArchivo({ partido: valor, convocatoria: d ? (d.convocatoria || null) : null });
+            setDoc(doc(fbDb, "partidos", id), arch).catch(errorNube);
+            if (!yaArchivado) {
+                setDoc(refSanc(), { club: CLUB_SYNC, ultimoCierre: { nombre: miNombre, rival: arch.rival, ts: Date.now(), device: deviceId } }, { merge: true }).catch(errorNube);
+            }
+        }
+        setDoc(refPartido(), datos, { merge: true }).catch(errorNube);
     }
 
     function subirSanciones(valor, anterior) {
@@ -4056,12 +4169,13 @@ window.ocultarAvisoSanciones = function() {
                 return false;
             }
             if (usuario && d && d.partido && d.estado === 'finalizado') {
-                // Partido anterior terminado pero sin cerrar: se archiva antes de empezar el nuevo
+                // Partido anterior terminado pero sin cerrar: se archiva (o se actualiza su archivo) antes de empezar el nuevo
                 const batch = writeBatch(fbDb);
-                batch.set(doc(collection(fbDb, "partidos")), datosArchivo(d));
-                batch.update(refPartido(), { partido: null, estado: 'preparacion', ...meta() });
+                batch.set(d.archivoId ? doc(fbDb, "partidos", d.archivoId) : doc(collection(fbDb, "partidos")), datosArchivo(d));
+                batch.update(refPartido(), { partido: null, archivoId: deleteField(), estado: 'preparacion', ...meta() });
                 batch.commit().catch(errorNube);
             }
+            archivoIdLocal = null;   // el partido que empieza tendrá su propio archivo
             return true;
         },
 
@@ -4088,14 +4202,18 @@ window.ocultarAvisoSanciones = function() {
             if (!usuario || !d) return;
             yoCierroPartido = true;
             const batch = writeBatch(fbDb);
+            const idArch = d.archivoId || archivoIdLocal;
             if (d.partido) {
                 const arch = datosArchivo(d);
-                batch.set(doc(collection(fbDb, "partidos")), arch);
+                // Si ya se archivó al finalizar, se actualiza ese mismo documento (no se duplica)
+                batch.set(idArch ? doc(fbDb, "partidos", idArch) : doc(collection(fbDb, "partidos")), arch);
                 // Aviso para los demás móviles (lo reciben por el documento de sanciones)
-                batch.set(refSanc(), { club: CLUB_SYNC, ultimoCierre: { nombre: miNombre, rival: arch.rival, ts: Date.now(), device: deviceId } }, { merge: true });
+                if (!idArch) batch.set(refSanc(), { club: CLUB_SYNC, ultimoCierre: { nombre: miNombre, rival: arch.rival, ts: Date.now(), device: deviceId } }, { merge: true });
             }
             batch.delete(refPartido());
             batch.commit().catch(errorNube);
+            archivoIdLocal = null;
+            remotoPartido = null;   // ya no hay partido abierto (la nueva convocatoria se crea limpia)
         },
 
         async reservarJornada(esperada) {
