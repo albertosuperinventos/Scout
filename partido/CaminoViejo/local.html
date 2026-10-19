@@ -250,6 +250,7 @@
         <button class="btn" style="background: #2ecc71;" onclick="mostrarCorner()">⚑ CÓRNER</button>
         <button class="btn" style="background: #1a6b3a;" onclick="mostrarFueraDeJuego()">🚩 F. DE JUEGO</button>
         <button class="btn" style="background: #34495e;" onclick="mostrarManual()">➕ ACCIÓN MANUAL</button>
+        <button class="btn" style="background: #8e44ad; grid-column: 1 / -1;" onclick="dictarPorVoz()">🎤 DICTAR POR VOZ</button>
     </div>
 </div>
 
@@ -1474,6 +1475,21 @@ window.mostrarCambio = function() {
                 btnSuplente.className = 'btn btn-exito';
                 btnSuplente.innerText = suplente.name;
                 btnSuplente.onclick = () => {
+                    ejecutarCambio(j, suplente);
+                    cerrarModal();
+                    guardarAuto();
+                };
+                grid2.appendChild(btnSuplente);
+            });
+            modal2.appendChild(grid2);
+        };
+        grid.appendChild(btn);
+    });
+    modal.appendChild(grid);
+};
+
+// Sale j, entra suplente (desde los botones o por voz)
+function ejecutarCambio(j, suplente) {
                     let minuto = obtenerMinutoActual();
                     
                     if (fase === 1 || fase === 3) {
@@ -1503,16 +1519,250 @@ window.mostrarCambio = function() {
                     enCampo = convocados.filter(x => x.activo);
                     
                     registrarEvento('CAMBIO', rolGelves, suplente.name, `(sale ${j.name})`);
-                    cerrarModal();
-                    guardarAuto();
-                };
-                grid2.appendChild(btnSuplente);
-            });
-            modal2.appendChild(grid2);
-        };
-        grid.appendChild(btn);
+}
+
+// ===== DICTADO POR VOZ (reglas propias, sin IA) =====
+// Frases: "gol de Hugo asistencia Bernal", "gol rival", "cambio entra Lucas sale Óscar", "entra Lucas por Óscar",
+// "amarilla Joaquín", "roja rival 10", "córner a favor", "córner en contra", "gol anulado de Hugo",
+// "gol anulado rival", "ocasión de Hugo tiro al palo", "fuera de juego de Hugo", "fuera de juego a favor",
+// "penalti a favor sobre Hugo", "penalti en contra de Bernal". Siempre se confirma antes de apuntar.
+const VOZ_TIPOS_OCASION = ['Falta directa', 'Falta al area', 'Jugada personal', 'Jugada de equipo', 'Córner rematado', 'Tiro lejano', 'Tiro al palo', 'Tiro al larguero'];
+
+function distanciaPal(a, b) {
+    if (Math.abs(a.length - b.length) > 2) return 9;
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+        d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[a.length][b.length];
+}
+
+// Mejor jugador de la lista para un trozo de frase. Devuelve { j, dudoso } o null.
+function buscarJugadorVoz(trozo, lista) {
+    const t = normalizarNombre(trozo).split(' ').filter(w => w.length > 1 && !['de', 'del', 'la', 'el', 'a', 'al', 'para', 'por', 'numero', 'dorsal'].includes(w));
+    if (!t.length || !lista.length) return null;
+    const num = (trozo.match(/\b(\d{1,2})\b/) || [])[1];
+    const puntos = lista.map(j => {
+        let p = 0;
+        if (num && String(j.num) === num && num !== '0') p += 5;
+        const pals = tokensNombre(j.name).concat(tokensNombre(rfafDe(j.name)));
+        t.forEach(w => {
+            if (pals.includes(w)) p += 3;
+            else if (w.length >= 4 && pals.some(x => x.length >= 4 && distanciaPal(w, x) <= 1)) p += 2;
+        });
+        return { j, p };
+    }).filter(x => x.p > 0).sort((a, b) => b.p - a.p);
+    if (!puntos.length) return null;
+    return { j: puntos[0].j, dudoso: puntos.length > 1 && puntos[1].p === puntos[0].p };
+}
+
+// Convierte la frase en una acción. Devuelve null si no se entiende.
+function interpretarVoz(texto) {
+    const t = ' ' + normalizarNombre(texto) + ' ';
+    const banquillo = convocados.filter(x => !enCampo.includes(x));
+    const rivalTxt = /\b(rival|ellos|contrario|en contra)\b/;
+    const dorsalRival = (t.match(/\b(\d{1,2})\b/) || [])[1];
+    const tras = (re) => { const m = t.match(re); return m ? t.slice(m.index + m[0].length) : ''; };
+    let m;
+    // Gol anulado
+    if (/gol anulado|anulado/.test(t)) {
+        if (rivalTxt.test(t)) return { tipo: 'ocasion', equipo: 'rival', ocasion: 'Gol anulado' };
+        const r = buscarJugadorVoz(tras(/anulad[oa]/), enCampo);
+        return { tipo: 'ocasion', equipo: 'nos', ocasion: 'Gol anulado', jugador: r && r.j, dudoso: r && r.dudoso };
+    }
+    // Cambio
+    if (/\b(cambio|entra|sale)\b/.test(t)) {
+        let entraTxt = '', saleTxt = '';
+        if ((m = t.match(/entra (.+?) (?:sale|por) (.+)/))) { entraTxt = m[1]; saleTxt = m[2]; }
+        else if ((m = t.match(/sale (.+?) entra (.+)/))) { saleTxt = m[1]; entraTxt = m[2]; }
+        else if ((m = t.match(/cambio (.+?) por (.+)/))) { entraTxt = m[1]; saleTxt = m[2]; }
+        const e = buscarJugadorVoz(entraTxt, banquillo), s2 = buscarJugadorVoz(saleTxt, enCampo);
+        return { tipo: 'cambio', entra: e && e.j, sale: s2 && s2.j, dudoso: (e && e.dudoso) || (s2 && s2.dudoso) };
+    }
+    // Tarjetas
+    if ((m = t.match(/\b(amarilla|roja)\b/))) {
+        const color = m[1] === 'roja' ? 'ROJA' : 'AMARILLA';
+        if (rivalTxt.test(t)) return { tipo: 'tarjeta', equipo: 'rival', color, dorsal: dorsalRival || '' };
+        const r = buscarJugadorVoz(t.replace(/tarjeta|amarilla|roja/g, ' '), enCampo);
+        return { tipo: 'tarjeta', equipo: 'nos', color, jugador: r && r.j, dudoso: r && r.dudoso };
+    }
+    // Penaltis
+    if (/penalti|penalty/.test(t)) {
+        const contra = /en contra|rival|ellos/.test(t);
+        const r = buscarJugadorVoz(t.replace(/penalti|penalty|a favor|en contra|sobre|rival/g, ' '), enCampo);
+        return { tipo: 'penalti', contra, jugador: r && r.j, dudoso: r && r.dudoso };
+    }
+    // Córner
+    if (/corner/.test(t)) return { tipo: 'corner', contra: rivalTxt.test(t) };
+    // Fuera de juego
+    if (/fuera de juego|offside/.test(t)) {
+        if (/a favor/.test(t)) return { tipo: 'fuerajuego', favor: true };
+        const r = buscarJugadorVoz(t.replace(/fuera de juego|offside|en contra/g, ' '), enCampo);
+        return { tipo: 'fuerajuego', favor: false, jugador: r && r.j, dudoso: r && r.dudoso };
+    }
+    // Ocasión
+    if (/ocasion/.test(t)) {
+        const tipoOc = VOZ_TIPOS_OCASION.find(x => t.includes(' ' + normalizarNombre(x) + ' ')) || 'Jugada personal';
+        if (rivalTxt.test(t)) return { tipo: 'ocasion', equipo: 'rival', ocasion: tipoOc };
+        let resto = t.replace('ocasion', ' ');
+        VOZ_TIPOS_OCASION.forEach(x => { resto = resto.replace(normalizarNombre(x), ' '); });
+        const r = buscarJugadorVoz(resto, enCampo);
+        return { tipo: 'ocasion', equipo: 'nos', ocasion: tipoOc, jugador: r && r.j, dudoso: r && r.dudoso };
+    }
+    // Gol
+    if (/\bgol\b/.test(t)) {
+        if (rivalTxt.test(t)) return { tipo: 'golrival' };
+        let golTxt = tras(/\bgol\b/), asisTxt = '';
+        if ((m = golTxt.match(/(.*?)\b(?:asistencia|asiste|pase|pase de)\b(.*)/))) { golTxt = m[1]; asisTxt = m[2]; }
+        const g = buscarJugadorVoz(golTxt, enCampo);
+        const a = asisTxt ? buscarJugadorVoz(asisTxt, enCampo.filter(x => !g || x !== g.j)) : null;
+        return { tipo: 'gol', jugador: g && g.j, asistente: a && a.j, dudoso: (g && g.dudoso) || (a && a.dudoso) };
+    }
+    return null;
+}
+
+function textoAccionVoz(a) {
+    const n = j => j ? j.name : '❓';
+    switch (a.tipo) {
+        case 'gol': return `⚽ GOL de ${n(a.jugador)}${a.asistente ? ` · asistencia de ${a.asistente.name}` : ''}`;
+        case 'golrival': return '⚽ GOL del rival';
+        case 'cambio': return `🔄 CAMBIO · entra ${n(a.entra)} · sale ${n(a.sale)}`;
+        case 'tarjeta': return `${a.color === 'ROJA' ? '🟥 ROJA' : '🟨 AMARILLA'} ${a.equipo === 'rival' ? 'al rival' + (a.dorsal ? ' (dorsal ' + a.dorsal + ')' : '') : 'a ' + n(a.jugador)}`;
+        case 'penalti': return a.contra ? `🎯 PENALTI EN CONTRA (cometido por ${n(a.jugador)})` : `🎯 PENALTI A FAVOR (sobre ${n(a.jugador)})`;
+        case 'corner': return a.contra ? '⚑ CÓRNER en contra' : '⚑ CÓRNER a favor';
+        case 'fuerajuego': return a.favor ? '🚩 FUERA DE JUEGO a favor (del rival)' : `🚩 FUERA DE JUEGO de ${a.jugador ? a.jugador.name : '(sin asignar)'}`;
+        case 'ocasion': return `🔥 ${a.ocasion === 'Gol anulado' ? '⛔ GOL ANULADO' : 'OCASIÓN · ' + a.ocasion} · ${a.equipo === 'rival' ? 'rival' : n(a.jugador)}`;
+    }
+    return '';
+}
+
+// Qué jugadores hay que elegir (para poder corregir lo que se ha entendido)
+function camposJugadorVoz(a) {
+    const banquillo = convocados.filter(x => !enCampo.includes(x));
+    if (a.tipo === 'gol') return [['jugador', '⚽ Goleador', enCampo, false], ['asistente', '🎯 Asistencia', enCampo, true]];
+    if (a.tipo === 'cambio') return [['entra', '⬆️ Entra', banquillo, false], ['sale', '⬇️ Sale', enCampo, false]];
+    if ((a.tipo === 'tarjeta' || a.tipo === 'ocasion') && a.equipo === 'nos') return [['jugador', '👤 Jugador', enCampo, false]];
+    if (a.tipo === 'penalti') return [['jugador', '👤 Jugador', enCampo, false]];
+    if (a.tipo === 'fuerajuego' && !a.favor) return [['jugador', '👤 Jugador (opcional)', enCampo, true]];
+    return [];
+}
+
+window.dictarPorVoz = function() {
+    if (soloLectura()) { avisoSoloLectura(); return; }
+    if (fase === 4) { alert('El partido ya ha terminado.'); return; }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('⚠️ Este navegador no permite dictar. Usa Chrome en el móvil.'); return; }
+    const rec = new SR();
+    rec.lang = 'es-ES';
+    rec.interimResults = false;
+    rec.maxAlternatives = 3;
+    const modal = crearModal('🎤 Escuchando…');
+    modal.innerHTML += `
+        <p style="text-align:center; color:#5B6573; margin:10px 0;">Habla ahora. Por ejemplo:<br>
+        <i>"gol de Hugo asistencia Bernal"</i> · <i>"cambio entra Lucas sale Óscar"</i> · <i>"amarilla Joaquín"</i> · <i>"córner a favor"</i></p>
+        <div style="text-align:center; font-size:48px;">🎙️</div>
+        <button class="btn btn-neutral" onclick="cerrarModal()">CANCELAR</button>`;
+    let entendido = false;
+    rec.onresult = ev => {
+        entendido = true;
+        const alts = [...ev.results[0]].map(x => x.transcript);
+        let accion = null, frase = alts[0] || '';
+        for (const a of alts) { const r = interpretarVoz(a); if (r) { accion = r; frase = a; break; } }
+        confirmarAccionVoz(frase, accion);
+    };
+    rec.onerror = ev => {
+        entendido = true;
+        cerrarModal();
+        const motivo = ev.error === 'network' ? 'Sin conexión: el dictado necesita internet.'
+            : ev.error === 'not-allowed' ? 'Permiso de micrófono denegado. Actívalo en los ajustes de Chrome para esta web.'
+            : ev.error === 'no-speech' ? 'No se ha oído nada.' : 'Error: ' + ev.error;
+        alert('🎤 ' + motivo);
+    };
+    rec.onend = () => { if (!entendido) cerrarModal(); };
+    try { rec.start(); } catch (e) { cerrarModal(); alert('🎤 No se pudo iniciar el micrófono: ' + e.message); }
+};
+
+function confirmarAccionVoz(frase, accion) {
+    const modal = crearModal('🎤 ¿Apunto esto?');
+    let html = `<p style="text-align:center; color:#64748B; font-size:13px; margin:6px 0;">Has dicho: "<i>${escH(frase)}</i>"</p>`;
+    if (!accion) {
+        html += `<p style="text-align:center; color:#e74c3c; margin:12px 0;">No lo he entendido. Prueba con frases como "gol de Hugo", "amarilla Joaquín" o "cambio entra Lucas sale Óscar".</p>
+            <div class="btn-group">
+                <button class="btn btn-neutral" style="flex:1;" onclick="cerrarModal()">CERRAR</button>
+                <button class="btn" style="flex:1; background:#8e44ad;" onclick="dictarPorVoz()">🔁 REPETIR</button>
+            </div>`;
+        modal.innerHTML += html;
+        return;
+    }
+    window._accionVoz = accion;
+    html += `<p id="vozResumen" style="text-align:center; font-weight:bold; font-size:17px; margin:10px 0;">${escH(textoAccionVoz(accion))}</p>`;
+    camposJugadorVoz(accion).forEach(([campo, etiqueta, lista, opcional]) => {
+        const sel = accion[campo];
+        html += `<label style="color:#64748B; font-size:13px; display:block; margin:8px 0 2px;">${etiqueta}${accion.dudoso ? ' · revisa' : ''}</label>
+            <select id="voz_${campo}" onchange="cambiarJugadorVoz('${campo}', this.value)">
+                <option value="">${opcional ? '— Ninguno —' : '— Elige —'}</option>
+                ${lista.map((j, i) => `<option value="${i}" ${j === sel ? 'selected' : ''}>${escH(j.num)} - ${escH(j.name)}</option>`).join('')}
+            </select>`;
     });
-    modal.appendChild(grid);
+    html += `<div class="btn-group" style="margin-top:12px;">
+            <button class="btn btn-neutral" style="flex:1;" onclick="cerrarModal()">CANCELAR</button>
+            <button class="btn" style="flex:1; background:#8e44ad;" onclick="dictarPorVoz()">🔁 REPETIR</button>
+            <button class="btn btn-exito" style="flex:1.4;" onclick="apuntarAccionVoz()">✅ APUNTAR</button>
+        </div>`;
+    modal.innerHTML += html;
+}
+
+window.cambiarJugadorVoz = function(campo, idx) {
+    const a = window._accionVoz;
+    if (!a) return;
+    const def = camposJugadorVoz(a).find(c => c[0] === campo);
+    a[campo] = idx === '' ? null : def[2][parseInt(idx)];
+    const r = document.getElementById('vozResumen');
+    if (r) r.textContent = textoAccionVoz(a);
+};
+
+window.apuntarAccionVoz = function() {
+    const a = window._accionVoz;
+    if (!a) return;
+    const falta = camposJugadorVoz(a).filter(([c, , , opc]) => !opc && !a[c]);
+    if (falta.length) { alert('Elige: ' + falta.map(f => f[1]).join(', ')); return; }
+    if (a.tipo !== 'cambio' && fase !== 1 && fase !== 3) { alert('Solo se pueden apuntar jugadas con el partido en juego.'); return; }
+    switch (a.tipo) {
+        case 'gol': {
+            a.jugador.goles++;
+            const id = registrarEvento('GOL', rolGelves, a.jugador.name);
+            if (a.asistente) {
+                a.asistente.asistencias++;
+                const e = eventos.find(x => x.id === id);
+                if (e) e.extra = `(asist. ${a.asistente.name})`;
+                actualizarTimeline();
+            }
+            break;
+        }
+        case 'golrival': registrarEvento('GOL', rolRival, document.getElementById('nombreRival').value || 'RIVAL'); break;
+        case 'cambio': ejecutarCambio(a.sale, a.entra); break;
+        case 'tarjeta':
+            if (a.equipo === 'rival') registrarEvento(a.color, rolRival, a.dorsal ? 'Riv ' + a.dorsal : 'Rival');
+            else { if (a.color === 'ROJA') a.jugador.rojas++; else a.jugador.amarillas++; registrarEvento(a.color, rolGelves, a.jugador.name); }
+            break;
+        case 'penalti':
+            if (a.contra) registrarEvento('PENALTI CONTRA', rolRival, a.jugador.name, 'cometido por');
+            else registrarEvento('PENALTI', rolGelves, a.jugador.name, 'cometido a');
+            break;
+        case 'corner': registrarEvento('CORNER', a.contra ? rolRival : rolGelves, 'Córner'); break;
+        case 'fuerajuego':
+            if (a.favor) registrarEvento('FUERA JUEGO', rolGelves, 'F.Juego favor');
+            else if (a.jugador) registrarEvento('FUERA JUEGO', rolRival, a.jugador.name, 'F.Juego contra');
+            else registrarEvento('FUERA JUEGO', rolRival, 'F.Juego contra');
+            break;
+        case 'ocasion':
+            if (a.equipo === 'rival') registrarEvento('OCASION', rolRival, 'Rival', a.ocasion);
+            else registrarEvento('OCASION', rolGelves, a.jugador.name, a.ocasion);
+            break;
+    }
+    window._accionVoz = null;
+    cerrarModal();
+    guardarAuto();
 };
 
 window.mostrarManual = function() {
