@@ -3804,9 +3804,13 @@ window.abrirHistorico = async function() {
     cont.innerHTML = '<p style="color:#5B6573; text-align:center;">⏳ Cargando…</p>';
     if (!window.fbSync) { cont.innerHTML = '<p style="color:#5B6573; text-align:center;">Inicia sesión para ver los partidos.</p>'; return; }
     let lista = [];
+    const btnImp0 = document.getElementById('btnImportarPartido');
+    if (btnImp0) btnImp0.style.display = window.fbSync.esAdmin() ? 'block' : 'none';
     try { lista = await window.fbSync.listarArchivados(); }
     catch (e) { cont.innerHTML = `<p style="color:#e74c3c; text-align:center;">No se pudieron cargar los partidos: ${e.message}</p>`; return; }
     window._historico = lista;
+    const btnImp = document.getElementById('btnImportarPartido');
+    if (btnImp) btnImp.style.display = window.fbSync.esAdmin() ? 'block' : 'none';
     if (!lista.length) { cont.innerHTML = '<p style="color:#5B6573; text-align:center;">Todavía no hay partidos archivados. Se guardan aquí al pulsar FINALIZAR PARTIDO.</p>'; return; }
     const escH = x => String(x ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
     const admin = window.fbSync.esAdmin();
@@ -3856,6 +3860,198 @@ window.exportarArchivado = async function(i, formato) {
         if (document.getElementById('nombreArbitro')) document.getElementById('nombreArbitro').value = copia.arbitroDom;
         if (document.getElementById('notasArbitro')) document.getElementById('notasArbitro').value = copia.notasDom;
     }
+};
+
+// ===== AÑADIR A 📂 PARTIDOS JUGADOS UN PARTIDO DESDE EXCEL / CSV (formato de la app) =====
+async function filasDeArchivoPartido(file) {
+    const celda = v => {
+        if (v === null || v === undefined) return '';
+        if (typeof v === 'object') {
+            if (v.richText) return v.richText.map(t => t.text).join('');
+            if ('result' in v) return v.result === undefined || v.result === null ? '' : String(v.result);
+            if (v.text !== undefined) return String(v.text);
+            if (v instanceof Date) return v.toLocaleDateString('es-ES');
+            return '';
+        }
+        return String(v);
+    };
+    if (/\.csv$/i.test(file.name)) {
+        let t = await file.text();
+        t = t.replace(/^\uFEFF/, '');
+        return t.split(/\r?\n/).map(l => {
+            const out = []; let cur = '', q = false;
+            for (const ch of l) {
+                if (ch === '"') q = !q;
+                else if (ch === ';' && !q) { out.push(cur); cur = ''; }
+                else cur += ch;
+            }
+            out.push(cur);
+            return out.map(x => x.trim());
+        });
+    }
+    if (typeof ExcelJS === 'undefined') throw new Error('Falta la librería de Excel (¿sin conexión?)');
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await file.arrayBuffer());
+    const ws = wb.worksheets[0];
+    const filas = [];
+    ws.eachRow({ includeEmpty: true }, row => {
+        const vals = [];
+        for (let c = 1; c <= 10; c++) vals.push(celda(row.getCell(c).value).trim());
+        filas.push(vals);
+    });
+    return filas;
+}
+
+// Convierte las filas exportadas por la app en un partido (mismo formato que guarda la app)
+function partidoDesdeFilas(filas) {
+    const r = { partido: '', fecha: '', arbitro: '', notas: '', jugadores: [], cambios: [], eventos: [] };
+    let modo = '';
+    const minuto = x => parseInt(String(x || '').replace(/[^0-9]/g, ''));
+    filas.forEach(f => {
+        const a = (f[0] || '').trim(), b = (f[1] || '').trim();
+        if (!f.some(x => x)) return;
+        const A = normalizarNombre(a);
+        let m;
+        if ((m = a.match(/^PARTIDO:\s*(.*)$/i))) { r.partido = m[1]; return; }
+        if ((m = a.match(/^FECHA:\s*(.*)$/i))) { r.fecha = m[1]; return; }
+        if ((m = a.match(/^[ÁA]RBITRO:\s*(.*)$/i))) { r.arbitro = m[1]; return; }
+        if ((m = a.match(/^NOTAS [ÁA]RBITRO:\s*(.*)$/i))) { r.notas = m[1]; return; }
+        if (A === 'partido' && modo === '') { r.partido = f[2] || b; return; }
+        if (A === 'fecha') { r.fecha = f[2] || b; return; }
+        if (A === 'arbitro') { r.arbitro = f[2] || b; return; }
+        if (A === 'notas arbitro') { r.notas = f[2] || b; return; }
+        if (/jugadores$/.test(A) && !b) { modo = ''; return; }
+        if (A === 'dorsal' && /jugador/i.test(b)) { modo = 'jug'; return; }
+        if (/cambios realizados/.test(A)) { modo = 'camb'; return; }
+        if (/corners|fueras de juego/.test(A) && !/a favor|en contra/.test(A)) { modo = 'corn'; return; }
+        if (/cronica completa/.test(A)) { modo = 'cron'; return; }
+        if (A === 'minuto' && (/sale|equipo/i.test(b))) return;
+        if (/^partido$/.test(A)) return;
+        if (modo === 'jug') {
+            if (!b) return;
+            const tramos = [];
+            const re = /(\d+)\s*-\s*(\d+)\s*\((\d+)\s*min\)/g; let t;
+            while ((t = re.exec(f[8] || ''))) tramos.push({ inicio: +t[1], fin: +t[2], mins: +t[2] - +t[1] });
+            r.jugadores.push({ num: a, name: b, rol: f[2] || '', goles: parseInt(f[4]) || 0, asistencias: parseInt(f[5]) || 0,
+                amarillas: parseInt(f[6]) || 0, rojas: parseInt(f[7]) || 0, intervalos: tramos });
+        } else if (modo === 'camb') {
+            if (!isNaN(minuto(a)) && b) r.cambios.push({ min: minuto(a), sale: b, entra: f[2] || '' });
+        } else if (modo === 'corn') {
+            const lado = /en contra/.test(A) ? 'contra' : 'favor';
+            const tipo = /corner/.test(A) ? 'CORNER' : 'FUERA JUEGO';
+            const mins = ((a.includes(':') ? a.split(':').slice(1).join(':') : '') + ' ' + (f[2] || '')).match(/\d+(?=')/g) || [];
+            mins.forEach(x => r.eventos.push({ min: +x, tipo, lado, jugador: tipo === 'CORNER' ? 'Córner' : (lado === 'favor' ? 'F.Juego favor' : 'F.Juego contra'), extra: '' }));
+        } else if (modo === 'cron') {
+            if (a && !isNaN(minuto(a)) && f[2]) r.eventos.push({ min: minuto(a), equipoTxt: b, tipo: f[2].toUpperCase(), jugador: f[3] || '', extra: f[4] || '' });
+            if (f[6] && !isNaN(minuto(f[6])) && f[8]) r.eventos.push({ min: minuto(f[6]), equipoTxt: f[7] || '', tipo: f[8].toUpperCase().includes('ROJ') ? 'ROJA' : 'AMARILLA', jugador: f[9] || '', extra: '' });
+        }
+    });
+    return r;
+}
+
+// Nombre de la app para un nombre del Excel (o null si no se reconoce con seguridad)
+function nombreAppDe(nombre) {
+    const limpio = String(nombre || '').replace(/\(c\)/ig, '').trim();
+    const cand = [...PLANTILLA_BASE.filter(j => !j.n.startsWith('Filial')), ...STAFF_TECNICO].map(j => ({ ref: j.n, n: j.n, rfaf: j.rfaf }));
+    if (cand.some(c => c.n === limpio)) return limpio;
+    return buscarNombreSeguro(limpio, cand);
+}
+
+window.importarPartidoArchivo = async function(input) {
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file || !window.fbSync) return;
+    let d;
+    try { d = partidoDesdeFilas(await filasDeArchivoPartido(file)); }
+    catch (e) { alert('No se pudo leer el archivo: ' + e.message); return; }
+    if (!d.partido || !d.jugadores.length) { alert('⚠️ El archivo no tiene el formato de los Excel/CSV de partido de la app.'); return; }
+    const lados = d.partido.split(/\s+vs\s+/i).map(x => x.trim());
+    const miEq = normalizarNombre(NOMBRE_EQUIPO);
+    const rol = normalizarNombre(lados[0]).includes(miEq) ? 'L' : 'V';
+    const rival = (rol === 'L' ? lados[1] : lados[0]) || 'RIVAL';
+    const rolR = rol === 'L' ? 'V' : 'L';
+    const fm = (d.fecha || '').match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    const fechaISO = fm ? `${fm[3]}-${fm[2].padStart(2, '0')}-${fm[1].padStart(2, '0')}` : '';
+    // Nombres de nuestros jugadores -> nombres de la app
+    const sinReconocer = [];
+    d.jugadores.forEach(j => {
+        const n = nombreAppDe(j.name);
+        j.original = j.name;
+        if (n) j.name = n; else if (!sinReconocer.includes(j.name)) sinReconocer.push(j.name);
+    });
+    window._importPartido = { d, rol, rolR, rival, fechaISO, sinReconocer };
+    const yaEsta = (window._historico || []).some(p => normalizarNombre(p.rival) === normalizarNombre(rival) && p.fechaTexto === (fm ? `${fm[1].padStart(2, '0')}/${fm[2].padStart(2, '0')}/${fm[3]}` : ''));
+    const gNos = d.eventos.filter(e => e.tipo === 'GOL' && normalizarNombre(e.equipoTxt || '').includes(miEq)).length;
+    const gRiv = d.eventos.filter(e => e.tipo === 'GOL').length - gNos;
+    const resultado = rol === 'L' ? `${gNos} - ${gRiv}` : `${gRiv} - ${gNos}`;
+    const nombres = [...PLANTILLA_BASE.filter(j => !j.n.startsWith('Filial')).map(j => j.n), ...STAFF_TECNICO.map(j => j.n)];
+    const modal = crearModal('📥 AÑADIR PARTIDO');
+    modal.style.overflowY = 'auto';
+    modal.innerHTML += `
+        <div style="background:#FFFFFF; border-radius:15px; padding:12px; margin:8px 0;">
+            <div style="font-weight:bold; font-size:16px;">${escH(d.partido)}</div>
+            <div style="color:#5B6573; font-size:13px; margin-top:4px;">${escH(d.fecha || 'Sin fecha')} · resultado ${escH(resultado)} · ${d.jugadores.filter(j => j.intervalos.length).length} jugadores · ${d.cambios.length} cambios</div>
+            ${d.arbitro ? `<div style="color:#5B6573; font-size:12px;">Árbitro: ${escH(d.arbitro)}</div>` : ''}
+        </div>
+        ${yaEsta ? '<p style="color:#e74c3c; font-size:13px; text-align:center;">⚠️ Ya hay un partido contra este rival en esa fecha en Partidos jugados.</p>' : ''}
+        <label style="color:#64748B; font-size:13px; display:block; margin:8px 0 4px;">Tipo</label>
+        <select id="impTipo"><option value="Liga" selected>🏆 Liga</option><option value="Amistoso">🤝 Amistoso</option></select>
+        ${sinReconocer.length ? `<p style="color:#B9640A; font-size:13px; margin:12px 0 4px;">Estos nombres no coinciden con la plantilla. Elige quién es (o déjalo tal cual):</p>
+            ${sinReconocer.map((n, i) => `<div style="background:#FDECEA; border-radius:10px; padding:8px; margin-bottom:6px;"><b>${escH(n)}</b>${selectorJugador('impAsig_' + i, nombres).replace('— Sin asignar (no se suma) —', '— Dejar el nombre tal cual —')}</div>`).join('')}` : ''}
+        <div class="btn-group" style="margin-top:12px;">
+            <button class="btn btn-neutral" style="flex:1;" onclick="cerrarModal()">CANCELAR</button>
+            <button class="btn btn-exito" style="flex:2;" onclick="guardarPartidoImportado()">💾 GUARDAR EN PARTIDOS JUGADOS</button>
+        </div>`;
+};
+
+window.guardarPartidoImportado = async function() {
+    const x = window._importPartido;
+    if (!x) return;
+    const { d, rol, rolR, rival, fechaISO, sinReconocer } = x;
+    const mapa = {};
+    d.jugadores.forEach(j => { if (j.original !== j.name) mapa[j.original] = j.name; });
+    sinReconocer.forEach((n, i) => { const v = document.getElementById('impAsig_' + i)?.value; if (v) mapa[n] = v; });
+    const cambiar = t => {
+        let out = String(t || '');
+        Object.keys(mapa).sort((a, b) => b.length - a.length).forEach(k => { out = out.split(k).join(mapa[k]); });
+        return out;
+    };
+    const tipo = document.getElementById('impTipo')?.value || 'Liga';
+    const miEq = normalizarNombre(NOMBRE_EQUIPO);
+    const convocadosImp = d.jugadores.map(j => ({
+        num: j.num, name: mapa[j.original] || j.name, goles: j.goles, asistencias: j.asistencias, amarillas: j.amarillas, rojas: j.rojas,
+        intervalos: j.intervalos, activo: false, entradaActual: null, titular: /titular/i.test(j.rol)
+    }));
+    let n = 0;
+    const eventosImp = [];
+    d.cambios.forEach(c => eventosImp.push({ id: Date.now() + (n++), min: c.min, tipo: 'CAMBIO', equipo: rol, jugador: cambiar(c.entra), extra: `(sale ${cambiar(c.sale)})` }));
+    d.eventos.forEach(e => {
+        let equipo;
+        if (e.lado) equipo = (e.tipo === 'CORNER' ? (e.lado === 'favor' ? rol : rolR) : (e.lado === 'favor' ? rol : rolR));
+        else equipo = normalizarNombre(e.equipoTxt || '').includes(miEq) ? rol : rolR;
+        const nuestro = equipo === rol && !e.lado;
+        eventosImp.push({ id: Date.now() + (n++), min: e.min, tipo: e.tipo, equipo, jugador: nuestro ? cambiar(e.jugador) : e.jugador, extra: nuestro ? cambiar(e.extra) : e.extra });
+    });
+    eventosImp.sort((a, b) => a.min - b.min);
+    const golesL = eventosImp.filter(e => e.tipo === 'GOL' && e.equipo === 'L').length;
+    const golesV = eventosImp.filter(e => e.tipo === 'GOL' && e.equipo === 'V').length;
+    const finales = convocadosImp.flatMap(j => j.intervalos.map(t => t.fin));
+    const minutoFinal = Math.max(0, ...finales, ...eventosImp.map(e => e.min));
+    const fin1T = Math.max(0, ...convocadosImp.flatMap(j => j.intervalos.filter(t => t.inicio < 45).map(t => t.fin)));
+    const datos = {
+        rolGelves: rol, rolRival: rolR, convocados: convocadosImp, eventos: eventosImp, golesL, golesV, fase: 4,
+        tiempoInicio: 0, duracion1T: fin1T ? `1T: ${String(fin1T).padStart(2, '0')}:00` : '', minutoFinal, minutoFin1T: fin1T || 45,
+        rival, arbitro: d.arbitro || '', notasArbitro: d.notas || '',
+        config: { tipo, rival, fecha: fechaISO, lugar: '', horaPartido: '', horaCitacion: '', rolGelves: rol },
+        importado: true
+    };
+    try {
+        await window.fbSync.importarArchivado(JSON.stringify(datos), { rival, fecha: fechaISO, tipo, golesL, golesV });
+    } catch (e) { alert('No se pudo guardar: ' + e.message); return; }
+    window._importPartido = null;
+    cerrarModal();
+    avisoInfo(`✅ ${d.partido} añadido a Partidos jugados.`);
+    abrirHistorico();
 };
 
 window.borrarArchivado = async function(i) {
@@ -3948,6 +4144,8 @@ window.ocultarAvisoSanciones = function() {
         <button class="btn btn-neutral" style="padding:10px 20px; width:auto;" onclick="window.mostrarPantalla('pConfig')">⬅️ VOLVER</button>
         <h3 style="margin:0; color:#1F6AA5;">📂 PARTIDOS JUGADOS</h3>
     </div>
+    <button id="btnImportarPartido" class="btn" style="display:none; background:#6c3483; margin:0 0 12px;" onclick="document.getElementById('inputImportarPartido').click()">📥 AÑADIR PARTIDO DESDE EXCEL / CSV</button>
+    <input type="file" id="inputImportarPartido" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;" onchange="importarPartidoArchivo(this)">
     <div id="listaHistorico" style="flex:1; overflow-y:auto;"></div>
 </div>
 
@@ -4671,6 +4869,16 @@ window.ocultarAvisoSanciones = function() {
             });
             out.sort((a, b) => b.orden - a.orden);
             return out;
+        },
+
+        // Añade a 📂 Partidos jugados un partido traído de un Excel/CSV (solo el admin)
+        async importarArchivado(partido, info) {
+            if (!soyAdmin) throw new Error('Solo el admin puede añadir partidos al histórico.');
+            await setDoc(doc(collection(fbDb, "partidos")), {
+                club: CLUB_SYNC, estado: 'archivado', rival: info.rival || '', fecha: info.fecha || '', tipo: info.tipo || '',
+                golesL: info.golesL || 0, golesV: info.golesV || 0, partido, convocatoria: null, importado: true,
+                cerradoAt: serverTimestamp(), cerradoPor: usuario.email || '', cerradoPorNombre: miNombre
+            });
         },
 
         async borrarArchivado(id) {
