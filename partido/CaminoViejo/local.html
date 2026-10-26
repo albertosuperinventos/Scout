@@ -2512,6 +2512,11 @@ window.abrirResumenArbitro = function() {
     const goles = evs.filter(e => e.tipo === 'GOL');
     const tarjetas = evs.filter(e => e.tipo !== 'GOL');
     const modal = crearModal('📋 RESUMEN PARA EL ÁRBITRO');
+    // Lista larga: arriba y con scroll (sin tocar el resto de modales)
+    modal.style.justifyContent = 'flex-start';
+    modal.style.overflowY = 'auto';
+    modal.style.webkitOverflowScrolling = 'touch';
+    modal.style.paddingBottom = '40px';
     modal.innerHTML += `
         <div style="text-align:center; margin:10px 0 15px;">
             <div style="font-size:13px; color:#64748B;">${escH(n.local)} vs ${escH(n.visitante)}</div>
