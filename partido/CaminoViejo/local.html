@@ -100,7 +100,6 @@
         body.solo-lectura .btn-del,
         body.solo-lectura #pResumen button[onclick*="volverAlPartido"],
         body.solo-lectura #pResumen button[onclick*="nuevoPartido"],
-        body.solo-lectura #btnSubirActa,
         body.solo-lectura #listaTitularidades button,
         body.solo-lectura #pResumen input,
         body.solo-lectura #pResumen textarea {
@@ -2452,13 +2451,190 @@ window.guardarEdicionEvento = function(id) {
     if(isNaN(nuevoMin) || nuevoMin < 0 || nuevoMin > 120) {
         alert('Minuto inválido (0-120)'); return;
     }
+    ajustarContadorEvento(e, -1);
     e.min = nuevoMin;
     e.jugador = nuevoJug;
     e.extra = nuevoExtra;
+    ajustarContadorEvento(e, +1);
     cerrarModal();
     actualizarMarcador();
     actualizarTimeline();
     guardarAuto();
+};
+
+// Mantiene sincronizados goles/tarjetas del jugador (Excel/CSV) con los eventos
+function ajustarContadorEvento(e, delta) {
+    if (!e || e.equipo !== rolGelves) return;
+    const j = convocados.find(c => c.name === e.jugador);
+    if (!j) return;
+    const campo = e.tipo === 'GOL' ? 'goles' : e.tipo === 'AMARILLA' ? 'amarillas' : e.tipo === 'ROJA' ? 'rojas' : null;
+    if (campo) j[campo] = Math.max(0, (j[campo] || 0) + delta);
+}
+
+// ===== RESUMEN PARA EL ÁRBITRO (goles y tarjetas) =====
+const TIPOS_RESUMEN = ['GOL', 'AMARILLA', 'ROJA'];
+
+function nombresResumen() {
+    const rival = document.getElementById('nombreRival')?.value || 'RIVAL';
+    return {
+        rival,
+        local: rolGelves === 'L' ? NOMBRE_EQUIPO : rival,
+        visitante: rolGelves === 'V' ? NOMBRE_EQUIPO : rival
+    };
+}
+
+function eventosResumen() {
+    return eventos.filter(e => TIPOS_RESUMEN.includes(e.tipo)).sort((a, b) => a.min - b.min);
+}
+
+function refrescarTrasResumen() {
+    actualizarMarcador();
+    actualizarTimeline();
+    if (fase === 4) finalizarPartido();
+    guardarAuto();
+}
+
+window.abrirResumenArbitro = function() {
+    const n = nombresResumen();
+    const editable = !soloLectura();
+    const evs = eventosResumen();
+    const fila = e => {
+        const nuestro = e.equipo === rolGelves;
+        const color = COLORES_EVENTO[e.tipo] || '#3498db';
+        return `<div style="display:flex; align-items:center; gap:8px; padding:8px 10px; background:${nuestro ? '#F4F6F9' : '#FFFFFF'}; border:1px solid #D5DCE5; border-left:5px solid ${color}; border-radius:12px; margin-bottom:6px;">
+            <b style="min-width:34px;">${escH(e.min)}'</b>
+            <span style="font-size:18px;">${ICONOS[e.tipo] || ''}</span>
+            <span style="flex:1; font-size:14px;">${escH(e.jugador)}<br><span style="font-size:11px; color:#64748B;">${escH(nuestro ? NOMBRE_EQUIPO : n.rival)}</span></span>
+            ${editable ? `<button style="background:#e67e22; border:none; color:white; border-radius:50%; width:32px; height:32px; cursor:pointer;" onclick="editarEventoResumen(${e.id})">✏️</button>
+            <button style="background:#e74c3c; border:none; color:white; border-radius:50%; width:32px; height:32px; cursor:pointer;" onclick="borrarEventoResumen(${e.id})">✕</button>` : ''}
+        </div>`;
+    };
+    const goles = evs.filter(e => e.tipo === 'GOL');
+    const tarjetas = evs.filter(e => e.tipo !== 'GOL');
+    const modal = crearModal('📋 RESUMEN PARA EL ÁRBITRO');
+    modal.innerHTML += `
+        <div style="text-align:center; margin:10px 0 15px;">
+            <div style="font-size:13px; color:#64748B;">${escH(n.local)} vs ${escH(n.visitante)}</div>
+            <div style="font-size:36px; font-weight:bold;">${golesL} - ${golesV}</div>
+        </div>
+        <div style="font-weight:bold; margin:8px 0;">⚽ GOLES</div>
+        ${goles.length ? goles.map(fila).join('') : '<p style="color:#64748B; font-size:13px;">Sin goles</p>'}
+        <div style="font-weight:bold; margin:14px 0 8px;">🟨🟥 TARJETAS</div>
+        ${tarjetas.length ? tarjetas.map(fila).join('') : '<p style="color:#64748B; font-size:13px;">Sin tarjetas</p>'}
+        ${editable ? `<button class="btn btn-neutral" style="margin-top:12px; width:100%;" onclick="editarEventoResumen(null)">➕ AÑADIR GOL / TARJETA</button>` : ''}
+        <div class="btn-group" style="margin-top:10px;">
+            <button class="btn" style="flex:1; background:#25D366;" onclick="enviarResumenWhatsApp()">📲 WHATSAPP</button>
+            <button class="btn btn-exito" style="flex:1;" onclick="cerrarModal()">✅ CERRAR</button>
+        </div>
+    `;
+};
+
+// id = null → añadir nuevo
+window.editarEventoResumen = function(id) {
+    if (soloLectura()) return;
+    const e = id === null ? null : eventos.find(ev => ev.id === id);
+    if (id !== null && !e) return;
+    const n = nombresResumen();
+    const tipo = e ? e.tipo : 'GOL';
+    const nuestro = e ? e.equipo === rolGelves : true;
+    const opcionesNuestros = () => {
+        let html = '';
+        convocados.forEach(j => {
+            html += `<option value="${escH(j.name)}" ${e && e.jugador === j.name ? 'selected' : ''}>${escH(j.num)} - ${escH(j.name)}</option>`;
+        });
+        STAFF_TECNICO.forEach(s => {
+            const v = s.n + ' (staff)';
+            html += `<option value="${escH(v)}" ${e && e.jugador === v ? 'selected' : ''}>${escH(s.rol)} · ${escH(s.n)}</option>`;
+        });
+        if (e && nuestro && !convocados.some(j => j.name === e.jugador) && !STAFF_TECNICO.some(s => s.n + ' (staff)' === e.jugador)) {
+            html = `<option value="${escH(e.jugador)}" selected>${escH(e.jugador)}</option>` + html;
+        }
+        return html;
+    };
+    const dorsalRival = e && !nuestro ? (String(e.jugador).match(/^Riv\s+(.+)$/)?.[1] || '') : '';
+    const modal = crearModal(e ? `✏️ CORREGIR — min ${e.min}'` : '➕ AÑADIR');
+    modal.innerHTML += `
+        <div style="margin:15px 0;">
+            <label style="color:#64748B; font-size:13px; display:block; margin-bottom:4px;">Tipo</label>
+            <select id="resTipo" style="margin-bottom:12px;">
+                <option value="GOL" ${tipo === 'GOL' ? 'selected' : ''}>⚽ Gol</option>
+                <option value="AMARILLA" ${tipo === 'AMARILLA' ? 'selected' : ''}>🟨 Amarilla</option>
+                <option value="ROJA" ${tipo === 'ROJA' ? 'selected' : ''}>🟥 Roja</option>
+            </select>
+            <label style="color:#64748B; font-size:13px; display:block; margin-bottom:4px;">Equipo</label>
+            <select id="resEquipo" style="margin-bottom:12px;" onchange="document.getElementById('resBloqueNuestro').style.display=this.value==='N'?'block':'none'; document.getElementById('resBloqueRival').style.display=this.value==='R'?'block':'none';">
+                <option value="N" ${nuestro ? 'selected' : ''}>${escH(NOMBRE_EQUIPO)}</option>
+                <option value="R" ${!nuestro ? 'selected' : ''}>${escH(n.rival)}</option>
+            </select>
+            <div id="resBloqueNuestro" style="display:${nuestro ? 'block' : 'none'};">
+                <label style="color:#64748B; font-size:13px; display:block; margin-bottom:4px;">Jugador</label>
+                <select id="resJugador" style="margin-bottom:12px;">${opcionesNuestros()}</select>
+            </div>
+            <div id="resBloqueRival" style="display:${!nuestro ? 'block' : 'none'};">
+                <label style="color:#64748B; font-size:13px; display:block; margin-bottom:4px;">Dorsal rival (opcional)</label>
+                <input type="text" id="resDorsal" value="${escH(dorsalRival)}" style="margin-bottom:12px;">
+            </div>
+            <label style="color:#64748B; font-size:13px; display:block; margin-bottom:4px;">Minuto</label>
+            <input type="number" id="resMin" value="${e ? escH(e.min) : ''}" min="0" max="120">
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-peligro" style="flex:1;" onclick="abrirResumenArbitro()">CANCELAR</button>
+            <button class="btn btn-exito" style="flex:1;" onclick="guardarEventoResumen(${e ? e.id : 'null'})">💾 GUARDAR</button>
+        </div>
+    `;
+};
+
+window.guardarEventoResumen = function(id) {
+    if (soloLectura()) return;
+    const tipo = document.getElementById('resTipo').value;
+    const nuestro = document.getElementById('resEquipo').value === 'N';
+    const min = parseInt(document.getElementById('resMin').value);
+    if (isNaN(min) || min < 0 || min > 120) { alert('Minuto inválido (0-120)'); return; }
+    let jugador;
+    if (nuestro) {
+        jugador = document.getElementById('resJugador').value;
+        if (!jugador) { alert('Elige jugador'); return; }
+        if (tipo === 'GOL' && jugador.endsWith(' (staff)')) { alert('Un gol no puede ser del staff'); return; }
+    } else {
+        const dorsal = document.getElementById('resDorsal').value.trim();
+        jugador = tipo === 'GOL' ? (nombresResumen().rival) + (dorsal ? ' (' + dorsal + ')' : '') : (dorsal ? 'Riv ' + dorsal : 'Rival');
+    }
+    const equipo = nuestro ? rolGelves : rolRival;
+    if (id === null) {
+        const e = { id: Date.now() + Math.random(), min, tipo, equipo, jugador, extra: '', parte: min > (minutoFin1T || 45) ? 3 : 1 };
+        eventos.push(e);
+        ajustarContadorEvento(e, +1);
+    } else {
+        const e = eventos.find(ev => ev.id === id);
+        if (!e) return;
+        ajustarContadorEvento(e, -1);
+        if (e.equipo !== equipo || e.tipo !== tipo) e.extra = '';
+        e.tipo = tipo; e.equipo = equipo; e.min = min;
+        e.jugador = jugador;
+        ajustarContadorEvento(e, +1);
+    }
+    refrescarTrasResumen();
+    abrirResumenArbitro();
+};
+
+window.borrarEventoResumen = function(id) {
+    if (soloLectura()) return;
+    if (!confirm('¿Borrar este evento?')) return;
+    borrarEvento(id);
+    if (fase === 4) finalizarPartido();
+    abrirResumenArbitro();
+};
+
+window.enviarResumenWhatsApp = function() {
+    const n = nombresResumen();
+    const evs = eventosResumen();
+    const linea = e => `${e.min}' ${ICONOS[e.tipo] || ''} ${e.jugador}${e.equipo === rolGelves || String(e.jugador).startsWith(n.rival) ? '' : ' (' + n.rival + ')'}`;
+    let t = `🏁 FINAL: ${n.local} ${golesL} - ${golesV} ${n.visitante}\n`;
+    const goles = evs.filter(e => e.tipo === 'GOL');
+    const tarjetas = evs.filter(e => e.tipo !== 'GOL');
+    t += `\n⚽ GOLES\n` + (goles.length ? goles.map(linea).join('\n') : 'Sin goles') + '\n';
+    t += `\n🟨🟥 TARJETAS\n` + (tarjetas.length ? tarjetas.map(linea).join('\n') : 'Sin tarjetas');
+    window.open('https://wa.me/?text=' + encodeURIComponent(t.trim()), '_blank');
 };
 
 // ===== PIN PARA VOLVER Y EDITAR =====
@@ -2533,7 +2709,6 @@ function cambiarApiKey() {
 }
 
 let ocrRfafData = null;
-let ocrActaData = null;
 
 function fileToBase64(file) {
     return new Promise((res, rej) => {
@@ -2810,185 +2985,6 @@ window.aplicarDiferenciasRfaf = function() {
     document.querySelectorAll('.modal').forEach(m => m.remove());
     cargarPantallaSanciones();
     alert(`✅ ${aplicadas} sanci${aplicadas !== 1 ? 'ones aplicadas' : 'ón aplicada'} (jornada ${window._rfafJornada}).`);
-};
-
-// ── OCR ACTA ──────────────────────────────────────────────────────────────────
-window.abrirOcrActa = function() {
-    ocrActaData = null;
-    document.getElementById('ocrActaPreview').style.display = 'none';
-    document.getElementById('ocrActaResultado').style.display = 'none';
-    document.getElementById('btnAnalizarActa').style.display = 'none';
-    document.getElementById('btnAplicarActa').style.display = 'none';
-    document.getElementById('ocrActaLabel').innerText = '📁 Pulsa para seleccionar imagen';
-    document.getElementById('ocrActaInput').value = '';
-    document.getElementById('modalOcrActa').style.display = 'flex';
-};
-window.cerrarOcrActa = function() {
-    document.getElementById('modalOcrActa').style.display = 'none';
-};
-window.previsualizarActa = function(input) {
-    const file = input.files[0]; if (!file) return;
-    const img = document.getElementById('ocrActaPreview');
-    img.src = URL.createObjectURL(file);
-    img.style.display = 'block';
-    document.getElementById('ocrActaLabel').innerText = '✅ ' + file.name;
-    document.getElementById('btnAnalizarActa').style.display = 'block';
-};
-window.analizarActa = async function() {
-    const input = document.getElementById('ocrActaInput');
-    if (!input.files[0]) return;
-    const btn = document.getElementById('btnAnalizarActa');
-    btn.innerText = '⏳ Analizando...'; btn.disabled = true;
-    try {
-        const base64 = await fileToBase64(input.files[0]);
-        const mediaType = input.files[0].type || 'image/jpeg';
-        const plantilla = plantillaParaIA();
-        const staff = staffParaIA(true);
-        const system = `Eres un asistente que extrae tarjetas de actas de partidos de fútbol. Responde ÚNICAMENTE con JSON válido sin backticks.`;
-        const user = `Analiza esta acta de partido y extrae las tarjetas (amarillas y rojas) de jugadores Y STAFF del equipo ${NOMBRE_EQUIPO}.
-Jugadores ${NOMBRE_EQUIPO}: ${plantilla}
-Staff ${NOMBRE_EQUIPO}: ${staff}
-IMPORTANTE: Devuelve el nombre EXACTAMENTE como aparece escrito en el acta, sin adaptarlo ni corregirlo. Incluye solo personas de ${NOMBRE_EQUIPO}. Si no puedes leer bien un nombre, ponlo en no_identificados.
-Devuelve JSON exacto:
-{"tarjetas":[{"nombre":"nombre exacto tal como aparece en el acta","dorsal":número_o_null,"tipo":"AMARILLA|ROJA","minuto":número_o_null}],"no_identificados":["nombre tal como aparece en el acta"]}`;
-        const resp = await llamarClaude(base64, mediaType, system, user);
-        ocrActaData = extraerJSON(resp);
-        const lista = document.getElementById('ocrActaLista');
-        lista.innerHTML = '';
-        if (ocrActaData.tarjetas?.length > 0) {
-            ocrActaData.tarjetas.forEach(t => {
-                const d = document.createElement('div');
-                d.style.cssText = 'background:#F4F6F9;border-radius:10px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;';
-                const color = t.tipo==='AMARILLA'?'#f1c40f':'#e74c3c';
-                d.innerHTML = `<span style="font-weight:bold;">${escH(t.nombre)}</span><span style="color:${color};">${t.tipo==='AMARILLA'?'🟨':'🟥'} ${t.tipo}${t.minuto?' (min. '+t.minuto+"')":''}`;
-                lista.appendChild(d);
-            });
-            document.getElementById('btnAplicarActa').style.display = 'block';
-        } else {
-            lista.innerHTML = `<p style="color:#5B6573;text-align:center;">No se detectaron tarjetas de ${NOMBRE_EQUIPO}</p>`;
-        }
-        if (ocrActaData.no_identificados?.length > 0) {
-            const sep = document.createElement('div');
-            sep.style.cssText = 'color:#e74c3c;font-size:12px;margin:10px 0 5px;';
-            sep.innerText = '⚠️ No identificados (añade manualmente):';
-            lista.appendChild(sep);
-            ocrActaData.no_identificados.forEach(n => {
-                const d = document.createElement('div');
-                d.style.cssText = 'background:#FDECEA;border-radius:8px;padding:8px;margin-bottom:5px;font-size:12px;color:#e74c3c;';
-                d.innerText = n;
-                lista.appendChild(d);
-            });
-        }
-        document.getElementById('ocrActaResultado').style.display = 'block';
-    } catch(err) { alert('Error: ' + err.message); }
-    finally { btn.innerText = '🔍 ANALIZAR CON IA'; btn.disabled = false; }
-};
-window.aplicarTarjetasActa = function() {
-    if (!ocrActaData?.tarjetas) return;
-    function buscarJugador(nombre, dorsal) {
-        // Emparejamiento por nombre oficial RFAF; si hay duda decide el dorsal; si no, queda sin asignar
-        const candidatos = [
-            ...convocados.map(j => ({ ref: j, n: j.name, rfaf: rfafDe(j.name), d: j.num })),
-            ...STAFF_TECNICO.map(j => ({ ref: { name: j.n, num: '-', esStaff: true }, n: j.n, rfaf: j.rfaf, d: '' }))
-        ];
-        return buscarNombreSeguro(nombre, candidatos, dorsal);
-    }
-    let ok = 0;
-    const noReconocidas = [];
-    const dataSanciones = getSanciones();
-
-    ocrActaData.tarjetas.forEach(t => {
-        const jug = buscarJugador(t.nombre, t.dorsal);
-        if (jug && aplicarTarjetaActa(jug, t, dataSanciones)) ok++;
-        else noReconocidas.push(t);
-    });
-
-    // Guardar sanciones actualizadas
-    guardarLocalSync('sanciones', JSON.stringify(dataSanciones));
-
-    cerrarOcrActa(); actualizarTimeline(); guardarAuto();
-    const msg = `✅ ${ok} tarjeta${ok!==1?'s':''} aplicada${ok!==1?'s':''} al partido y a sanciones.`;
-    if (!noReconocidas.length) { alert(msg); return; }
-
-    // Nombres no reconocidos: se eligen a mano aquí mismo
-    window._actaNoReconocidas = noReconocidas;
-    const nombres = [...convocados.map(j => j.name), ...STAFF_TECNICO.map(j => j.n)];
-    const modal = document.createElement('div');
-    modal.className = 'modal';
-    modal.style.cssText = 'display:flex; flex-direction:column; padding:20px; overflow-y:auto;';
-    modal.innerHTML = `
-        <h2 style="color:#B9640A; margin:0 0 6px;">⚠️ Tarjetas sin asignar</h2>
-        <p style="color:#5B6573; font-size:13px; margin-bottom:12px;">${msg}<br>Estos nombres del acta no se han podido reconocer con seguridad. Elige a quién corresponden:</p>
-        <div style="flex:1; overflow-y:auto; margin-bottom:12px;">
-            ${noReconocidas.map((t, i) => `
-            <div style="background:#F4F6F9; border-radius:10px; padding:10px; margin-bottom:8px;">
-                <div style="font-weight:bold;">${t.tipo === 'AMARILLA' ? '🟨' : '🟥'} ${String(t.nombre).replace(/</g,'&lt;')}${t.dorsal ? ' · dorsal ' + t.dorsal : ''}${t.minuto ? " · min. " + t.minuto + "'" : ''}</div>
-                ${selectorJugador('actaAsig_' + i, nombres)}
-            </div>`).join('')}
-        </div>
-        <div style="display:flex; gap:8px;">
-            <button class="btn btn-neutral" style="flex:1;" onclick="this.closest('.modal').remove()">NO APLICAR</button>
-            <button class="btn btn-exito" style="flex:2;" onclick="aplicarActaAsignadas()">✅ APLICAR ASIGNADAS</button>
-        </div>`;
-    document.body.appendChild(modal);
-};
-
-// Aplica una tarjeta del acta al partido y a sanciones. Devuelve true si se aplicó.
-function aplicarTarjetaActa(jug, t, dataSanciones) {
-    if (jug && !jug.esStaff) {
-        const j = convocados.find(c=>c.name===jug.name);
-        if (!j) return false;
-        if (t.tipo==='AMARILLA') {
-            j.amarillas=(j.amarillas||0)+1;
-            registrarEvento('AMARILLA',rolGelves,j.name,'',t.minuto||obtenerMinutoActual());
-            // Actualizar también sanciones acumuladas
-            if (dataSanciones[j.name]) {
-                dataSanciones[j.name].amarillas=(dataSanciones[j.name].amarillas||0)+1;
-                // Comprobar si llega a acumulación (5 amarillas = sanción)
-                if (dataSanciones[j.name].amarillas >= 5 && dataSanciones[j.name].sancionado === 0) {
-                    dataSanciones[j.name].sancionado = 1;
-                    dataSanciones[j.name].motivo = 'acumulacion';
-                }
-            }
-        } else {
-            j.rojas=(j.rojas||0)+1;
-            registrarEvento('ROJA',rolGelves,j.name,'',t.minuto||obtenerMinutoActual());
-            // Roja directa = 1 partido de sanción
-            if (dataSanciones[j.name]) {
-                dataSanciones[j.name].sancionado=(dataSanciones[j.name].sancionado||0)+1;
-                dataSanciones[j.name].motivo='roja';
-            }
-        }
-        return true;
-    }
-    if (jug?.esStaff) {
-        registrarEvento(t.tipo,rolGelves,jug.name+' (staff)','',t.minuto||obtenerMinutoActual());
-        // Actualizar sanciones del staff también
-        if (dataSanciones[jug.name]) {
-            if (t.tipo==='AMARILLA') dataSanciones[jug.name].amarillas=(dataSanciones[jug.name].amarillas||0)+1;
-            else { dataSanciones[jug.name].sancionado=(dataSanciones[jug.name].sancionado||0)+1; dataSanciones[jug.name].motivo='roja'; }
-        }
-        return true;
-    }
-    return false;
-}
-
-window.aplicarActaAsignadas = function() {
-    const lista = window._actaNoReconocidas || [];
-    const dataSanciones = getSanciones();
-    let ok = 0;
-    lista.forEach((t, i) => {
-        const nombre = document.getElementById('actaAsig_' + i)?.value;
-        if (!nombre) return;
-        const esStaff = STAFF_TECNICO.some(s => s.n === nombre);
-        const jug = esStaff ? { name: nombre, num: '-', esStaff: true } : convocados.find(c => c.name === nombre);
-        if (jug && aplicarTarjetaActa(jug, t, dataSanciones)) ok++;
-    });
-    guardarLocalSync('sanciones', JSON.stringify(dataSanciones));
-    actualizarTimeline(); guardarAuto();
-    document.querySelectorAll('.modal').forEach(m => m.remove());
-    window._actaNoReconocidas = null;
-    alert(`✅ ${ok} tarjeta${ok!==1?'s':''} más aplicada${ok!==1?'s':''}.`);
 };
 
 // ── OCR RIVALES ───────────────────────────────────────────────────────────────
@@ -3442,10 +3438,6 @@ window.onload = function() {
     if (btnVisitanteEl) btnVisitanteEl.textContent = `VISITANTE`;
     const btnGolGelvesEl = document.getElementById('btnGolGelves');
     if (btnGolGelvesEl) btnGolGelvesEl.textContent = `⚽ GOL ${NOMBRE_EQUIPO}`;
-    const btnSubirActaEl = document.getElementById('btnSubirActa');
-    if (btnSubirActaEl) btnSubirActaEl.textContent = `📸 SUBIR ACTA → EXTRAER TARJETAS ${NOMBRE_EQUIPO}`;
-    const descOcrActaEl = document.getElementById('descOcrActa');
-    if (descOcrActaEl) descOcrActaEl.textContent = `Sube una foto del acta del partido. Claude detectará las tarjetas amarillas y rojas de jugadores y staff de ${NOMBRE_EQUIPO}.`;
     ['nombreLocal', 'resumenLocal'].forEach(id => {
         const el = document.getElementById(id);
         if (el && el.textContent.trim().toUpperCase() === 'GELVES') el.textContent = NOMBRE_EQUIPO;
@@ -4366,7 +4358,7 @@ window.ocultarAvisoSanciones = function() {
         <button class="btn btn-neutral" style="flex:1;" onclick="volverAlPartido()">⬅️ VOLVER Y EDITAR</button>
         <button class="btn btn-exito" style="flex:1;" onclick="exportarCSV()">📥 CSV</button>
     </div>
-    <button class="btn" id="btnSubirActa" style="background:#1A6B3A; margin-top:8px; width:100%;" onclick="abrirOcrActa()">📸 SUBIR ACTA → EXTRAER TARJETAS GELVES</button>
+    <button class="btn" id="btnResumenArbitro" style="background:#1A6B3A; margin-top:8px; width:100%;" onclick="abrirResumenArbitro()">📋 RESUMEN PARA EL ÁRBITRO</button>
     <button class="btn" style="background:#1F6AA5; margin-top:8px; width:100%;" onclick="exportarExcel()">📊 GENERAR EXCEL</button>
     <button class="btn btn-neutral" onclick="nuevoPartido()" style="margin-top:10px;">🔄 NUEVO PARTIDO</button>
 </div>
@@ -4527,25 +4519,6 @@ window.ocultarAvisoSanciones = function() {
     <button id="btnAplicarRfaf" class="btn btn-exito" style="display:none; margin-top:8px;" onclick="window.aplicarSancionesRfaf()">✅ APLICAR SANCIONES</button>
 </div>
 
-<!-- Modal OCR Acta -->
-<div id="modalOcrActa" style="display:none; position:fixed; inset:0; background:rgba(233,238,244,0.98); z-index:9999; flex-direction:column; padding:20px; overflow-y:auto;">
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
-        <h2 style="color:#1A6B3A; margin:0;">📸 ACTA PARTIDO</h2>
-        <button onclick="window.cerrarOcrActa()" style="background:#D5DCE5; border:none; color:#1E293B; width:36px; height:36px; border-radius:50%; font-size:20px; cursor:pointer;">✕</button>
-    </div>
-    <p style="color:#5B6573; font-size:13px; margin-bottom:15px;" id="descOcrActa">Sube una foto del acta del partido. Claude detectará las tarjetas amarillas y rojas de jugadores y staff de Gelves.</p>
-    <label style="display:block; background:#F4F6F9; border:2px dashed #1A6B3A; border-radius:15px; padding:20px; text-align:center; cursor:pointer; margin-bottom:15px;">
-        <span id="ocrActaLabel" style="color:#1A6B3A; font-size:15px;">📁 Pulsa para seleccionar imagen</span>
-        <input type="file" id="ocrActaInput" accept="image/*" style="display:none;" onchange="previsualizarActa(this)">
-    </label>
-    <img id="ocrActaPreview" style="display:none; width:100%; border-radius:10px; margin-bottom:15px; max-height:300px; object-fit:contain;">
-    <div id="ocrActaResultado" style="display:none; background:#EAF6EE; border-radius:15px; padding:15px; margin-bottom:15px;">
-        <div style="color:#1E8E53; font-weight:bold; margin-bottom:10px;">📋 Tarjetas detectadas:</div>
-        <div id="ocrActaLista"></div>
-    </div>
-    <button id="btnAnalizarActa" class="btn" style="background:#1A6B3A; display:none;" onclick="window.analizarActa()">🔍 ANALIZAR CON IA</button>
-    <button id="btnAplicarActa" class="btn btn-exito" style="display:none; margin-top:8px;" onclick="window.aplicarTarjetasActa()">✅ APLICAR TARJETAS</button>
-</div>
 
 
 <script type="module">
