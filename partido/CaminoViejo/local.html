@@ -282,6 +282,10 @@ const STAFF_TECNICO = [
     { n:"Iván López Martín", rol:"🧑‍💼 Entrenador", rfaf:"Lopez Martin, Ivan" },
     { n:"Pedro Antonio Martín Pérez", rol:"📋 Delegado", rfaf:"Martin Perez, Pedro Antonio" },
 ];
+// Staff como "jugador" para tarjetas en directo (mismo formato que el resumen del árbitro: "Nombre (staff)")
+const STAFF_EVENTO = STAFF_TECNICO.map(s => ({ name: s.n + ' (staff)', num: s.rol, staff: true, rolTxt: s.rol.replace(/[^\p{L}\s]/gu, ' ').trim() }));
+// Staff del rival (sin nombre, solo el cargo)
+const STAFF_RIVAL = ['Entrenador rival', '2º entrenador rival', 'Delegado rival'];
 
 // ===== JUGADORES BASE =====
 var PLANTILLA_BASE = [
@@ -1295,53 +1299,66 @@ window.mostrarPenaltiContra = function() {
 window.mostrarTarjetaGelves = function() {
     if(enCampo.length === 0) return;
     let modal = crearModal("🟨 TARJETA");
-    let grid = document.createElement('div');
-    grid.className = 'grid-jugadores';
-    enCampo.forEach(j => {
-        let btn = document.createElement('button');
-        btn.className = 'btn btn-neutral';
-        btn.innerText = j.name;
-        btn.onclick = () => {
-            cerrarModal();
-            let modal2 = crearModal("COLOR");
-            let grid2 = document.createElement('div');
-            grid2.className = 'grid-jugadores';
-            
-            let btnAmarilla = document.createElement('button');
-            btnAmarilla.className = 'btn';
-            btnAmarilla.style.background = '#f1c40f';
-            btnAmarilla.style.color = 'black';
-            btnAmarilla.innerText = 'AMARILLA';
-            btnAmarilla.onclick = () => {
-                j.amarillas++;
-                registrarEvento('AMARILLA', rolGelves, j.name);
+    const pedirColor = (j) => {
+        cerrarModal();
+        let modal2 = crearModal("COLOR");
+        let grid2 = document.createElement('div');
+        grid2.className = 'grid-jugadores';
+        const crear = (tipo, bg, fg) => {
+            let b = document.createElement('button');
+            b.className = 'btn';
+            b.style.background = bg;
+            if (fg) b.style.color = fg;
+            b.innerText = tipo;
+            b.onclick = () => {
+                if (!j.staff) { if (tipo === 'ROJA') j.rojas++; else j.amarillas++; }
+                registrarEvento(tipo, rolGelves, j.name);
                 cerrarModal();
             };
-            
-            let btnRoja = document.createElement('button');
-            btnRoja.className = 'btn';
-            btnRoja.style.background = '#e74c3c';
-            btnRoja.innerText = 'ROJA';
-            btnRoja.onclick = () => {
-                j.rojas++;
-                registrarEvento('ROJA', rolGelves, j.name);
-                cerrarModal();
-            };
-            
-            grid2.appendChild(btnAmarilla);
-            grid2.appendChild(btnRoja);
-            modal2.appendChild(grid2);
+            return b;
         };
-        grid.appendChild(btn);
-    });
-    modal.appendChild(grid);
+        grid2.appendChild(crear('AMARILLA', '#f1c40f', 'black'));
+        grid2.appendChild(crear('ROJA', '#e74c3c'));
+        modal2.appendChild(grid2);
+    };
+    const cont = document.createElement('div');
+    cont.style.cssText = 'max-height:65vh; overflow-y:auto;';
+    const seccion = (titulo, lista, texto) => {
+        if (!lista.length) return;
+        const h = document.createElement('div');
+        h.style.cssText = 'font-weight:bold; font-size:13px; color:#64748B; margin:10px 0 4px;';
+        h.innerText = titulo;
+        cont.appendChild(h);
+        let grid = document.createElement('div');
+        grid.className = 'grid-jugadores';
+        grid.style.cssText = 'margin:4px 0; max-height:none; overflow:visible;';
+        lista.forEach(j => {
+            let btn = document.createElement('button');
+            btn.className = 'btn btn-neutral';
+            btn.innerText = texto(j);
+            btn.onclick = () => pedirColor(j);
+            grid.appendChild(btn);
+        });
+        cont.appendChild(grid);
+    };
+    seccion('⚽ EN EL CAMPO', enCampo, j => j.name);
+    seccion('🪑 BANQUILLO', convocados.filter(x => !enCampo.includes(x)), j => j.name);
+    seccion('👨‍💼 STAFF', STAFF_EVENTO, j => j.num + ' · ' + j.name.replace(' (staff)', ''));
+    modal.appendChild(cont);
 };
 
 window.mostrarTarjetaRival = function() {
     let modal = crearModal("🟨 TARJETA RIVAL");
+    window._quienRival = '';
+    const quien = [['', '⚽ Jugador'], ...STAFF_RIVAL.map(x => [x, x.replace(' rival', '')])];
     modal.innerHTML += `
-        <p style="color:#64748B; text-align:center; margin:5px 0 15px;">Dorsal del jugador rival (opcional)</p>
-        <input type="text" id="dorsalRival" placeholder="Dorsal (ej: 10)" style="margin-bottom:15px; text-align:center; font-size:24px; font-weight:bold; color:#9A6B00;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:5px 0 12px;">
+            ${quien.map(([v, t], i) => `<button class="btn ${i === 0 ? 'btn-exito' : 'btn-neutral'} quien-rival" style="margin:0; font-size:14px;" onclick="elegirQuienRival(this, ${jsArg(v)})">${escH(t)}</button>`).join('')}
+        </div>
+        <div id="bloqueDorsalRival">
+            <p style="color:#64748B; text-align:center; margin:5px 0 15px;">Dorsal del jugador rival (opcional)</p>
+            <input type="text" id="dorsalRival" placeholder="Dorsal (ej: 10)" style="margin-bottom:15px; text-align:center; font-size:24px; font-weight:bold; color:#9A6B00;">
+        </div>
         <div class="btn-group">
             <button class="btn" style="flex:1; background:#f1c40f; color:black; font-size:18px;" onclick="registrarTarjetaRival('AMARILLA')">🟨 AMARILLA</button>
             <button class="btn" style="flex:1; background:#e74c3c; font-size:18px;" onclick="registrarTarjetaRival('ROJA')">🟥 ROJA</button>
@@ -1350,9 +1367,16 @@ window.mostrarTarjetaRival = function() {
     `;
 };
 
+window.elegirQuienRival = function(btn, v) {
+    window._quienRival = v;
+    document.querySelectorAll('.quien-rival').forEach(b => { b.classList.remove('btn-exito'); b.classList.add('btn-neutral'); });
+    btn.classList.remove('btn-neutral'); btn.classList.add('btn-exito');
+    document.getElementById('bloqueDorsalRival').style.display = v ? 'none' : 'block';
+};
+
 window.registrarTarjetaRival = function(tipo) {
     const dorsal = document.getElementById('dorsalRival')?.value.trim();
-    const jugador = dorsal ? 'Riv ' + dorsal : 'Rival';
+    const jugador = window._quienRival || (dorsal ? 'Riv ' + dorsal : 'Rival');
     registrarEvento(tipo, rolRival, jugador);
     cerrarModal();
 };
@@ -1672,8 +1696,18 @@ function interpretarVoz(texto) {
     // Tarjetas
     if ((m = t.match(/\b(amarilla|roja)\b/))) {
         const color = m[1] === 'roja' ? 'ROJA' : 'AMARILLA';
-        if (rivalTxt.test(t)) return { tipo: 'tarjeta', equipo: 'rival', color, dorsal: dorsalRival || '' };
-        const r = buscarJugadorVoz(t.replace(/tarjeta|amarilla|roja/g, ' '), enCampo);
+        if (rivalTxt.test(t)) {
+            const sr = /\b(segundo|2) entrenador\b|\bayudante\b/.test(t) ? STAFF_RIVAL[1]
+                : /\bdelegado\b/.test(t) ? STAFF_RIVAL[2]
+                : /\b(entrenador|mister|tecnico)\b/.test(t) ? STAFF_RIVAL[0] : '';
+            return { tipo: 'tarjeta', equipo: 'rival', color, dorsal: sr ? '' : (dorsalRival || ''), staffRival: sr };
+        }
+        const st = STAFF_EVENTO.find(s => {
+            const r = normalizarNombre(s.rolTxt);
+            return r && (t.includes(' ' + r + ' ') || (r === 'entrenador' && /\b(mister|tecnico)\b/.test(t)));
+        });
+        if (st) return { tipo: 'tarjeta', equipo: 'nos', color, jugador: st };
+        const r = buscarJugadorVoz(t.replace(/tarjeta|amarilla|roja/g, ' '), [...enCampo, ...banquillo, ...STAFF_EVENTO]);
         return { tipo: 'tarjeta', equipo: 'nos', color, jugador: r && r.j, dudoso: r && r.dudoso };
     }
     // Penaltis
@@ -1717,7 +1751,7 @@ function textoAccionVoz(a) {
         case 'gol': return `⚽ GOL de ${n(a.jugador)}${a.asistente ? ` · asistencia de ${a.asistente.name}` : ''}`;
         case 'golrival': return '⚽ GOL del rival';
         case 'cambio': return `🔄 CAMBIO · entra ${n(a.entra)} · sale ${n(a.sale)}`;
-        case 'tarjeta': return `${a.color === 'ROJA' ? '🟥 ROJA' : '🟨 AMARILLA'} ${a.equipo === 'rival' ? 'al rival' + (a.dorsal ? ' (dorsal ' + a.dorsal + ')' : '') : 'a ' + n(a.jugador)}`;
+        case 'tarjeta': return `${a.color === 'ROJA' ? '🟥 ROJA' : '🟨 AMARILLA'} ${a.equipo === 'rival' ? (a.staffRival ? 'al ' + a.staffRival.toLowerCase() : 'al rival' + (a.dorsal ? ' (dorsal ' + a.dorsal + ')' : '')) : 'a ' + n(a.jugador)}`;
         case 'penalti': return a.contra ? `🎯 PENALTI EN CONTRA (cometido por ${n(a.jugador)})` : `🎯 PENALTI A FAVOR (sobre ${n(a.jugador)})`;
         case 'corner': return a.contra ? '⚑ CÓRNER en contra' : '⚑ CÓRNER a favor';
         case 'fuerajuego': return a.favor ? '🚩 FUERA DE JUEGO a favor (del rival)' : `🚩 FUERA DE JUEGO de ${a.jugador ? a.jugador.name : '(sin asignar)'}`;
@@ -1731,7 +1765,8 @@ function camposJugadorVoz(a) {
     const banquillo = convocados.filter(x => !enCampo.includes(x));
     if (a.tipo === 'gol') return [['jugador', '⚽ Goleador', enCampo, false], ['asistente', '🎯 Asistencia', enCampo, true]];
     if (a.tipo === 'cambio') return [['entra', '⬆️ Entra', banquillo, false], ['sale', '⬇️ Sale', enCampo, false]];
-    if ((a.tipo === 'tarjeta' || a.tipo === 'ocasion') && a.equipo === 'nos') return [['jugador', '👤 Jugador', enCampo, false]];
+    if (a.tipo === 'tarjeta' && a.equipo === 'nos') return [['jugador', '👤 Jugador / staff', [...enCampo, ...banquillo, ...STAFF_EVENTO], false]];
+    if (a.tipo === 'ocasion' && a.equipo === 'nos') return [['jugador', '👤 Jugador', enCampo, false]];
     if (a.tipo === 'penalti') return [['jugador', '👤 Jugador', enCampo, false]];
     if (a.tipo === 'fuerajuego' && !a.favor) return [['jugador', '👤 Jugador (opcional)', enCampo, true]];
     return [];
@@ -2001,8 +2036,8 @@ window.apuntarAccionVoz = function() {
         case 'golrival': registrarEvento('GOL', rolRival, document.getElementById('nombreRival').value || 'RIVAL'); break;
         case 'cambio': ejecutarCambio(a.sale, a.entra); break;
         case 'tarjeta':
-            if (a.equipo === 'rival') registrarEvento(a.color, rolRival, a.dorsal ? 'Riv ' + a.dorsal : 'Rival');
-            else { if (a.color === 'ROJA') a.jugador.rojas++; else a.jugador.amarillas++; registrarEvento(a.color, rolGelves, a.jugador.name); }
+            if (a.equipo === 'rival') registrarEvento(a.color, rolRival, a.staffRival || (a.dorsal ? 'Riv ' + a.dorsal : 'Rival'));
+            else { if (!a.jugador.staff) { if (a.color === 'ROJA') a.jugador.rojas++; else a.jugador.amarillas++; } registrarEvento(a.color, rolGelves, a.jugador.name); }
             break;
         case 'penalti':
             if (a.contra) registrarEvento('PENALTI CONTRA', rolRival, a.jugador.name, 'cometido por');
@@ -2026,7 +2061,9 @@ window.apuntarAccionVoz = function() {
 
 window.mostrarManual = function() {
     let modal = crearModal("➕ ACCIÓN MANUAL");
-    let opciones = convocados.map(j => `<option value="${escH(j.name)}">${escH(j.num)} - ${escH(j.name)}</option>`).join('');
+    let opciones = convocados.map(j => `<option value="${escH(j.name)}">${escH(j.num)} - ${escH(j.name)}</option>`).join('')
+        + STAFF_EVENTO.map(s => `<option value="${escH(s.name)}">${escH(s.num)} · ${escH(s.name.replace(' (staff)', ''))}</option>`).join('')
+        + STAFF_RIVAL.map(x => `<option value="${escH(x)}">${escH(x)}</option>`).join('');
     modal.innerHTML += `
         <input type="number" id="minManual" placeholder="Minuto" value="45">
         <select id="tipoManual">
@@ -2055,6 +2092,7 @@ window.anadirManual = function() {
     let tipo = document.getElementById('tipoManual').value;
     let equipo = document.getElementById('equipoManual').value;
     let jugador = document.getElementById('jugadorManual').value;
+    if (tipo === 'GOL' && (jugador.endsWith(' (staff)') || STAFF_RIVAL.includes(jugador))) { alert('Un gol no puede ser del staff'); return; }
     registrarEvento(tipo, equipo, jugador, "", parseInt(min));
     cerrarModal();
 };
@@ -2419,8 +2457,11 @@ window.editarEvento = function(id) {
         const sel = e.jugador === j.name ? 'selected' : '';
         opcionesJugadores += `<option value="${escH(j.name)}" ${sel}>${escH(j.num)} - ${escH(j.name)}</option>`;
     });
+    [...STAFF_EVENTO.map(s => s.name), ...STAFF_RIVAL].forEach(v => {
+        opcionesJugadores += `<option value="${escH(v)}" ${e.jugador === v ? 'selected' : ''}>${escH(v)}</option>`;
+    });
     // Si el jugador actual no está en convocados (ej: "Rival", "Riv 10") añadirlo como opción seleccionada
-    const enLista = convocados.some(j => j.name === e.jugador);
+    const enLista = convocados.some(j => j.name === e.jugador) || STAFF_EVENTO.some(s => s.name === e.jugador) || STAFF_RIVAL.includes(e.jugador);
     if(!enLista && e.jugador !== 'Sin asignar') {
         opcionesJugadores = `<option value="${escH(e.jugador)}" selected>${escH(e.jugador)}</option>` + opcionesJugadores;
     }
