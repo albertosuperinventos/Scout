@@ -129,6 +129,50 @@
             background: #f39c12; color: #DDE3EA; border: none; border-radius: 12px;
             padding: 6px 12px; font-weight: bold; cursor: pointer; white-space: nowrap;
         }
+        /* ===== PANTALLA PARTIDO · diseño Camino Viejo (azul y amarillo) ===== */
+        #pPartido { --cv-azul:#1E3A8A; --cv-amarillo:#FACC15; --cv-rival:#B91C1C; --cv-borde:#C5CDD8; --cv-gris:#475569; }
+        #pPartido .marcador-cv { background: var(--cv-azul); color: #fff; border-radius: 22px; padding: 14px 16px; margin: 40px 0 10px; border-bottom: 5px solid var(--cv-amarillo); text-align: center; }
+        #pPartido .marcador-cv .fase-cv { display:inline-block; font-size: 12px; font-weight: bold; color: var(--cv-azul); background: var(--cv-amarillo); padding: 4px 12px; border-radius: 999px; margin-bottom: 8px; }
+        #pPartido .fila-cv { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        #pPartido.cv-visitante .fila-cv { flex-direction: row-reverse; }
+        #pPartido .nombre-cv { flex: 1; font-size: 15px; font-weight: bold; color: #fff; overflow-wrap: anywhere; }
+        #pPartido .goles-cv { font-size: 46px; font-weight: 900; color: var(--cv-amarillo); min-width: 44px; }
+        #pPartido .guion-cv { font-size: 34px; font-weight: 900; color: var(--cv-amarillo); }
+        #pPartido .equipo-propio { color: var(--cv-amarillo); }
+        #pPartido .timer { font-size: 34px; color: #fff; background: rgba(255,255,255,0.12); padding: 6px 18px; margin-top: 6px; }
+        #pPartido #hintReloj, #pPartido #infoExtra { color: #DBE4F3 !important; font-size: 12px; }
+        #pPartido #btnFase { background: var(--cv-azul); color: var(--cv-amarillo); border: none; border-bottom: 4px solid var(--cv-amarillo); border-radius: 16px; font-size: 16px; }
+        #pPartido .controles-cv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
+        #pPartido .controles-cv .cab { font-size: 12px; font-weight: bold; text-align: center; letter-spacing: .5px; }
+        #pPartido .controles-cv button { border-radius: 14px; font-family: inherit; font-weight: bold; cursor: pointer; margin: 0; padding: 0; }
+        #pPartido .b-gol { height: 66px; font-size: 18px; border: none; }
+        #pPartido .b-gol.nos { background: var(--cv-azul); color: var(--cv-amarillo); }
+        #pPartido .b-gol.riv { background: #fff; color: var(--cv-rival); border: 2px solid var(--cv-rival); }
+        #pPartido .par-cv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; align-content: start; }
+        #pPartido .b-tarj { height: 56px; font-size: 13px; background: #fff; color: #1E293B; border: 1px solid var(--cv-borde); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+        #pPartido .b-tarj i { display: block; width: 13px; height: 18px; border-radius: 3px; }
+        #pPartido .b-sec { height: 46px; font-size: 12px; background: #F5F7FB; color: #334155; border: 1px solid var(--cv-borde); }
+        #pPartido .b-cambio { grid-column: span 2; background: var(--cv-amarillo); color: var(--cv-azul); border: none; }
+        #pPartido .b-ancho { grid-column: 1 / -1; height: 48px; font-size: 14px; border: none; color: #fff; }
+        #pPartido .timeline-container { border: 1px solid #DDE3EA; }
+        #pPartido .tabs-tl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; background: #DDE3EA; padding: 3px; border-radius: 12px; }
+        #pPartido .tabs-tl button { border: none; border-radius: 9px; padding: 7px 12px; font-size: 13px; font-weight: bold; background: transparent; color: var(--cv-gris); cursor: pointer; }
+        #pPartido .tabs-tl button.on { background: var(--cv-azul); color: var(--cv-amarillo); }
+        #timelineCentral { width: 100%; padding: 6px 4px; }
+        .tl-fila { display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr); align-items: center; min-height: 36px; }
+        .tl-lado { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; min-width: 0; }
+        .tl-lado.izq { justify-content: flex-end; text-align: right; padding-right: 4px; }
+        .tl-lado.der { justify-content: flex-start; padding-left: 4px; }
+        .tl-txt { min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
+        .tl-txt small { display: block; font-weight: normal; color: #64748B; font-size: 11px; }
+        .tl-min { display: flex; justify-content: center; }
+        .tl-min span { font-size: 12px; font-weight: bold; color: #475569; background: #EEF2F8; border-radius: 999px; padding: 3px 8px; }
+        .tl-ico { font-size: 15px; flex-shrink: 0; }
+        .tl-acc { display: flex; gap: 3px; flex-shrink: 0; }
+        .tl-acc button { border: none; border-radius: 50%; width: 26px; height: 26px; font-size: 12px; cursor: pointer; padding: 0; }
+        .tl-sep { display: flex; align-items: center; gap: 8px; margin: 6px 4px; font-size: 11px; font-weight: bold; color: #475569; }
+        .tl-sep::before, .tl-sep::after { content: ''; flex: 1; height: 1px; background: #C5CDD8; }
+        .tl-vacio { text-align: center; color: #64748B; font-size: 13px; padding: 16px 8px; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js" async></script>
 </head>
@@ -225,52 +269,72 @@
 
 <!-- Pantalla Partido -->
 <div id="pPartido" class="pantalla">
-    <div class="marcador-box">
-        <div id="textoFase" style="color: #64748B; margin-bottom: 5px;">⏳ PREPARTIDO</div>
-        <div class="nombres-marcador">
-            <span id="nombreLocal">GELVES</span>
-            <span id="nombreVisitante">RIVAL</span>
-        </div>
-        <div class="marcador">
-            <span id="golesLocal">0</span> - <span id="golesVisitante">0</span>
+    <div class="marcador-cv">
+        <div id="textoFase" class="fase-cv">⏳ PREPARTIDO</div>
+        <div class="fila-cv">
+            <span id="nombreLocal" class="nombre-cv" style="text-align:left;">GELVES</span>
+            <span id="golesLocal" class="goles-cv">0</span>
+            <span class="guion-cv">-</span>
+            <span id="golesVisitante" class="goles-cv">0</span>
+            <span id="nombreVisitante" class="nombre-cv" style="text-align:right;">RIVAL</span>
         </div>
         <div class="timer" id="reloj" onclick="corregirMinutoActual()" style="cursor:pointer;">00:00</div>
-        <div id="hintReloj" style="display:none; color:#64748B; font-size:11px; margin-top:4px;">✏️ Toca el reloj para corregir el minuto</div>
+        <div id="hintReloj" style="display:none; margin-top:4px;">✏️ Toca el reloj para corregir el minuto</div>
         <div id="infoExtra"></div>
     </div>
 
-    <button id="btnFase" class="btn btn-exito" onclick="siguienteFase()">▶️ INICIAR 1ª PARTE</button>
+    <button id="btnFase" class="btn" onclick="siguienteFase()">▶️ INICIAR 1ª PARTE</button>
+
+    <!-- Botones por equipo: Camino Viejo siempre a la izquierda -->
+    <div class="grid-controles controles-cv">
+        <div class="cab" style="color:var(--cv-azul);">CAMINO VIEJO</div>
+        <div class="cab" style="color:var(--cv-rival);">RIVAL</div>
+
+        <button class="b-gol nos" id="btnGolGelves" onclick="mostrarGolGelves()">⚽ GOL</button>
+        <button class="b-gol riv" onclick="golRival()">⚽ GOL</button>
+
+        <div class="par-cv">
+            <button class="b-tarj" onclick="mostrarTarjetaGelves('AMARILLA')"><i style="background:#F5B400;"></i>Amarilla</button>
+            <button class="b-tarj" onclick="mostrarTarjetaGelves('ROJA')"><i style="background:#DC2626;"></i>Roja</button>
+        </div>
+        <div class="par-cv">
+            <button class="b-tarj" onclick="mostrarTarjetaRival('AMARILLA')"><i style="background:#F5B400;"></i>Amarilla</button>
+            <button class="b-tarj" onclick="mostrarTarjetaRival('ROJA')"><i style="background:#DC2626;"></i>Roja</button>
+        </div>
+
+        <div class="par-cv">
+            <button class="b-sec" onclick="mostrarOcasion('nos')">🔥 Ocasión</button>
+            <button class="b-sec" onclick="mostrarPenaltiFavor()">🎯 Penalti</button>
+            <button class="b-sec" onclick="mostrarCorner('favor')">⚑ Córner</button>
+            <button class="b-sec" onclick="mostrarFueraDeJuego('contra')">🚩 F. juego</button>
+            <button class="b-sec b-cambio" onclick="mostrarCambio()">🔄 Cambio</button>
+        </div>
+        <div class="par-cv">
+            <button class="b-sec" onclick="mostrarOcasion('rival')">🔥 Ocasión</button>
+            <button class="b-sec" onclick="mostrarPenaltiContra()">🎯 Penalti</button>
+            <button class="b-sec" onclick="mostrarCorner('contra')">⚑ Córner</button>
+            <button class="b-sec" onclick="mostrarFueraDeJuego('favor')">🚩 F. juego</button>
+        </div>
+
+        <button class="b-ancho" style="background:#8e44ad;" onclick="dictarPorVoz()">🎤 DICTAR POR VOZ</button>
+        <button class="b-ancho" style="background:#475569;" onclick="mostrarManual()">➕ ACCIÓN MANUAL</button>
+    </div>
 
     <div class="timeline-container">
         <div class="timeline-header">
-            <span>📋 TIMELINE</span>
-            <div class="filtro-cambios">
-                <span style="font-size: 14px;">🔄 Cambios</span>
-                <label class="switch">
-                    <input type="checkbox" id="filtroCambios" checked onchange="toggleCambios()">
-                    <span class="slider"></span>
-                </label>
+            <span style="font-weight:bold;">📋 TIMELINE</span>
+            <div class="tabs-tl">
+                <button id="tabTlPrincipales" onclick="cambiarFiltroTimeline('principales')">Principales</button>
+                <button id="tabTlTodo" class="on" onclick="cambiarFiltroTimeline('todo')">Todo</button>
             </div>
+            <!-- se mantiene oculto por compatibilidad con el código existente -->
+            <input type="checkbox" id="filtroCambios" checked onchange="toggleCambios()" style="display:none;">
         </div>
         <div class="timeline-scroll">
-            <div id="timelineLocal" class="col"></div>
-            <div id="timelineVisitante" class="col"></div>
+            <div id="timelineCentral"></div>
+            <div id="timelineLocal" style="display:none;"></div>
+            <div id="timelineVisitante" style="display:none;"></div>
         </div>
-    </div>
-
-    <div class="grid-controles">
-        <button class="btn btn-exito" id="btnGolGelves" onclick="mostrarGolGelves()">⚽ GOL GELVES</button>
-        <button class="btn btn-peligro" onclick="golRival()">⚽ GOL RIVAL</button>
-        <button class="btn" style="background: #9b59b6;" onclick="mostrarPenaltiFavor()">🎯 PENALTI FAVOR</button>
-        <button class="btn" style="background: #c0392b;" onclick="mostrarPenaltiContra()">🎯 PENALTI CONTRA</button>
-        <button class="btn" style="background: linear-gradient(90deg, #f1c40f 50%, #e74c3c 50%); color: black;" onclick="mostrarTarjetaGelves()">🟨🟥 TARJETA</button>
-        <button class="btn" style="background: linear-gradient(90deg, #f1c40f 50%, #e74c3c 50%); color: black;" onclick="mostrarTarjetaRival()">🟨🟥 TARJ. RIVAL</button>
-        <button class="btn" style="background: #e67e22;" onclick="mostrarOcasion()">🔥 OCASIÓN</button>
-        <button class="btn" style="background: #2c3e50;" onclick="mostrarCambio()">🔄 CAMBIO</button>
-        <button class="btn" style="background: #2ecc71;" onclick="mostrarCorner()">⚑ CÓRNER</button>
-        <button class="btn" style="background: #1a6b3a;" onclick="mostrarFueraDeJuego()">🚩 F. DE JUEGO</button>
-        <button class="btn" style="background: #34495e;" onclick="mostrarManual()">➕ ACCIÓN MANUAL</button>
-        <button class="btn" style="background: #8e44ad; grid-column: 1 / -1;" onclick="dictarPorVoz()">🎤 DICTAR POR VOZ</button>
     </div>
 </div>
 
@@ -1137,6 +1201,7 @@ function actualizarNombresEquipos() {
     document.getElementById('nombreVisitante').innerText = rolGelves === 'V' ? NOMBRE_EQUIPO : rival;
     document.getElementById('resumenLocal').innerText = rolGelves === 'L' ? NOMBRE_EQUIPO : rival;
     document.getElementById('resumenVisitante').innerText = rolGelves === 'V' ? NOMBRE_EQUIPO : rival;
+    aplicarLadoCV();
 }
 
 window.toggleCambios = function() {
@@ -1160,31 +1225,72 @@ function actualizarMarcador() {
     golesV = eventos.filter(e => e.tipo === 'GOL' && e.equipo === 'V').length;
     document.getElementById('golesLocal').innerText = golesL;
     document.getElementById('golesVisitante').innerText = golesV;
+    aplicarLadoCV();
 }
 
+// Camino Viejo siempre a la izquierda en la pantalla de partido (marcador y timeline)
+function aplicarLadoCV() {
+    const p = document.getElementById('pPartido');
+    if (!p) return;
+    p.classList.toggle('cv-visitante', rolGelves === 'V');
+    const nl = document.getElementById('nombreLocal'), nv = document.getElementById('nombreVisitante');
+    if (nl) { nl.classList.toggle('equipo-propio', rolGelves === 'L'); nl.style.textAlign = rolGelves === 'L' ? 'left' : 'right'; }
+    if (nv) { nv.classList.toggle('equipo-propio', rolGelves === 'V'); nv.style.textAlign = rolGelves === 'V' ? 'left' : 'right'; }
+}
+
+// Filtro del timeline: 'todo' (por defecto) o 'principales'
+var filtroTimeline = 'todo';
+var TIPOS_PRINCIPALES = ['GOL', 'AMARILLA', 'ROJA', 'PENALTI', 'PENALTI CONTRA', 'CAMBIO'];
+window.cambiarFiltroTimeline = function(f) {
+    filtroTimeline = f === 'principales' ? 'principales' : 'todo';
+    document.getElementById('tabTlPrincipales')?.classList.toggle('on', filtroTimeline === 'principales');
+    document.getElementById('tabTlTodo')?.classList.toggle('on', filtroTimeline === 'todo');
+    actualizarTimeline();
+};
+
 function actualizarTimeline() {
-    const tlLocal = document.getElementById('timelineLocal');
-    const tlVisit = document.getElementById('timelineVisitante');
-    tlLocal.innerHTML = '';
-    tlVisit.innerHTML = '';
-    
-    [...eventos].sort((a,b) => a.min - b.min).forEach(e => {
-        if(!mostrarCambios && e.tipo === 'CAMBIO') return;
-        
-        let icono = ICONOS[e.tipo] || '•';
-        let color = COLORES_EVENTO[e.tipo] || '#3498db';
-        let html = `
-            <div class="evento" data-tipo="${escH(e.tipo)}" style="border-left-color: ${color};">
-                <span><b>${escH(e.min)}'</b> ${icono} ${escH(e.jugador)} ${escH(e.extra || '')}</span>
-                <div style="display:flex; gap:4px;">
-                    <button class="btn-del" style="background:#e67e22; border:none; color:white; border-radius:50%; width:30px; height:30px; cursor:pointer; font-size:14px;" onclick="editarEvento(${e.id})">✏️</button>
-                    <button class="btn-del" style="background:#e74c3c; border:none; color:white; border-radius:50%; width:30px; height:30px; cursor:pointer;" onclick="borrarEvento(${e.id})">✕</button>
-                </div>
-            </div>
-        `;
-        if(e.equipo === 'L') tlLocal.innerHTML += html;
-        else tlVisit.innerHTML += html;
+    const tl = document.getElementById('timelineCentral');
+    if (!tl) return;
+    aplicarLadoCV();
+
+    const lista = [...eventos]
+        .sort((a,b) => a.min - b.min)
+        .filter(e => mostrarCambios || e.tipo !== 'CAMBIO')
+        .filter(e => filtroTimeline === 'todo' || TIPOS_PRINCIPALES.includes(e.tipo));
+
+    if (!lista.length) {
+        tl.innerHTML = `<div class="tl-vacio">${eventos.length ? 'No hay eventos principales todavía' : 'Aún no hay eventos'}</div>`;
+        return;
+    }
+
+    // Marcador al descanso (goles de la 1ª parte)
+    const golesDescanso = eq => eventos.filter(e => e.tipo === 'GOL' && e.equipo === eq && (e.parte || 1) <= 1).length;
+    const golesCV = golesDescanso(rolGelves), golesRiv = golesDescanso(rolRival);
+
+    let html = '';
+    let separado = false;
+    lista.forEach(e => {
+        if (!separado && (e.parte || 1) >= 2) {
+            html += `<div class="tl-sep">Descanso · ${golesCV} - ${golesRiv}</div>`;
+            separado = true;
+        }
+        const icono = ICONOS[e.tipo] || '•';
+        const extra = e.extra ? `<small>${escH(e.extra)}</small>` : '';
+        const texto = `<span class="tl-txt">${escH(e.jugador)}${extra}</span>`;
+        const acc = `<span class="tl-acc">
+                <button class="btn-del" style="background:#FEF3C7;" aria-label="Editar" onclick="editarEvento(${e.id})">✏️</button>
+                <button class="btn-del" style="background:#FEE2E2; color:#B91C1C;" aria-label="Borrar" onclick="borrarEvento(${e.id})">✕</button>
+            </span>`;
+        const esCV = e.equipo === rolGelves;
+        const izq = esCV ? `${acc}${texto}<span class="tl-ico">${icono}</span>` : '';
+        const der = esCV ? '' : `<span class="tl-ico">${icono}</span>${texto}${acc}`;
+        html += `<div class="tl-fila" data-tipo="${escH(e.tipo)}">
+                <div class="tl-lado izq">${izq}</div>
+                <div class="tl-min"><span>${escH(e.min)}'</span></div>
+                <div class="tl-lado der">${der}</div>
+            </div>`;
     });
+    tl.innerHTML = html;
 }
 
 window.borrarEvento = function(id) {
@@ -1296,11 +1402,17 @@ window.mostrarPenaltiContra = function() {
     modal.appendChild(grid);
 };
 
-window.mostrarTarjetaGelves = function() {
+window.mostrarTarjetaGelves = function(colorPre) {
     if(enCampo.length === 0) return;
-    let modal = crearModal("🟨 TARJETA");
+    const pre = (colorPre === 'AMARILLA' || colorPre === 'ROJA') ? colorPre : null;
+    let modal = crearModal(pre === 'ROJA' ? "🟥 ROJA · ¿A quién?" : pre === 'AMARILLA' ? "🟨 AMARILLA · ¿A quién?" : "🟨 TARJETA");
     const pedirColor = (j) => {
         cerrarModal();
+        if (pre) {
+            if (!j.staff) { if (pre === 'ROJA') j.rojas++; else j.amarillas++; }
+            registrarEvento(pre, rolGelves, j.name);
+            return;
+        }
         let modal2 = crearModal("COLOR");
         let grid2 = document.createElement('div');
         grid2.className = 'grid-jugadores';
@@ -1347,8 +1459,9 @@ window.mostrarTarjetaGelves = function() {
     modal.appendChild(cont);
 };
 
-window.mostrarTarjetaRival = function() {
-    let modal = crearModal("🟨 TARJETA RIVAL");
+window.mostrarTarjetaRival = function(colorPre) {
+    const pre = (colorPre === 'AMARILLA' || colorPre === 'ROJA') ? colorPre : null;
+    let modal = crearModal(pre === 'ROJA' ? "🟥 ROJA RIVAL" : pre === 'AMARILLA' ? "🟨 AMARILLA RIVAL" : "🟨 TARJETA RIVAL");
     window._quienRival = '';
     const quien = [['', '⚽ Jugador'], ...STAFF_RIVAL.map(x => [x, x.replace(' rival', '')])];
     modal.innerHTML += `
@@ -1360,8 +1473,8 @@ window.mostrarTarjetaRival = function() {
             <input type="text" id="dorsalRival" placeholder="Dorsal (ej: 10)" style="margin-bottom:15px; text-align:center; font-size:24px; font-weight:bold; color:#9A6B00;">
         </div>
         <div class="btn-group">
-            <button class="btn" style="flex:1; background:#f1c40f; color:black; font-size:18px;" onclick="registrarTarjetaRival('AMARILLA')">🟨 AMARILLA</button>
-            <button class="btn" style="flex:1; background:#e74c3c; font-size:18px;" onclick="registrarTarjetaRival('ROJA')">🟥 ROJA</button>
+            ${pre !== 'ROJA' ? `<button class="btn" style="flex:1; background:#f1c40f; color:black; font-size:18px;" onclick="registrarTarjetaRival('AMARILLA')">🟨 ${pre ? 'GUARDAR AMARILLA' : 'AMARILLA'}</button>` : ''}
+            ${pre !== 'AMARILLA' ? `<button class="btn" style="flex:1; background:#e74c3c; font-size:18px;" onclick="registrarTarjetaRival('ROJA')">🟥 ${pre ? 'GUARDAR ROJA' : 'ROJA'}</button>` : ''}
         </div>
         <button class="btn btn-neutral" style="margin-top:10px;" onclick="cerrarModal()">CANCELAR</button>
     `;
@@ -1382,7 +1495,7 @@ window.registrarTarjetaRival = function(tipo) {
 };
 
 // ===== NUEVA FUNCIÓN OCASIÓN =====
-window.mostrarOcasion = function() {
+window.mostrarOcasion = function(lado) {
     // Paso 1: Seleccionar equipo
     let modal1 = crearModal("🔥 OCASIÓN - ¿Qué equipo?");
     let grid1 = document.createElement('div');
@@ -1413,6 +1526,8 @@ window.mostrarOcasion = function() {
     grid1.appendChild(btnGelves);
     grid1.appendChild(btnRival);
     modal1.appendChild(grid1);
+    if (lado === 'nos') btnGelves.onclick();
+    else if (lado === 'rival') btnRival.onclick();
 };
 
 // Seleccionar jugador de Gelves
@@ -1477,7 +1592,7 @@ function mostrarTipoOcasion(jugador, equipo) {
     modal.appendChild(grid);
 }
 
-window.mostrarCorner = function() {
+window.mostrarCorner = function(lado) {
     let modal = crearModal("⚑ CÓRNER");
     let grid = document.createElement('div');
     grid.className = 'grid-jugadores';
@@ -1501,9 +1616,11 @@ window.mostrarCorner = function() {
     grid.appendChild(btnFavor);
     grid.appendChild(btnContra);
     modal.appendChild(grid);
+    if (lado === 'favor') btnFavor.onclick();
+    else if (lado === 'contra') btnContra.onclick();
 };
 
-window.mostrarFueraDeJuego = function() {
+window.mostrarFueraDeJuego = function(lado) {
     let modal = crearModal("🚩 FUERA DE JUEGO");
     let grid = document.createElement('div');
     grid.className = 'grid-jugadores';
@@ -1561,6 +1678,8 @@ window.mostrarFueraDeJuego = function() {
     grid.appendChild(btnFavor);
     grid.appendChild(btnContra);
     modal.appendChild(grid);
+    if (lado === 'favor') btnFavor.onclick();
+    else if (lado === 'contra') btnContra.onclick();
 };
 
 window.registrarFjFavor = function() {
@@ -3483,7 +3602,7 @@ window.onload = function() {
     const btnVisitanteEl = document.getElementById('btnVisitante');
     if (btnVisitanteEl) btnVisitanteEl.textContent = `VISITANTE`;
     const btnGolGelvesEl = document.getElementById('btnGolGelves');
-    if (btnGolGelvesEl) btnGolGelvesEl.textContent = `⚽ GOL ${NOMBRE_EQUIPO}`;
+    if (btnGolGelvesEl) btnGolGelvesEl.textContent = `⚽ GOL`;
     ['nombreLocal', 'resumenLocal'].forEach(id => {
         const el = document.getElementById(id);
         if (el && el.textContent.trim().toUpperCase() === 'GELVES') el.textContent = NOMBRE_EQUIPO;
