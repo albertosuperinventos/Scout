@@ -159,17 +159,24 @@
         #pPartido .tabs-tl button { border: none; border-radius: 9px; padding: 7px 12px; font-size: 13px; font-weight: bold; background: transparent; color: var(--cv-gris); cursor: pointer; }
         #pPartido .tabs-tl button.on { background: var(--cv-azul); color: var(--cv-amarillo); }
         #timelineCentral { width: 100%; padding: 6px 4px; }
-        .tl-fila { display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr); align-items: center; min-height: 36px; }
+        .tl-fila { display: grid; grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr); align-items: center; min-height: 40px; cursor: pointer; border-radius: 10px; }
+        .tl-fila:active { background: #EEF2F8; }
+        .tl-pista { text-align: center; font-size: 11px; color: #64748B; padding: 2px 0 6px; }
         .tl-lado { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; min-width: 0; }
         .tl-lado.izq { justify-content: flex-end; text-align: right; padding-right: 4px; }
         .tl-lado.der { justify-content: flex-start; padding-left: 4px; }
-        .tl-txt { min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
+        .tl-txt { min-width: 0; overflow-wrap: break-word; hyphens: none; line-height: 1.25; font-weight: 700; }
+        .tl-txt.cv { color: #1E3A8A; } .tl-txt.riv { color: #B91C1C; }
         .tl-txt small { display: block; font-weight: normal; color: #64748B; font-size: 11px; }
         .tl-min { display: flex; justify-content: center; }
         .tl-min span { font-size: 12px; font-weight: bold; color: #475569; background: #EEF2F8; border-radius: 999px; padding: 3px 8px; }
+        .tl-fila[data-tipo="GOL"] .tl-min span { background: #DCFCE7; color: #166534; }
+        .tl-fila[data-tipo="AMARILLA"] .tl-min span { background: #FEF3C7; color: #92400E; }
+        .tl-fila[data-tipo="ROJA"] .tl-min span { background: #FEE2E2; color: #B91C1C; }
+        .tl-fila[data-tipo="CAMBIO"] .tl-min span { background: #DBEAFE; color: #1E3A8A; }
         .tl-ico { font-size: 15px; flex-shrink: 0; }
         .tl-acc { display: flex; gap: 3px; flex-shrink: 0; }
-        .tl-acc button { border: none; border-radius: 50%; width: 26px; height: 26px; font-size: 12px; cursor: pointer; padding: 0; }
+        .tl-acc button { border: none; border-radius: 50%; width: 30px; height: 30px; font-size: 13px; cursor: pointer; padding: 0; background: #EEF2F8; }
         .tl-sep { display: flex; align-items: center; gap: 8px; margin: 6px 4px; font-size: 11px; font-weight: bold; color: #475569; }
         .tl-sep::before, .tl-sep::after { content: ''; flex: 1; height: 1px; background: #C5CDD8; }
         .tl-vacio { text-align: center; color: #64748B; font-size: 13px; padding: 16px 8px; }
@@ -1238,6 +1245,12 @@ function aplicarLadoCV() {
     if (nv) { nv.classList.toggle('equipo-propio', rolGelves === 'V'); nv.style.textAlign = rolGelves === 'V' ? 'left' : 'right'; }
 }
 
+// Tocar un evento del timeline abre editar (dentro está borrar). En solo lectura no hace nada.
+window.tocarEventoTimeline = function(id) {
+    if (typeof soloLectura === 'function' && soloLectura()) return;
+    editarEvento(id);
+};
+
 // Filtro del timeline: 'todo' (por defecto) o 'principales'
 var filtroTimeline = 'todo';
 var TIPOS_PRINCIPALES = ['GOL', 'AMARILLA', 'ROJA', 'PENALTI', 'PENALTI CONTRA', 'CAMBIO'];
@@ -1275,22 +1288,21 @@ function actualizarTimeline() {
             separado = true;
         }
         const icono = ICONOS[e.tipo] || '•';
-        const extra = e.extra ? `<small>${escH(e.extra)}</small>` : '';
-        const texto = `<span class="tl-txt">${escH(e.jugador)}${extra}</span>`;
-        const acc = `<span class="tl-acc">
-                <button class="btn-del" style="background:#FEF3C7;" aria-label="Editar" onclick="editarEvento(${e.id})">✏️</button>
-                <button class="btn-del" style="background:#FEE2E2; color:#B91C1C;" aria-label="Borrar" onclick="borrarEvento(${e.id})">✕</button>
-            </span>`;
         const esCV = e.equipo === rolGelves;
+        // Texto de detalle más claro solo en pantalla (el dato guardado no cambia)
+        const extraTxt = e.extra === 'cometido a' ? 'penalti a favor' : e.extra === 'cometido por' ? 'penalti en contra' : (e.extra || '');
+        const extra = extraTxt ? `<small>${escH(extraTxt)}</small>` : '';
+        const texto = `<span class="tl-txt ${esCV ? 'cv' : 'riv'}">${escH(e.jugador)}${extra}</span>`;
+        const acc = '';   // se edita/borra tocando la fila
         const izq = esCV ? `${acc}${texto}<span class="tl-ico">${icono}</span>` : '';
         const der = esCV ? '' : `<span class="tl-ico">${icono}</span>${texto}${acc}`;
-        html += `<div class="tl-fila" data-tipo="${escH(e.tipo)}">
+        html += `<div class="tl-fila" data-tipo="${escH(e.tipo)}" role="button" tabindex="0" aria-label="Editar o borrar evento" onclick="tocarEventoTimeline(${e.id})">
                 <div class="tl-lado izq">${izq}</div>
                 <div class="tl-min"><span>${escH(e.min)}'</span></div>
                 <div class="tl-lado der">${der}</div>
             </div>`;
     });
-    tl.innerHTML = html;
+    tl.innerHTML = `<div class="tl-pista">Toca un evento para editarlo o borrarlo</div>` + html;
 }
 
 window.borrarEvento = function(id) {
@@ -2567,6 +2579,17 @@ window.cerrarModal = function() {
 };
 
 // ===== EDITAR EVENTO =====
+// Borrar desde la ventana de editar: hay que tocar dos veces para evitar borrados sin querer
+window.borrarDesdeEditar = function(btn, id) {
+    if (btn.dataset.confirmar !== '1') {
+        btn.dataset.confirmar = '1';
+        btn.textContent = '⚠️ ¿SEGURO? TOCA OTRA VEZ PARA BORRAR';
+        return;
+    }
+    cerrarModal();
+    borrarEvento(id);
+};
+
 window.editarEvento = function(id) {
     let e = eventos.find(ev => ev.id === id);
     if(!e) return;
@@ -2595,8 +2618,9 @@ window.editarEvento = function(id) {
             <label style="color:#64748B; font-size:13px; display:block; margin-bottom:4px;">Detalle extra</label>
             <input type="text" id="editExtra" value="${escH(e.extra || '')}">
         </div>
+        <button class="btn btn-peligro" style="width:100%; margin-bottom:10px;" onclick="borrarDesdeEditar(this, ${id})">🗑️ BORRAR EVENTO</button>
         <div class="btn-group">
-            <button class="btn btn-peligro" style="flex:1;" onclick="cerrarModal()">CANCELAR</button>
+            <button class="btn btn-neutral" style="flex:1;" onclick="cerrarModal()">CANCELAR</button>
             <button class="btn btn-exito" style="flex:1;" onclick="guardarEdicionEvento(${id})">💾 GUARDAR</button>
         </div>
     `;
