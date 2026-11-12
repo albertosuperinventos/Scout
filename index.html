@@ -403,6 +403,22 @@
                     <div class="club-chip-list" id="clubChipList"></div>
                 </div>
                 <div class="admin-section">
+                    <div class="admin-section-title">📋 Importar plantilla</div>
+                    <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;">
+                        <div style="font-size:.72rem;color:var(--muted);">Un jugador por línea: <strong>Apellidos, Nombre</strong> (el número delante es opcional). Se crean como plantilla; los que ya existan en ese club se saltan.</div>
+                        <div style="display:flex;gap:8px;">
+                            <select id="importClub" style="flex:1;padding:8px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.82rem;"><option value="">— Club —</option></select>
+                            <select id="importCat" style="flex:1;padding:8px 10px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.82rem;">
+                                <option value="">— Categoría —</option>
+                                <option>Pre-benjamín</option><option>Benjamín</option><option>Alevín</option>
+                                <option>Infantil</option><option>Cadete</option><option>Juvenil</option><option>Senior</option>
+                            </select>
+                        </div>
+                        <textarea id="importText" rows="8" placeholder="1 BASTIDA BASTIDA, JOSÉ&#10;2 MÁRQUEZ GUTIÉRREZ, JAIME" style="padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);font-family:inherit;font-size:.82rem;resize:vertical;"></textarea>
+                        <button id="importBtn" style="background:var(--blue);color:#fff;border:none;padding:9px;border-radius:10px;font-weight:700;font-size:.82rem;cursor:pointer;">Importar jugadores</button>
+                    </div>
+                </div>
+                <div class="admin-section">
                     <div class="admin-section-title">👥 Usuarios</div>
                     <!-- Formulario añadir usuario -->
                     <div style="background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px;">
@@ -1070,6 +1086,8 @@
         document.getElementById("playerClub").innerHTML = opts;
         const newUserClubSel = document.getElementById("newUserClub");
         if (newUserClubSel) newUserClubSel.innerHTML = opts;
+        const importClubSel = document.getElementById("importClub");
+        if (importClubSel) importClubSel.innerHTML = opts;
     }
 
     // LOAD ADMIN DATA
@@ -1328,6 +1346,55 @@
         await loadClubs(); toast(`✅ Club "${name}" añadido`);
     });
     initNewClubDiasChips();
+
+    // IMPORTAR PLANTILLA (admin): "Apellidos, Nombre" por línea
+    function titleCaseEs(s) {
+        return s.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (m, sep, l) => sep + l.toUpperCase()).replace(/\b(De|Del|La|Las|Los|Y)\b/g, w => w.toLowerCase());
+    }
+    function parseLineaPlantilla(linea) {
+        let t = linea.replace(/\t+/g, ",").replace(/^\s*\d+[\s.,)-]*/, "").trim();
+        if (!t) return null;
+        const partes = t.split(",").map(x => x.trim()).filter(Boolean);
+        if (partes.length < 2) return { error: linea.trim() };
+        const apellidos = titleCaseEs(partes[0]);
+        const nombre = titleCaseEs(partes.slice(1).join(" "));
+        return { name: `${nombre} ${apellidos}`, nombreRFAF: `${apellidos}, ${nombre}` };
+    }
+    document.getElementById("importBtn").addEventListener("click", async () => {
+        if (!isAdmin) { toast("⚠️ Solo admin", "error"); return; }
+        const club = document.getElementById("importClub").value;
+        const cat = document.getElementById("importCat").value;
+        const lineas = document.getElementById("importText").value.split(/\r?\n/);
+        if (!club) { toast("⚠️ Elige el club", "error"); return; }
+        const filas = lineas.map(parseLineaPlantilla).filter(Boolean);
+        const malas = filas.filter(f => f.error);
+        if (malas.length) { toast(`⚠️ Falta la coma en: ${malas[0].error}`, "error"); return; }
+        if (!filas.length) { toast("⚠️ Pega la lista de jugadores", "error"); return; }
+        const btn = document.getElementById("importBtn");
+        btn.disabled = true; btn.textContent = "Importando...";
+        try {
+            const snap = await getDocs(query(playersCol, where("club", "==", club)));
+            const norm = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+            const existentes = new Set(snap.docs.map(d => norm(d.data().name)));
+            let creados = 0, saltados = 0;
+            for (const f of filas) {
+                if (existentes.has(norm(f.name))) { saltados++; continue; }
+                await addDoc(playersCol, {
+                    name: f.name, nombreRFAF: f.nombreRFAF, club, category: cat || "",
+                    birthYear: "", team: "", phone: "", dorsal: "", tipo: "", numCaptaciones: "",
+                    positions: [], foot: "diestro", shoot: "", tactica: "", tecnica: "", fisico: "",
+                    rating: null, observations: "", valFinal: "", photoB64: null,
+                    authSig: null, authName: null, authDate: null,
+                    createdAt: new Date(), updatedAt: new Date(), createdBy: currentUser.uid
+                });
+                existentes.add(norm(f.name)); creados++;
+            }
+            document.getElementById("importText").value = "";
+            toast(`✅ ${creados} jugadores creados${saltados ? ` · ${saltados} ya existían` : ""}`);
+            await loadPlayers();
+        } catch (e) { toast("❌ " + e.message, "error"); }
+        finally { btn.disabled = false; btn.textContent = "Importar jugadores"; }
+    });
 
     // EXPORT EXCEL
     document.getElementById("exportBtn").addEventListener("click", () => {
