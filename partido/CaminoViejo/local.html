@@ -360,31 +360,8 @@ const STAFF_RIVAL = ['Entrenador rival', '2º entrenador rival', 'Delegado rival
 
 // ===== JUGADORES BASE =====
 var PLANTILLA_BASE = [
-    // Solo se usa si no se puede cargar la plantilla de Scout (Firestore).
-    // rfaf = nombre exacto en rfaf.es (para leer capturas de sanciones y actas)
-    {d:0, n:"Adriano Segura Gomez", rfaf:"Segura Gomez, Adriano"},
-    {d:0, n:"Miguel Romero",        rfaf:"Miguel Romero Segura"},
-    {d:0, n:"Rodrigo Vargas",       rfaf:"Vargas Garcia, Rodrigo"},
-    {d:0, n:"Alberto Lopez",        rfaf:"Lopez Basterra, Alberto"},
-    {d:0, n:"Joaquin Morera",       rfaf:"Morera Valentin-gamazo, Joaquin"},
-    {d:0, n:"Hugo Cabrera",         rfaf:"Cabrera Echeverria, Hugo"},
-    {d:0, n:"Queco",                rfaf:"Ayuso Clavijo, Francisco"},
-    {d:0, n:"Victor Rodriguez",     rfaf:"Mejias Rodriguez, Victor"},
-    {d:0, n:"Pablo Bernal",         rfaf:"Bernal Diaz, Pablo"},
-    {d:0, n:"Guille Ocaña",         rfaf:"Guillermo Ocaña Martinez"},
-    {d:0, n:"Samuel",               rfaf:"Becerra Arribas, Samuel"},
-    {d:0, n:"Robert Pinto",         rfaf:"Robert Antonio Pinto Romero"},
-    {d:0, n:"Guille Salazar",       rfaf:"Salazar Romero, Guillermo"},
-    {d:0, n:"Mario Flores",         rfaf:"Flores Martin, Mario"},
-    {d:0, n:"Dani Guerrero",        rfaf:"Daniel Guerrero Martin"},
-    {d:0, n:"Oscar Aguilar",        rfaf:"Aguilar Santaella, Oscar"},
-    {d:0, n:"Alvaro Roman",         rfaf:"Roman Diez, Alvaro"},
-    {d:0, n:"Pablo Aguilar",        rfaf:"Aguilar Santaella, Pablo"},
-    {d:0, n:"Nico Abad",            rfaf:"Abad Jurado, Nicolas"},
-    {d:0, n:"Diego García",         rfaf:"Diego Garcia Sousa"},
-    {d:0, n:"Jorge",                rfaf:"Jorge Aguilera Calvo"},
-    {d:0, n:"Lucas",                rfaf:"Dodera De Mello, Lucas"},
-    {d:0, n:"Pablo Monge",          rfaf:"Monge Ruiz, Pablo"}
+    // Vacía a propósito: la plantilla se carga de Scout (Firestore) al iniciar sesión
+    // y se guarda en este dispositivo. No poner nombres reales aquí (el repositorio es público).
 ];
 
 // ===== PLAZAS EXTRA PARA JUGADORES DE CADETE B / FILIAL =====
@@ -1770,10 +1747,10 @@ function ejecutarCambio(j, suplente) {
 }
 
 // ===== DICTADO POR VOZ (reglas propias, sin IA) =====
-// Frases: "gol de Hugo asistencia Bernal", "gol rival", "cambio entra Lucas sale Óscar", "entra Lucas por Óscar",
-// "amarilla Joaquín", "roja rival 10", "córner a favor", "córner en contra", "gol anulado de Hugo",
-// "gol anulado rival", "ocasión de Hugo tiro al palo", "fuera de juego de Hugo", "fuera de juego a favor",
-// "penalti a favor sobre Hugo", "penalti en contra de Bernal". Siempre se confirma antes de apuntar.
+// Frases: "gol de Pablo asistencia Mario", "gol rival", "cambio entra Dani sale Mario", "entra Dani por Mario",
+// "amarilla Pablo", "roja rival 10", "córner a favor", "córner en contra", "gol anulado de Pablo",
+// "gol anulado rival", "ocasión de Pablo tiro al palo", "fuera de juego de Pablo", "fuera de juego a favor",
+// "penalti a favor sobre Pablo", "penalti en contra de Mario". Siempre se confirma antes de apuntar.
 const VOZ_TIPOS_OCASION = ['Falta directa', 'Falta al area', 'Jugada personal', 'Jugada de equipo', 'Córner rematado', 'Tiro lejano', 'Tiro al palo', 'Tiro al larguero'];
 
 function distanciaPal(a, b) {
@@ -1984,9 +1961,9 @@ function escucharVoz(titulo, ayuda, alTexto) {
 
 window.dictarListaVoz = function(modo, seguir) {
     if (!seguir) window._vozLista = { modo, items: [], quitar: false };
-    const ayuda = modo === 'conv' ? 'Di nombres: <i>"Hugo, Pablo Bernal, Queco…"</i> o <i>"quita a Hugo y Lucas"</i>'
-        : modo === 'once' ? 'Di los titulares por nombre o dorsal: <i>"1, 4, Hugo, Pablo Bernal…"</i>'
-        : 'Di nombre y dorsal: <i>"Lucas 1, Hugo 10, Pablo Bernal 9…"</i>';
+    const ayuda = modo === 'conv' ? 'Di nombres: <i>"Pablo, Mario, Dani…"</i> o <i>"quita a Pablo y Mario"</i>'
+        : modo === 'once' ? 'Di los titulares por nombre o dorsal: <i>"1, 4, Pablo, Mario…"</i>'
+        : 'Di nombre y dorsal: <i>"Pablo 1, Mario 10, Dani 9…"</i>';
     escucharVoz('🎤 Escuchando…', ayuda, texto => {
         const L = window._vozLista;
         if (/\bquit|\bfuera\b/.test(normalizarNombre(texto))) L.quitar = true;
@@ -2087,7 +2064,7 @@ window.dictarPorVoz = function() {
     const modal = crearModal('🎤 Escuchando…');
     modal.innerHTML += `
         <p style="text-align:center; color:#5B6573; margin:10px 0;">Habla ahora. Por ejemplo:<br>
-        <i>"gol de Hugo asistencia Bernal"</i> · <i>"cambio entra Lucas sale Óscar"</i> · <i>"amarilla Joaquín"</i> · <i>"córner a favor"</i></p>
+        <i>"gol de Pablo asistencia Mario"</i> · <i>"cambio entra Dani sale Mario"</i> · <i>"amarilla Pablo"</i> · <i>"córner a favor"</i></p>
         <div style="text-align:center; font-size:48px;">🎙️</div>
         <button class="btn btn-neutral" onclick="cerrarModal()">CANCELAR</button>`;
     let entendido = false;
@@ -2114,7 +2091,7 @@ function confirmarAccionVoz(frase, accion) {
     const modal = crearModal('🎤 ¿Apunto esto?');
     let html = `<p style="text-align:center; color:#64748B; font-size:13px; margin:6px 0;">Has dicho: "<i>${escH(frase)}</i>"</p>`;
     if (!accion) {
-        html += `<p style="text-align:center; color:#e74c3c; margin:12px 0;">No lo he entendido. Prueba con frases como "gol de Hugo", "amarilla Joaquín" o "cambio entra Lucas sale Óscar".</p>
+        html += `<p style="text-align:center; color:#e74c3c; margin:12px 0;">No lo he entendido. Prueba con frases como "gol de Pablo", "amarilla Pablo" o "cambio entra Dani sale Mario".</p>
             <div class="btn-group">
                 <button class="btn btn-neutral" style="flex:1;" onclick="cerrarModal()">CERRAR</button>
                 <button class="btn" style="flex:1; background:#8e44ad;" onclick="dictarPorVoz()">🔁 REPETIR</button>
@@ -4749,29 +4726,7 @@ window.ocultarAvisoSanciones = function() {
     // Solo se usan para rellenar el campo "Nombre en RFAF" de los jugadores de Scout que lo
     // tengan vacío. Después se corrige desde la ficha del jugador en Scout.
     const RFAF_INICIAL = [
-        [["adriano segura gomez", "adriano segura", "adriano"], "Segura Gomez, Adriano"],
-        [["miguel romero", "miguel romero segura"], "Miguel Romero Segura"],
-        [["rodrigo vargas", "rodrigo vargas garcia"], "Vargas Garcia, Rodrigo"],
-        [["alberto lopez", "alberto lopez basterra"], "Lopez Basterra, Alberto"],
-        [["joaquin morera", "joaquin morera valentin gamazo"], "Morera Valentin-gamazo, Joaquin"],
-        [["hugo cabrera", "hugo cabrera echeverria"], "Cabrera Echeverria, Hugo"],
-        [["queco", "francisco ayuso", "francisco ayuso clavijo"], "Ayuso Clavijo, Francisco"],
-        [["victor rodriguez", "victor mejias", "victor mejias rodriguez"], "Mejias Rodriguez, Victor"],
-        [["pablo bernal", "pablo bernal diaz"], "Bernal Diaz, Pablo"],
-        [["guille ocana", "guillermo ocana", "guillermo ocana martinez"], "Guillermo Ocaña Martinez"],
-        [["samuel", "samuel becerra", "samuel becerra arribas"], "Becerra Arribas, Samuel"],
-        [["robert pinto", "robert", "robert antonio pinto romero"], "Robert Antonio Pinto Romero"],
-        [["guille salazar", "guillermo salazar", "guillermo salazar romero"], "Salazar Romero, Guillermo"],
-        [["mario flores", "mario flores martin"], "Flores Martin, Mario"],
-        [["dani guerrero", "daniel guerrero", "daniel guerrero martin"], "Daniel Guerrero Martin"],
-        [["oscar aguilar", "oscar aguilar santaella"], "Aguilar Santaella, Oscar"],
-        [["alvaro roman", "alvaro roman diez"], "Roman Diez, Alvaro"],
-        [["pablo aguilar", "pablo aguilar santaella"], "Aguilar Santaella, Pablo"],
-        [["nico abad", "nicolas abad", "nicolas abad jurado"], "Abad Jurado, Nicolas"],
-        [["diego garcia", "diego garcia sousa"], "Diego Garcia Sousa"],
-        [["jorge", "jorge aguilera", "jorge aguilera calvo"], "Jorge Aguilera Calvo"],
-        [["lucas", "lucas dodera", "lucas dodera de mello"], "Dodera De Mello, Lucas"],
-        [["pablo monge", "monge", "pablo monge ruiz"], "Monge Ruiz, Pablo"]
+        // Vacía a propósito (repositorio público). El nombre RFAF se pone en la ficha del jugador en Scout.
     ];
     function rfafInicial(nombreScout) {
         const n = normalizarNombre(nombreScout);

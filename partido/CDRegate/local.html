@@ -222,27 +222,8 @@ const STAFF_TECNICO = [
 
 // ===== JUGADORES BASE =====
 var PLANTILLA_BASE = [
-    // ⚠️ Estos son solo un respaldo hasta que Firestore cargue la plantilla real de Scout
-    {d:0, n:"Jugador 1"},
-    {d:0, n:"Jugador 2"},
-    {d:0, n:"Jugador 3"},
-    {d:0, n:"Jugador 4"},
-    {d:0, n:"Jugador 5"},
-    {d:0, n:"Jugador 6"},
-    {d:0, n:"Jugador 7"},
-    {d:0, n:"Jugador 8"},
-    {d:0, n:"Jugador 9"},
-    {d:0, n:"Jugador 10"},
-    {d:0, n:"Jugador 11"},
-    {d:0, n:"Jugador 12"},
-    {d:0, n:"Jugador 13"},
-    {d:0, n:"Jugador 14"},
-    {d:0, n:"Jugador 15"},
-    {d:0, n:"Jugador 16"},
-    {d:0, n:"Jugador 17"},
-    {d:0, n:"Jugador 18"},
-    {d:0, n:"Jugador 19"},
-    {d:0, n:"Jugador 20"}
+    // Vacía a propósito: la plantilla se carga de Scout (Firestore) al iniciar sesión
+    // y se guarda en este dispositivo. No poner nombres reales aquí (el repositorio es público).
 ];
 
 // ===== PLAZAS EXTRA PARA JUGADORES DE CADETE B / FILIAL =====
@@ -2357,84 +2338,7 @@ window.onload = function() {
     // ── DATOS INICIALES SANCIONES RIVALES ────────────────────────────────────
     // Se cargan solo si no hay datos previos guardados
     if (!localStorage.getItem(`${NOMBRE_EQUIPO}_rivales`)) {
-        const datosIniciales = {
-            "21": {
-                jornada: 21, fecha: "08/03/2026",
-                equipos: [
-                    { equipo: "A.D. SAN JOSE", sancionados: [
-                        { jugador: "RIVERO FALISTOCO, NICOLAS", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]},
-                    { equipo: "BURGUILLOS C.D.", sancionados: [
-                        { jugador: "CARMONA MERINO, IVAN", partidos: 1, motivo: "Acumulación de amonestaciones" },
-                        { jugador: "LOPEZ RODRIGUEZ, MANUEL", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]},
-                    { equipo: "C.D. MONITORES GERENA", sancionados: [
-                        { jugador: "MIRANDA ORTIZ, ALVARO", partidos: 2, motivo: "Conducta violenta al margen del juego" },
-                        { jugador: "FERNANDEZ MARTINEZ, MARCOS", partidos: 1, motivo: "Acumulación de amonestaciones" },
-                        { jugador: "MARQUEZ MENDEZ, DAVID", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]},
-                    { equipo: "C.D. VALENCINA F.C.", sancionados: [
-                        { jugador: "SUAREZ CARREIRA, ANDRES", partidos: 1, motivo: "Menospreciar árbitro" }
-                    ]},
-                    { equipo: "CORIA C.F.", sancionados: [
-                        { jugador: "MENA CASTRO, CARLOS", partidos: 1, motivo: "Doble amonestación" }
-                    ]},
-                    { equipo: "GUILLENA C.F.", sancionados: [
-                        { jugador: "ROMERO PAYAN, ANTONIO", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]},
-                    { equipo: "LORA C.F.", sancionados: [
-                        { jugador: "GOMEZ DELGADO, MIGUEL", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]},
-                    { equipo: "U.D. TOMARES A", sancionados: [
-                        { jugador: "CASTILLO ROMERO, MANUEL", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]}
-                ]
-            },
-            "22": {
-                jornada: 22, fecha: "22/02/2026",
-                equipos: [
-                    { equipo: "ATCO. ALGABEÑO", sancionados: [
-                        { jugador: "DIAZ ACUÑA, JOSE ANTONIO", partidos: 2, motivo: "Conducta violenta al margen del juego" }
-                    ]},
-                    { equipo: "BURGUILLOS C.D.", sancionados: [
-                        { jugador: "RIOS MARTIN, MANUEL", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]},
-                    { equipo: "CASTILLEJA C.F.", sancionados: [
-                        { jugador: "MARISCAL LOPEZ, FERNANDO", partidos: 1, motivo: "Doble amonestación y consiguiente expulsión" }
-                    ]},
-                    { equipo: "J.D. BORMUJOS", sancionados: [
-                        { jugador: "ARJONA FERNANDEZ, FABIO", partidos: 2, motivo: "Conducta violenta al margen del juego" }
-                    ]},
-                    { equipo: "LORA C.F.", sancionados: [
-                        { jugador: "GARRIDO CAIRO, HUGO", partidos: 2, motivo: "Insultar a un contrario" },
-                        { jugador: "MACHUCA IGLESIAS, MARTIN", partidos: 4, motivo: "Agresión a otro (1ª ocasión Art.73)" },
-                        { jugador: "PAREDES EUSO, RUBEN", partidos: 1, motivo: "Ofender/menospreciar/provocar al árbitro" }
-                    ]},
-                    { equipo: "UMBRETE C.F.", sancionados: [
-                        { jugador: "LLORENTE CALERO, PEDRO", partidos: 1, motivo: "Acumulación de amonestaciones" },
-                        { jugador: "RODAS GUTIERREZ, JESUS", partidos: 1, motivo: "Acumulación de amonestaciones" }
-                    ]}
-                ]
-            },
-            "23": {
-                jornada: 23, fecha: "08/03/2026",
-                equipos: [
-                    { equipo: "A.D. SAN JOSE", sancionados: [
-                        { jugador: "RIVERO FALISTOCO, NICOLAS", partidos: 1, motivo: "Doble amonestación y consiguiente expulsión" }
-                    ]},
-                    { equipo: "ATCO. ALGABEÑO", sancionados: [
-                        { jugador: "GENIZ BENCANO, DAVID", partidos: 1, motivo: "Menospreciar árbitro" },
-                        { jugador: "GOMEZ SORIANO, ALEJANDRO", partidos: 4, motivo: "Agresión a otro (3ª ocasión Art.73)" }
-                    ]},
-                    { equipo: "GUILLENA C.F.", sancionados: [
-                        { jugador: "DUQUE BARROSO, FRANCISCO JOSE", partidos: 1, motivo: "Conducta contraria al buen orden deportivo" }
-                    ]},
-                    { equipo: "U.D. TOMARES A (staff)", sancionados: [
-                        { jugador: "LUQUE MUÑOZ, JESUS", partidos: 1, motivo: "Protestar al árbitro" }
-                    ]}
-                ]
-            }
-        };
+        const datosIniciales = {};   // vacío a propósito (repositorio público)
         localStorage.setItem(`${NOMBRE_EQUIPO}_rivales`, JSON.stringify(datosIniciales));
     }
     // ─────────────────────────────────────────────────────────────────────────
@@ -2717,34 +2621,7 @@ window.exportarExcel = async function() {
 // ===== MÓDULO SANCIONES =====
 const SANCIONES_VERSION = 6;
 const SANCIONES_INICIALES = {
-    "Antunez":       { amarillas: 4, sancionado: 0 },
-    "Alberto Lopez": { amarillas: 3, sancionado: 0 },
-    "Jesus Ramos":   { amarillas: 3, sancionado: 0 },
-    "Isaac":         { amarillas: 2, sancionado: 0 },
-    "Manuel":        { amarillas: 1, sancionado: 0 },
-    "Saul":          { amarillas: 2, sancionado: 0 },
-    "Manuel Ortega":        { amarillas: 1, sancionado: 0 },
-    "Robert":        { amarillas: 1, sancionado: 0 },
-    "Carlos Molina":        { amarillas: 2, sancionado: 0 },
-    "Ramiro":        { amarillas: 4, sancionado: 1, motivo: 'acumulacion' },
-    "Hugo":          { amarillas: 1, sancionado: 0 },
-    "Samuel":        { amarillas: 2, sancionado: 0 },
-    "Vargas":        { amarillas: 2, sancionado: 0 },
-    "Marcos":        { amarillas: 2, sancionado: 1, motivo: 'roja' },
-    "Martin":        { amarillas: 1, sancionado: 0 },
-    "Jose Carlos Pozas":         { amarillas: 2, sancionado: 0 },
-    "Alvaro":        { amarillas: 1, sancionado: 0 },
-    "David Sanchez Cruz":  { amarillas: 2, sancionado: 0 },
-    "Guillermo Fasmil":        { amarillas: 0, sancionado: 0 },
-    "Juande":        { amarillas: 0, sancionado: 0 },
-    "Aitor":         { amarillas: 0, sancionado: 0 },
-    "Jesus":         { amarillas: 0, sancionado: 0 },
-    "Mario Lama":          { amarillas: 0, sancionado: 0 },
-    "Lucas":         { amarillas: 0, sancionado: 0 },
-    // Staff técnico
-    "David Mesa":        { amarillas: 0, sancionado: 0 },
-    "Antonio Pinto":     { amarillas: 0, sancionado: 0 },
-    "Alberto Delegado":  { amarillas: 0, sancionado: 0 },
+    // Vacío a propósito (repositorio público): las sanciones se guardan en el dispositivo/nube.
 };
 
 function getSanciones() {
