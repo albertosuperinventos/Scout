@@ -623,8 +623,11 @@ window.irAConvocatoria = function(datosGuardados) {
         } catch (e) {}
     }
     let html = '<table>';
-    const listaG = datosGuardados && datosGuardados.jugadores ? datosGuardados.jugadores : null;
-    const listaConIds = !!(listaG && listaG.some(x => x && x.id));
+    let listaG = datosGuardados && datosGuardados.jugadores ? datosGuardados.jugadores : null;
+    let listaConIds = !!(listaG && listaG.some(x => x && x.id));
+    if (listaConIds && !PLANTILLA_BASE.some(j => j.id && listaG.some(x => x && x.id === j.id))) {
+        listaG = null; listaConIds = false;   // es de otro equipo/plantilla: se empieza de cero
+    }
     PLANTILLA_BASE.forEach((j, i) => {
         // Se recupera por id del jugador de Scout; los guardados antiguos (sin id) por posición
         const g = listaG ? (listaConIds ? (j.id ? (listaG.find(x => x && x.id === j.id) || null) : null) : listaG[i]) : null;
@@ -4799,14 +4802,15 @@ window.ocultarAvisoSanciones = function() {
     }
 
     // ===== PLANTILLA DESDE SCOUT =====
-    function rosterCacheKey() { return `${CLUB_CORTO}_plantilla_cache`; }
+    function rosterCacheKey() { return `${CLUB_CORTO}_plantilla_cache_v2`; }
+    try { localStorage.removeItem(`${CLUB_CORTO}_plantilla_cache`); } catch (e) {}   // caché antigua: podía tener jugadores de otro equipo
 
     function cargarPlantillaDeCache() {
         try {
             const raw = localStorage.getItem(rosterCacheKey());
             if (raw) {
                 const arr = JSON.parse(raw);
-                if (Array.isArray(arr) && arr.length) window.PLANTILLA_BASE = arr;
+                if (arr && arr.club === CLUB_SYNC && Array.isArray(arr.jugadores) && arr.jugadores.length) window.PLANTILLA_BASE = arr.jugadores;
             }
         } catch(e) {}
     }
@@ -4832,8 +4836,10 @@ window.ocultarAvisoSanciones = function() {
             jugadores.sort((a, b) => a.n.localeCompare(b.n, 'es'));
             if (jugadores.length) {
                 window.PLANTILLA_BASE = jugadores;
-                localStorage.setItem(rosterCacheKey(), JSON.stringify(jugadores));
+                localStorage.setItem(rosterCacheKey(), JSON.stringify({ club: CLUB_SYNC, jugadores }));
                 aviso(`✅ Plantilla actualizada desde Scout (${jugadores.length} jugadores)`, false);
+                // Si ya estaba en la convocatoria con la lista anterior, se repinta con la buena
+                if (pantallaActiva() === 'pConvocatoria' && !soloLectura()) window.irAConvocatoria();
             } else {
                 aviso("⚠️ Scout no tiene jugadores para este club. Usando la plantilla guardada en este dispositivo.", true);
             }
