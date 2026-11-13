@@ -349,7 +349,9 @@
 <script>
 // ===== STAFF TÉCNICO =====
 const STAFF_TECNICO = [
-    // ⚠️ EDITAR: staff del Juvenil B (entrenador/delegado), formato: { n:"Nombre", rol:"🧑‍💼 Entrenador", rfaf:"Apellidos, Nombre" }
+    { n:"Daniel Rueda Reinoso", rol:"🧑‍💼 Entrenador", rfaf:"Rueda Reinoso, Daniel" },
+    { n:"Cristóbal Verdugo Peñuela", rol:"🧑‍💼 2º Entrenador", rfaf:"Verdugo Peñuela, Cristobal" },
+    { n:"Pedro López de Lerma", rol:"📋 Delegado", rfaf:"Lopez de Lerma, Pedro" },
 ];
 // Staff como "jugador" para tarjetas en directo (mismo formato que el resumen del árbitro: "Nombre (staff)")
 const STAFF_EVENTO = STAFF_TECNICO.map(s => ({ name: s.n + ' (staff)', num: s.rol, staff: true, rolTxt: s.rol.replace(/[^\p{L}\s]/gu, ' ').trim() }));
@@ -5364,6 +5366,12 @@ window.ocultarAvisoSanciones = function() {
                 miNombre = soyAdmin ? 'Admin' : (p.nombre || '');
                 // El admin no tiene club propio: usa el de este archivo
                 if (p.club && !soyAdmin && p.club !== 'Admin') club = p.club;
+                // Permisos por módulo (si falta el campo, todo permitido)
+                const modulo = MODO_SANCIONES ? 'sanciones' : 'partido';
+                if (!soyAdmin && p.permisos && p.permisos[modulo] === false) {
+                    document.body.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:sans-serif;background:#E9EEF4;color:#12295E;padding:24px;text-align:center;"><div style="font-size:3rem;">🔒</div><div style="font-size:1.2rem;font-weight:700;">Sin permisos</div><div>Contacte con el administrador.</div><a href="../../index.html" style="background:#12295E;color:#fff;padding:10px 20px;border-radius:10px;text-decoration:none;font-weight:700;">⬅️ Volver</a></div>';
+                    return;
+                }
             }
         } catch(e) {}
         if (!miNombre) miNombre = (user.email || '').split('@')[0];

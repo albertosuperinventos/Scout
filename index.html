@@ -953,6 +953,7 @@
                 document.getElementById("clubChips").style.display = "none";
                 document.getElementById("clubFieldWrap").style.display = "none";
             }
+            aplicarPermisosTiles();
             await loadClubs();
             await loadPlayers();
         } else {
@@ -971,7 +972,28 @@
     document.getElementById("homeLogoutBtn").addEventListener("click", () => signOut(auth));
 
     // NAVEGACIÓN HOME ↔ SCOUT
+    // PERMISOS POR MÓDULO (campo "permisos" del usuario; si falta, todo permitido)
+    const MODULOS = [["scout","🔍 Scout"],["asistencia","📋 Asistencia"],["partido","⚽ Partido"],["sanciones","🟥 Sanciones"]];
+    function tienePermiso(mod) {
+        if (isAdmin) return true;
+        return currentUserProfile?.permisos?.[mod] !== false;
+    }
+    function avisoSinPermiso() {
+        toast("🔒 Sin permisos. Contacte con el administrador", "error");
+    }
+    function aplicarPermisosTiles() {
+        [["tileScout","scout"],["tileAsistencia","asistencia"],["tilePartido","partido"],["tileSanciones","sanciones"]].forEach(([id, mod]) => {
+            const el = document.getElementById(id); if (!el) return;
+            const ok = tienePermiso(mod);
+            el.style.opacity = ok ? "" : "0.45";
+            let lock = el.querySelector(".tile-lock");
+            if (!ok && !lock) { lock = document.createElement("span"); lock.className = "tile-lock"; lock.style.cssText = "font-size:.75rem;color:#fff;"; lock.textContent = "🔒 Sin permisos"; el.appendChild(lock); }
+            if (ok && lock) lock.remove();
+        });
+    }
+
     document.getElementById("tileScout").addEventListener("click", () => {
+        if (!tienePermiso("scout")) { avisoSinPermiso(); return; }
         document.getElementById("homeScreen").style.display = "none";
         document.getElementById("appSection").style.display = "block";
     });
@@ -980,12 +1002,15 @@
         document.getElementById("homeScreen").style.display = "block";
     });
     document.getElementById("tileAsistencia").addEventListener("click", () => {
+        if (!tienePermiso("asistencia")) { avisoSinPermiso(); return; }
         openAsistenciaModal();
     });
     document.getElementById("tilePartido").addEventListener("click", () => {
+        if (!tienePermiso("partido")) { avisoSinPermiso(); return; }
         openPartidoModal();
     });
     document.getElementById("tileSanciones").addEventListener("click", () => {
+        if (!tienePermiso("sanciones")) { avisoSinPermiso(); return; }
         openPartidoModal('sanciones');
     });
 
@@ -1006,7 +1031,8 @@
     function getClubLogo(clubName) {
         const key = (clubName || "").trim().toLowerCase().replace(/\.+/g, "");
         for (const k in CLUB_LOGOS) {
-            if (k.replace(/\.+/g, "") === key) return CLUB_LOGOS[k];
+            const kk = k.replace(/\.+/g, "");
+            if (kk === key || key.startsWith(kk + " ")) return CLUB_LOGOS[k];
         }
         return null;
     }
@@ -1113,7 +1139,7 @@
             <div class="user-row" style="${isEditing ? "flex-direction:column;align-items:stretch;" : ""}">
                 <div class="user-row-info">
                     <div class="user-row-email">${u.admin ? "👑 " : ""}${esc(u.nombre) || esc(u.email) || esc(u.id)}</div>
-                    <div class="user-row-meta">${esc(u.email)} · ${u.club ? `🏟️ ${esc(u.club)}` : "Sin club"} · ${esc(u.categoria) || "Sin cat."}</div>
+                    <div class="user-row-meta">${esc(u.email)} · ${u.club ? `🏟️ ${esc(u.club)}` : "Sin club"} · ${esc(u.categoria) || "Sin cat."}${MODULOS.filter(([k]) => u.permisos?.[k] === false).length ? ` · 🔒 sin ${MODULOS.filter(([k]) => u.permisos?.[k] === false).map(([k]) => k).join(", ")}` : ""}</div>
                 </div>
                 ${isEditing ? `
                 <div style="display:flex;gap:8px;flex-wrap:wrap;width:100%;">
@@ -1123,6 +1149,10 @@
                 <label style="display:flex;align-items:center;gap:8px;font-size:.85rem;width:100%;margin:2px 0;">
                     <input type="checkbox" id="editAdmin_${u.id}" ${u.admin ? "checked" : ""} style="width:20px;height:20px;"> 👑 Administrador (ve y gestiona todos los clubes)
                 </label>
+                <div style="width:100%;font-size:.75rem;font-weight:700;color:var(--muted);margin-top:4px;">Puede entrar en:</div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;width:100%;">
+                    ${MODULOS.map(([k, lbl]) => `<label style="display:flex;align-items:center;gap:6px;font-size:.82rem;"><input type="checkbox" id="editPerm_${k}_${u.id}" ${u.permisos?.[k] === false ? "" : "checked"} style="width:18px;height:18px;"> ${lbl}</label>`).join("")}
+                </div>
                 <div style="display:flex;gap:8px;width:100%;">
                     <button class="btn-assign" data-uid="${u.id}" data-action="save-edit" style="flex:1;">💾 Guardar</button>
                     <button class="btn-assign" data-action="cancel-edit" style="flex:1;background:var(--surface2);color:var(--muted);border:1.5px solid var(--border);">Cancelar</button>
@@ -1166,7 +1196,9 @@
                 if (newAdmin !== (antes.admin === true) && !confirm(newAdmin
                     ? `¿Dar permisos de administrador a ${antes.nombre || antes.email || 'este usuario'}?\n\nPodrá ver y cambiar todos los clubes y usuarios.`
                     : `¿Quitar los permisos de administrador a ${antes.nombre || antes.email || 'este usuario'}?`)) return;
-                await updateDoc(doc(db, "usuarios", uid), { club: newClub || "", categoria: newCat || "", admin: newAdmin });
+                const permisos = {};
+                MODULOS.forEach(([k]) => { permisos[k] = !!document.getElementById(`editPerm_${k}_${uid}`)?.checked; });
+                await updateDoc(doc(db, "usuarios", uid), { club: newClub || "", categoria: newCat || "", admin: newAdmin, permisos });
                 toast("✅ Entrenador reasignado");
                 editingUserId = null;
                 loadAdminData();
