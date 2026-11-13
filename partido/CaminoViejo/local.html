@@ -5323,6 +5323,14 @@ window.ocultarAvisoSanciones = function() {
                 miNombre = soyAdmin ? 'Admin' : (p.nombre || '');
                 // El admin no tiene club propio: usa el de este archivo
                 if (p.club && !soyAdmin && p.club !== 'Admin') club = p.club;
+                // Esta pantalla solo es para su equipo: un usuario de otro club no puede entrar
+                // (si no, cargaría su plantilla y escribiría en el partido de este equipo)
+                if (!soyAdmin && normalizarNombre(p.club || '') !== normalizarNombre(CLUB_SYNC)) {
+                    if (unsubPartido) unsubPartido();
+                    if (unsubSanc) unsubSanc();
+                    document.body.innerHTML = '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;font-family:sans-serif;background:#E9EEF4;color:#12295E;padding:24px;text-align:center;"><div style="font-size:3rem;">🔒</div><div style="font-size:1.2rem;font-weight:700;">Esta pantalla es de otro equipo</div><div>Es la de <b>' + CLUB_SYNC + '</b> y tu equipo es <b>' + (p.club || 'sin equipo') + '</b>.<br>Entra desde el inicio de Scout con el botón Partido.</div><a href="../../index.html" style="background:#12295E;color:#fff;padding:10px 20px;border-radius:10px;text-decoration:none;font-weight:700;">⬅️ Ir al inicio</a></div>';
+                    return;
+                }
                 // Permisos por módulo (si falta el campo, todo permitido)
                 const modulo = MODO_SANCIONES ? 'sanciones' : 'partido';
                 if (!soyAdmin && p.permisos && p.permisos[modulo] === false) {
