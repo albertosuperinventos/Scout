@@ -2203,9 +2203,19 @@
         try { const u = new URL(url, location.href); u.searchParams.set('modo', modo); return u.href; }
         catch (e) { return url + (url.includes('?') ? '&' : '?') + 'modo=' + encodeURIComponent(modo); }
     }
+    // URL por defecto de la app de partido de cada club (si en Clubes no se ha puesto ninguna)
+    const URL_PARTIDO_DEFECTO = {
+        "camino viejo": "partido/CaminoViejo/local.html",
+        "camino viejo juvenil b": "partido/CaminoViejoJuvenilB/local.html",
+        "c.d. el regate": "partido/CDRegate/local.html",
+    };
+    function urlPartidoDe(c) {
+        return (c.urlPartido || "").trim() || URL_PARTIDO_DEFECTO[(c.nombre || "").trim().toLowerCase()] || "";
+    }
     function openPartidoModal(modo) {
         const body = document.getElementById("partidoModalBody");
-        const clubsConUrl = isAdmin ? allClubs : allClubs.filter(c => c.nombre.trim().toLowerCase() === (currentUserProfile?.club || "").trim().toLowerCase());
+        const clubsConUrl = (isAdmin ? allClubs : allClubs.filter(c => c.nombre.trim().toLowerCase() === (currentUserProfile?.club || "").trim().toLowerCase()))
+            .map(c => ({ ...c, urlPartido: urlPartidoDe(c) }));
 
         if (!isAdmin && clubsConUrl.length === 1 && clubsConUrl[0].urlPartido) {
             window.open(urlPartidoModo(clubsConUrl[0].urlPartido, modo), "_blank");

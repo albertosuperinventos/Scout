@@ -202,7 +202,7 @@
     </div>
 </div>
 
-<button onclick="cambiarApiKey()" title="Configurar clave de API" style="position:fixed;top:14px;right:14px;z-index:500;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.2);color:#F5B800;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🔑</button>
+<button id="btnLlave" onclick="cambiarApiKey()" title="Configurar clave de API" style="position:fixed;top:14px;right:14px;z-index:500;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.2);color:#F5B800;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;">🔑</button>
 
 <!-- Pantalla Configuración -->
 <div id="pConfig" class="pantalla active" style="background:#E9EEF4;">
@@ -590,6 +590,9 @@ const COLORES_EVENTO = {
 window.mostrarPantalla = function(id) {
     document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('active'));
     document.getElementById(id).classList.add('active');
+    // la llave (clave API) solo en la pantalla inicial: en las demás tapaba botones; si falta la clave se pide sola
+    const llave = document.getElementById('btnLlave');
+    if (llave) llave.style.display = id === 'pConfig' ? 'flex' : 'none';
 }
 
 window.cambiarRol = function(rol) {
@@ -4522,9 +4525,9 @@ window.ocultarAvisoSanciones = function() {
 <div id="pResumen" class="pantalla">
     <div class="marcador-box">
         <h2>📋 ACTA FINAL</h2>
-        <div class="nombres-marcador">
-            <span id="resumenLocal">GELVES</span>
-            <span id="resumenVisitante">RIVAL</span>
+        <div class="nombres-marcador" style="display:flex;justify-content:space-between;gap:16px;">
+            <span id="resumenLocal" style="flex:1;text-align:left;">GELVES</span>
+            <span id="resumenVisitante" style="flex:1;text-align:right;">RIVAL</span>
         </div>
         <div id="marcadorFinal" class="marcador">0 - 0</div>
     </div>
