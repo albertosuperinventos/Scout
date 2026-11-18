@@ -329,6 +329,9 @@
         <button class="b-ancho" style="background:#475569;" onclick="mostrarManual()">➕ ACCIÓN MANUAL</button>
     </div>
 
+    <!-- 📡 DIRECTO PARA PADRES (enlace de solo lectura) -->
+    <button id="btnDirecto" class="btn" style="background:#12295E;color:#F7C81E;margin:10px 0;" onclick="window.directo && window.directo.abrir()">📡 COMPARTIR EN DIRECTO</button>
+
     <div class="timeline-container">
         <div class="timeline-header">
             <span style="font-weight:bold;">📋 TIMELINE</span>
@@ -4760,6 +4763,307 @@ window.ocultarAvisoSanciones = function() {
 
     const refPartido = () => doc(fbDb, "partidos", `activo_${CLUB_KEY}`);
     const refSanc = () => doc(fbDb, "sanciones", CLUB_KEY);
+
+    // =====================================================================
+    // 📡 DIRECTO PARA PADRES (enlace de solo lectura, sin login)
+    // Solo AÑADE: no toca reloj, eventos ni Excel. Se publica una copia sin
+    // datos personales en directos/<id> cada vez que se guarda el partido.
+    // =====================================================================
+    const DIRECTO_ID = new URLSearchParams(location.search).get('directo');
+    const MODO_DIRECTO = !!DIRECTO_ID;
+    let directoTimer = null;
+    let directoValor = null;   // último JSON del partido que se ha subido
+
+    // Estado "compartido" (se guarda en el documento del partido activo)
+    function estadoDirecto() {
+        const d = remotoPartido;
+        return (d && d.directo && d.directo.id) ? d.directo : null;
+    }
+    const enlaceDirecto = id => location.origin + location.pathname + '?directo=' + encodeURIComponent(id);
+
+    function armarDirecto(p, nombres) {
+        const cfg = p.config || {};
+        const rival = p.rival || cfg.rival || 'RIVAL';
+        const lado = e => e === 'V' ? 'R' : 'L';
+        const nuestro = lado(p.rolGelves || 'L');
+        const suyo = nuestro === 'L' ? 'R' : 'L';
+        const conv = p.convocados || [];
+        const jug = n => conv.find(c => c.name === n);
+        const dorsalDe = n => {
+            const j = jug(n);
+            const d = j ? String(j.num ?? '').trim() : '';
+            return d && d !== '0' ? d : '–';
+        };
+        const nombreDe = n => (nombres && n) ? String(n) : '';
+        const eventos = [];
+        (p.eventos || []).forEach((e, i) => {
+            const base = { min: parseInt(e.min) || 0, i };
+            const t = e.tipo;
+            if (t === 'GOL') {
+                const nos = lado(e.equipo) === nuestro;
+                eventos.push({ ...base, tipo: 'gol', equipo: lado(e.equipo),
+                    dorsal: nos ? dorsalDe(e.jugador) : '–', nombre: nos ? nombreDe(e.jugador) : '' });
+            } else if (t === 'AMARILLA' || t === 'ROJA') {
+                const tipo = t === 'ROJA' ? 'tarjeta_roja' : 'tarjeta_amarilla';
+                if (lado(e.equipo) === nuestro) {
+                    const esJug = !!jug(e.jugador);
+                    eventos.push({ ...base, tipo, equipo: nuestro, dorsal: esJug ? dorsalDe(e.jugador) : '–',
+                        staff: !esJug, nombre: nombreDe(e.jugador) });
+                } else {
+                    const m = String(e.jugador || '').match(/^Riv\s+(\S+)/);
+                    eventos.push({ ...base, tipo, equipo: suyo, dorsal: m ? m[1] : '–', nombre: '' });
+                }
+            } else if (t === 'PENALTI') {
+                eventos.push({ ...base, tipo: 'penalti', equipo: nuestro, dorsal: dorsalDe(e.jugador), nombre: nombreDe(e.jugador) });
+            } else if (t === 'PENALTI CONTRA') {
+                eventos.push({ ...base, tipo: 'penalti', equipo: suyo, dorsal: '–', nombre: '' });
+            } else if (t === 'CAMBIO') {
+                const sale = (String(e.extra || '').match(/\(sale (.+)\)/) || [])[1] || '';
+                eventos.push({ ...base, tipo: 'cambio', equipo: lado(e.equipo),
+                    dorsal: dorsalDe(sale), dorsalEntra: dorsalDe(e.jugador),
+                    nombre: nombreDe(sale), nombreEntra: nombreDe(e.jugador) });
+            }
+        });
+        eventos.sort((a, b) => a.min - b.min || a.i - b.i);
+        eventos.forEach(e => { delete e.i; });
+
+        const f = p.fase || 0;
+        const ti = p.tiempoInicio || 0;
+        const reloj = { estado: ['PRE', '1T', 'DESC', '2T', 'FIN'][f] || 'PRE', parteMin: 45, inicioEfectivoMs: 0, congeladoSeg: 0 };
+        if (f === 1) reloj.inicioEfectivoMs = ti;
+        else if (f === 3) reloj.inicioEfectivoMs = ti - 45 * 60000;   // el reloj de Scout en 2ª parte es 45 + lo jugado
+        else if (f === 2) reloj.congeladoSeg = (p.minutoFin1T || 45) * 60;
+        else if (f === 4) reloj.congeladoSeg = (p.minutoFinal || 90) * 60;
+
+        const etiqueta = (document.getElementById('etiquetaEquipo')?.textContent || '').split('·')[1] || '';
+        return {
+            club: CLUB_SYNC,
+            categoria: etiqueta.trim(),
+            torneo: cfg.tipo || '',
+            fecha: cfg.fecha || '',
+            nl: nuestro === 'L' ? NOMBRE_EQUIPO : rival,
+            nr: nuestro === 'L' ? rival : NOMBRE_EQUIPO,
+            nuestro,
+            golesL: p.golesL || 0,
+            golesR: p.golesV || 0,
+            reloj,
+            eventos,
+            nombres: !!nombres,
+            finished: f === 4,
+            updatedAt: serverTimestamp()
+        };
+    }
+
+    async function publicarDirecto() {
+        const st = estadoDirecto();
+        if (!st || !usuario || soyLector(remotoPartido)) return;
+        const valor = directoValor || localStorage.getItem(LK('partido_final'));
+        let p = null;
+        try { p = JSON.parse(valor || 'null'); } catch (e) {}
+        if (!p) return;
+        await setDoc(doc(fbDb, "directos", st.id), armarDirecto(p, st.nombres));
+    }
+    function programarDirecto(valor) {
+        if (valor) directoValor = valor;
+        if (!estadoDirecto()) return;
+        clearTimeout(directoTimer);
+        directoTimer = setTimeout(() => { publicarDirecto().catch(e => console.error('Directo:', e)); }, 500);
+    }
+
+    function pintarBotonDirecto() {
+        const b = document.getElementById('btnDirecto');
+        if (b) b.textContent = estadoDirecto() ? '🔴 EN DIRECTO · VER ENLACE' : '📡 COMPARTIR EN DIRECTO';
+    }
+
+    async function empezarDirecto(nombres) {
+        if (!remotoPartido || !remotoPartido.partido) { alert('Primero empieza el partido (11 inicial) y vuelve a pulsar.'); return; }
+        if (soyLector(remotoPartido)) { avisoSoloLectura(); return; }
+        const st = { id: doc(collection(fbDb, "directos")).id, nombres: !!nombres };
+        try {
+            await updateDoc(refPartido(), { directo: st, ...meta() });
+            remotoPartido = { ...remotoPartido, directo: st };
+            await publicarDirecto();
+        } catch (e) {
+            console.error('Directo:', e);
+            alert('⚠️ No se pudo activar el directo: ' + (e?.message || e));
+            return;
+        }
+        pintarBotonDirecto();
+        window.directo.abrir();
+    }
+    async function cambiarNombresDirecto(nombres) {
+        const st = estadoDirecto();
+        if (!st || soyLector(remotoPartido)) return;
+        const nuevo = { ...st, nombres: !!nombres };
+        remotoPartido = { ...remotoPartido, directo: nuevo };
+        updateDoc(refPartido(), { directo: nuevo, ...meta() }).catch(e => console.error('Directo:', e));
+        publicarDirecto().catch(e => console.error('Directo:', e));
+    }
+    async function pararDirecto() {
+        const st = estadoDirecto();
+        if (!st) return;
+        if (!confirm('¿Dejar de compartir? El enlace dejará de funcionar.')) return;
+        try {
+            await deleteDoc(doc(fbDb, "directos", st.id));
+            await updateDoc(refPartido(), { directo: deleteField(), ...meta() });
+            const { directo, ...resto } = remotoPartido || {};
+            remotoPartido = resto;
+        } catch (e) {
+            console.error('Directo:', e);
+            alert('⚠️ No se pudo dejar de compartir: ' + (e?.message || e));
+        }
+        pintarBotonDirecto();
+        cerrarPanelDirecto();
+    }
+
+    function cerrarPanelDirecto() { document.getElementById('panelDirecto')?.remove(); }
+    function abrirPanelDirecto() {
+        cerrarPanelDirecto();
+        const st = estadoDirecto();
+        const lector = soyLector(remotoPartido);
+        const ov = document.createElement('div');
+        ov.id = 'panelDirecto';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:8000;background:rgba(18,41,94,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+        const caja = 'background:#fff;border-radius:18px;padding:20px;max-width:380px;width:100%;color:#12295E;font-family:inherit;';
+        const btn = (bg, col) => `display:block;width:100%;margin-top:10px;padding:13px;border:none;border-radius:12px;font-weight:800;font-size:15px;background:${bg};color:${col};cursor:pointer;`;
+        let html = `<div style="${caja}"><div style="font-size:18px;font-weight:800;margin-bottom:6px;">📡 Directo para padres</div>`;
+        if (!st) {
+            if (lector) {
+                html += `<p style="font-size:14px;">Este partido no se está compartiendo. Solo puede activarlo quien lo está apuntando.</p>`;
+            } else {
+                html += `<p style="font-size:14px;margin-bottom:10px;">Crea un enlace para ver marcador, minuto, goles, tarjetas, penaltis y cambios. Sin iniciar sesión y sin poder tocar nada.</p>
+                    <label style="display:flex;gap:10px;align-items:center;font-size:14px;background:#EEF2F8;padding:10px;border-radius:10px;">
+                        <input type="checkbox" id="chkNombresDirecto" style="width:22px;height:22px;"> Mostrar nombres de jugadores (si no, solo dorsales)</label>
+                    <button id="btnEmpezarDirecto" style="${btn('#12295E', '#F7C81E')}">📡 Empezar a compartir</button>`;
+            }
+        } else {
+            const url = enlaceDirecto(st.id);
+            html += `<p style="font-size:13px;margin-bottom:6px;">Enlace (solo lectura):</p>
+                <div style="font-size:12px;word-break:break-all;background:#EEF2F8;padding:10px;border-radius:10px;">${escH(url)}</div>
+                <button id="btnCopiarDirecto" style="${btn('#F7C81E', '#12295E')}">📋 Copiar enlace</button>
+                <button id="btnWaDirecto" style="${btn('#25D366', '#fff')}">💬 Enviar por WhatsApp</button>`;
+            if (!lector) {
+                html += `<label style="display:flex;gap:10px;align-items:center;font-size:14px;background:#EEF2F8;padding:10px;border-radius:10px;margin-top:10px;">
+                        <input type="checkbox" id="chkNombresDirecto" ${st.nombres ? 'checked' : ''} style="width:22px;height:22px;"> Mostrar nombres de jugadores</label>
+                    <button id="btnPararDirecto" style="${btn('#DC2626', '#fff')}">⛔ Dejar de compartir</button>`;
+            }
+        }
+        html += `<button id="btnCerrarDirecto" style="${btn('#E2E8F0', '#12295E')}">Cerrar</button></div>`;
+        ov.innerHTML = html;
+        document.body.appendChild(ov);
+        ov.addEventListener('click', ev => { if (ev.target === ov) cerrarPanelDirecto(); });
+        document.getElementById('btnCerrarDirecto').onclick = cerrarPanelDirecto;
+        const chk = document.getElementById('chkNombresDirecto');
+        if (!st) {
+            const b = document.getElementById('btnEmpezarDirecto');
+            if (b) b.onclick = () => { b.disabled = true; empezarDirecto(chk && chk.checked); };
+            return;
+        }
+        const url = enlaceDirecto(st.id);
+        document.getElementById('btnCopiarDirecto').onclick = async () => {
+            try { await navigator.clipboard.writeText(url); aviso('✅ Enlace copiado'); }
+            catch (e) { prompt('Copia el enlace:', url); }
+        };
+        document.getElementById('btnWaDirecto').onclick = () => {
+            const rival = document.getElementById('nombreRival')?.value || 'RIVAL';
+            const texto = `📡 Sigue en directo el partido ${NOMBRE_EQUIPO} - ${rival}:\n${url}`;
+            window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
+        };
+        if (chk) chk.onchange = () => cambiarNombresDirecto(chk.checked);
+        const bp = document.getElementById('btnPararDirecto');
+        if (bp) bp.onclick = pararDirecto;
+    }
+    window.directo = { abrir: abrirPanelDirecto };
+
+    // ---------- Vista del espectador (?directo=<id>) ----------
+    function iniciarVistaDirecto(id) {
+        document.documentElement.classList.add('modo-directo');
+        const css = document.createElement('style');
+        css.textContent = `
+            html.modo-directo body > :not(#vistaDirecto) { display: none !important; }
+            html.modo-directo body { margin: 0; padding: 0; background: #E9EEF4; }
+            #vistaDirecto { min-height: 100vh; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #12295E; max-width: 520px; margin: 0 auto; }
+            #vistaDirecto .vd-cab { background: #12295E; color: #fff; padding: 14px 16px 18px; text-align: center; border-radius: 0 0 22px 22px; }
+            #vistaDirecto .vd-logo { width: 54px; height: 54px; object-fit: contain; }
+            #vistaDirecto .vd-comp { font-size: 12px; opacity: .85; margin-top: 4px; }
+            #vistaDirecto .vd-estado { display: inline-block; margin-top: 8px; background: #F7C81E; color: #12295E; font-weight: 800; font-size: 13px; padding: 4px 12px; border-radius: 20px; }
+            #vistaDirecto .vd-marcador { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; }
+            #vistaDirecto .vd-eq { flex: 1; font-weight: 800; font-size: 15px; line-height: 1.15; }
+            #vistaDirecto .vd-goles { font-size: 46px; font-weight: 900; color: #F7C81E; min-width: 44px; }
+            #vistaDirecto .vd-min { font-size: 26px; font-weight: 800; margin-top: 8px; font-variant-numeric: tabular-nums; }
+            #vistaDirecto .vd-lista { padding: 14px; }
+            #vistaDirecto .vd-ev { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 12px; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+            #vistaDirecto .vd-ev.r { flex-direction: row-reverse; text-align: right; }
+            #vistaDirecto .vd-m { background: #12295E; color: #F7C81E; font-weight: 800; font-size: 13px; border-radius: 8px; padding: 3px 7px; min-width: 38px; text-align: center; }
+            #vistaDirecto .vd-txt { flex: 1; font-size: 14px; }
+            #vistaDirecto .vd-txt small { display: block; color: #5B6573; font-size: 11px; }
+            #vistaDirecto .vd-vacio { text-align: center; color: #5B6573; padding: 30px 10px; font-size: 14px; }
+        `;
+        document.head.appendChild(css);
+        const logo = document.querySelector('#pConfig img')?.src || '';
+        const v = document.createElement('div');
+        v.id = 'vistaDirecto';
+        v.innerHTML = '<div class="vd-vacio">Cargando…</div>';
+        const montar = () => { if (!document.getElementById('vistaDirecto')) document.body.appendChild(v); };
+        if (document.body) montar(); else document.addEventListener('DOMContentLoaded', montar);
+
+        let datos = null;
+        const fmt = s => { s = Math.max(0, Math.floor(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+        const segundos = r => (r.estado === '1T' || r.estado === '2T') ? (Date.now() - (r.inicioEfectivoMs || Date.now())) / 1000 : (r.congeladoSeg || 0);
+        const ESTADOS = { PRE: '⏳ Antes de empezar', '1T': '🔴 En juego · 1ª parte', DESC: '☕ Descanso', '2T': '🔴 En juego · 2ª parte', FIN: '🏁 Finalizado' };
+        const quien = (d, n) => `nº ${escH(d || '–')}${n ? ' · ' + escH(n) : ''}`;
+        function textoEvento(e, d) {
+            const eq = e.equipo === 'L' ? d.nl : d.nr;
+            const nos = e.equipo === d.nuestro;
+            switch (e.tipo) {
+                case 'gol': return ['⚽', `<b>Gol</b> de ${escH(eq)}`, nos ? quien(e.dorsal, e.nombre) : ''];
+                case 'tarjeta_amarilla':
+                case 'tarjeta_roja': {
+                    const ico = e.tipo === 'tarjeta_roja' ? '🟥' : '🟨';
+                    const det = e.staff ? ('Cuerpo técnico' + (e.nombre ? ' · ' + escH(e.nombre) : '')) : quien(e.dorsal, e.nombre);
+                    return [ico, `<b>${e.tipo === 'tarjeta_roja' ? 'Roja' : 'Amarilla'}</b> · ${escH(eq)}`, det];
+                }
+                case 'penalti': return ['🎯', `<b>Penalti</b> a favor de ${escH(eq)}`, nos && e.dorsal !== '–' ? 'Sobre ' + quien(e.dorsal, e.nombre) : ''];
+                case 'cambio': return ['🔄', `<b>Cambio</b> · ${escH(eq)}`, `Entra ${quien(e.dorsalEntra, e.nombreEntra)} · sale ${quien(e.dorsal, e.nombre)}`];
+            }
+            return null;
+        }
+        function pintar() {
+            montar();
+            if (!datos) { v.innerHTML = '<div class="vd-vacio">📡 Este partido en directo ya no está disponible.</div>'; return; }
+            const d = datos, r = d.reloj || {};
+            document.title = `${d.nl} ${d.golesL ?? 0}-${d.golesR ?? 0} ${d.nr} · Directo`;
+            const comp = [d.categoria, d.torneo, /^\d{4}-\d{2}-\d{2}$/.test(d.fecha || '') ? d.fecha.split('-').reverse().join('/') : d.fecha].filter(Boolean).map(escH).join(' · ');
+            const evs = (d.eventos || []).slice().reverse().map(e => {
+                const t = textoEvento(e, d);
+                if (!t) return '';
+                return `<div class="vd-ev ${e.equipo === 'R' ? 'r' : ''}"><span class="vd-m">${escH(e.min)}'</span><span style="font-size:20px;">${t[0]}</span><span class="vd-txt">${t[1]}${t[2] ? '<small>' + t[2] + '</small>' : ''}</span></div>`;
+            }).join('');
+            v.innerHTML = `
+                <div class="vd-cab">
+                    ${logo ? `<img class="vd-logo" src="${logo}" alt="">` : ''}
+                    <div class="vd-comp">${comp}</div>
+                    <div class="vd-estado">${d.finished ? ESTADOS.FIN : (ESTADOS[r.estado] || '')}</div>
+                    <div class="vd-marcador">
+                        <span class="vd-eq" style="text-align:right;">${escH(d.nl)}</span>
+                        <span class="vd-goles">${escH(d.golesL ?? 0)}</span><span style="font-size:30px;font-weight:900;">-</span><span class="vd-goles">${escH(d.golesR ?? 0)}</span>
+                        <span class="vd-eq" style="text-align:left;">${escH(d.nr)}</span>
+                    </div>
+                    <div class="vd-min" id="vdMinuto">${fmt(segundos(r))}</div>
+                </div>
+                <div class="vd-lista">${evs || '<div class="vd-vacio">Aún no hay goles, tarjetas ni cambios.</div>'}</div>`;
+        }
+        // Solo el móvil del espectador repinta el minuto cada segundo (no escribe nada)
+        setInterval(() => {
+            const el = document.getElementById('vdMinuto');
+            if (el && datos && datos.reloj) el.textContent = fmt(segundos(datos.reloj));
+        }, 1000);
+        onSnapshot(doc(fbDb, "directos", id), snap => {
+            datos = snap.exists() ? snap.data() : null;
+            pintar();
+        }, e => { console.error('Directo:', e); datos = null; pintar(); });
+    }
+    if (MODO_DIRECTO) iniciarVistaDirecto(DIRECTO_ID);
     const pantallaActiva = () => document.querySelector('.pantalla.active')?.id || '';
 
     function meta() {
@@ -4937,6 +5241,7 @@ window.ocultarAvisoSanciones = function() {
             }
         }
         setDoc(refPartido(), datos, { merge: true }).catch(errorNube);
+        programarDirecto(valor);   // 📡 directo para padres (si está compartido)
     }
 
     function subirSanciones(valor, anterior) {
@@ -4962,6 +5267,7 @@ window.ocultarAvisoSanciones = function() {
         document.body.classList.toggle('solo-lectura', lector);
         const t = document.getElementById('barraLecturaTexto');
         if (t) t.textContent = lector ? `👁️ Solo lectura · apunta ${nombreDe(d.editorNombre, d.editorEmail)}` : '';
+        pintarBotonDirecto();
         window.refrescarBannerGuardado();
     }
 
@@ -5363,6 +5669,7 @@ window.ocultarAvisoSanciones = function() {
     }
 
     onAuthStateChanged(fbAuth, (user) => {
+        if (MODO_DIRECTO) return;   // vista de padres: sin login ni datos del equipo
         document.getElementById('loginOverlay').style.display = user ? 'none' : 'flex';
         if (user) iniciarConUsuario(user);
         else {
