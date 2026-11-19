@@ -4776,6 +4776,7 @@ window.ocultarAvisoSanciones = function() {
     const MODO_DIRECTO = !!DIRECTO_ID;
     let directoTimer = null;
     let directoValor = null;   // último JSON del partido que se ha subido
+    const DIRECTO_HORAS = 24;  // el enlace caduca 24 h después de la última actualización (Firebase lo borra solo con TTL en 'caduca')
 
     // Estado "compartido" (se guarda en el documento del partido activo)
     function estadoDirecto() {
@@ -4853,6 +4854,7 @@ window.ocultarAvisoSanciones = function() {
             eventos,
             nombres: !!nombres,
             finished: f === 4,
+            caduca: new Date(Date.now() + DIRECTO_HORAS * 3600000),
             updatedAt: serverTimestamp()
         };
     }
@@ -5014,6 +5016,8 @@ window.ocultarAvisoSanciones = function() {
         const fmt = s => { s = Math.max(0, Math.floor(s)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
         const segundos = r => (r.estado === '1T' || r.estado === '2T') ? (Date.now() - (r.inicioEfectivoMs || Date.now())) / 1000 : (r.congeladoSeg || 0);
         const ESTADOS = { PRE: '⏳ Antes de empezar', '1T': '🔴 En juego · 1ª parte', DESC: '☕ Descanso', '2T': '🔴 En juego · 2ª parte', FIN: '🏁 Finalizado' };
+        const caducaMs = d => { const c = d && d.caduca; if (!c) return Infinity; return typeof c.toMillis === 'function' ? c.toMillis() : (typeof c === 'number' ? c : Date.parse(c)); };
+        const caducado = () => datos && caducaMs(datos) < Date.now();
         const quien = (d, n) => `nº ${escH(d || '–')}${n ? ' · ' + escH(n) : ''}`;
         function textoEvento(e, d) {
             const eq = e.equipo === 'L' ? d.nl : d.nr;
@@ -5033,7 +5037,7 @@ window.ocultarAvisoSanciones = function() {
         }
         function pintar() {
             montar();
-            if (!datos) { v.innerHTML = '<div class="vd-vacio">📡 Este partido en directo ya no está disponible.</div>'; return; }
+            if (!datos || caducado()) { v.innerHTML = '<div class="vd-vacio">📡 Este partido en directo ya no está disponible.</div>'; return; }
             const d = datos, r = d.reloj || {};
             document.title = `${d.nl} ${d.golesL ?? 0}-${d.golesR ?? 0} ${d.nr} · Directo`;
             const comp = [d.categoria, d.torneo, /^\d{4}-\d{2}-\d{2}$/.test(d.fecha || '') ? d.fecha.split('-').reverse().join('/') : d.fecha].filter(Boolean).map(escH).join(' · ');
@@ -5058,6 +5062,7 @@ window.ocultarAvisoSanciones = function() {
         }
         // Solo el móvil del espectador repinta el minuto cada segundo (no escribe nada)
         setInterval(() => {
+            if (caducado() && document.getElementById('vdMinuto')) { pintar(); return; }
             const el = document.getElementById('vdMinuto');
             if (el && datos && datos.reloj) el.textContent = fmt(segundos(datos.reloj));
         }, 1000);
