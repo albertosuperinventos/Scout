@@ -5003,9 +5003,14 @@ window.ocultarAvisoSanciones = function() {
             #vistaDirecto .vd-txt { flex: 1; font-size: 14px; }
             #vistaDirecto .vd-txt small { display: block; color: #5B6573; font-size: 11px; }
             #vistaDirecto .vd-vacio { text-align: center; color: #5B6573; padding: 30px 10px; font-size: 14px; }
-            #vistaDirecto { padding-bottom: calc(min(100vw, 520px) * 0.5625 + 8px); }
-            #vdPubli { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: 100%; max-width: 520px; z-index: 50; display: block; line-height: 0; box-shadow: 0 -2px 10px rgba(0,0,0,.15); }
-            #vdPubli img { width: 100%; height: auto; display: block; }
+            #vistaDirecto { padding-bottom: 64px; }
+            #vdPubli { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: 100%; max-width: 520px; z-index: 50; height: 54px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); background: #fff; border-top: 3px solid #F7C81E; box-shadow: 0 -2px 8px rgba(0,0,0,.10); font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+            #vdPubli a { text-decoration: none; }
+            #vdPubli .vp-web { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+            #vdPubli .vp-web img { height: 34px; width: auto; flex-shrink: 0; }
+            #vdPubli .vp-txt { font-size: 12px; line-height: 1.25; color: #A0002F; font-weight: 800; overflow: hidden; }
+            #vdPubli .vp-txt small { display: block; color: #0E4A3C; font-weight: 800; font-size: 11px; }
+            #vdPubli .vp-tel { flex-shrink: 0; background: #25D366; color: #fff; font-weight: 800; font-size: 12px; padding: 7px 10px; border-radius: 18px; white-space: nowrap; }
         `;
         document.head.appendChild(css);
         const logo = document.querySelector('#pConfig img')?.src || '';
@@ -5013,9 +5018,11 @@ window.ocultarAvisoSanciones = function() {
         v.id = 'vistaDirecto';
         v.innerHTML = '<div class="vd-vacio">Cargando…</div>';
         // Publicidad fija abajo (Superinventos)
-        const publi = document.createElement('a');
-        publi.id = 'vdPubli'; publi.href = 'https://www.superinventos.com'; publi.target = '_blank'; publi.rel = 'noopener';
-        publi.innerHTML = '<img src="../publi_superinventos.jpg" alt="Superinventos · Alarmas y cámaras sin pagos mensuales · 672 182 492">';
+        const publi = document.createElement('div');
+        publi.id = 'vdPubli';
+        publi.innerHTML = '<a class="vp-web" href="https://www.superinventos.com" target="_blank" rel="noopener"><img src="../publi_logo.png" alt="Superinventos">'
+            + '<span class="vp-txt">Alarmas y cámaras<small>sin pagos mensuales</small></span></a>'
+            + '<a class="vp-tel" href="https://wa.me/34672182492" target="_blank" rel="noopener">💬 672 182 492</a>';
         const montar = () => { if (!document.getElementById('vistaDirecto')) { document.body.appendChild(v); document.body.appendChild(publi); } };
         if (document.body) montar(); else document.addEventListener('DOMContentLoaded', montar);
 
