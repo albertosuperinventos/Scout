@@ -4984,7 +4984,7 @@ window.ocultarAvisoSanciones = function() {
         document.documentElement.classList.add('modo-directo');
         const css = document.createElement('style');
         css.textContent = `
-            html.modo-directo body > :not(#vistaDirecto) { display: none !important; }
+            html.modo-directo body > :not(#vistaDirecto):not(#vdPubli) { display: none !important; }
             html.modo-directo body { margin: 0; padding: 0; background: #E9EEF4; }
             #vistaDirecto { min-height: 100vh; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #12295E; max-width: 520px; margin: 0 auto; }
             #vistaDirecto .vd-cab { background: #12295E; color: #fff; padding: 14px 16px 18px; text-align: center; border-radius: 0 0 22px 22px; }
@@ -5002,13 +5002,20 @@ window.ocultarAvisoSanciones = function() {
             #vistaDirecto .vd-txt { flex: 1; font-size: 14px; }
             #vistaDirecto .vd-txt small { display: block; color: #5B6573; font-size: 11px; }
             #vistaDirecto .vd-vacio { text-align: center; color: #5B6573; padding: 30px 10px; font-size: 14px; }
+            #vistaDirecto { padding-bottom: calc(min(100vw, 520px) * 0.5625 + 8px); }
+            #vdPubli { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); width: 100%; max-width: 520px; z-index: 50; display: block; line-height: 0; box-shadow: 0 -2px 10px rgba(0,0,0,.15); }
+            #vdPubli img { width: 100%; height: auto; display: block; }
         `;
         document.head.appendChild(css);
         const logo = document.querySelector('#pConfig img')?.src || '';
         const v = document.createElement('div');
         v.id = 'vistaDirecto';
         v.innerHTML = '<div class="vd-vacio">Cargando…</div>';
-        const montar = () => { if (!document.getElementById('vistaDirecto')) document.body.appendChild(v); };
+        // Publicidad fija abajo (Superinventos)
+        const publi = document.createElement('a');
+        publi.id = 'vdPubli'; publi.href = 'https://www.superinventos.com'; publi.target = '_blank'; publi.rel = 'noopener';
+        publi.innerHTML = '<img src="../publi_superinventos.jpg" alt="Superinventos · Alarmas y cámaras sin pagos mensuales · 672 182 492">';
+        const montar = () => { if (!document.getElementById('vistaDirecto')) { document.body.appendChild(v); document.body.appendChild(publi); } };
         if (document.body) montar(); else document.addEventListener('DOMContentLoaded', montar);
 
         let datos = null;
