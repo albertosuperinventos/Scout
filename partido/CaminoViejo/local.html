@@ -3080,6 +3080,9 @@ window.aplicarSancionesRfaf = async function(jornadaConocida) {
         return;
     }
     window._rfafJornada = jCaptura;
+    // Jornadas ya jugadas después de la de la captura (al aplicar jornadas antiguas): esas sanciones ya se han ido cumpliendo
+    const yaJugadas = Math.max(0, (actual - 1) - jCaptura);
+    window._rfafYa = yaJugadas;
 
     function buscar(nombre) {
         // Emparejamiento por nombre oficial RFAF; si hay duda, queda sin asignar
@@ -3099,7 +3102,14 @@ window.aplicarSancionesRfaf = async function(jornadaConocida) {
     if (!filas.length) { alert('✅ La captura no tiene sanciones de tu equipo.'); return; }
     window._rfafFilas = filas;
 
-    const efecto = s => s.tipo === 'amarilla' ? '🟨 +1 amarilla' : `🔴 ${s.partidos || 1} partido${(s.partidos || 1) > 1 ? 's' : ''} de sanción`;
+    const efecto = s => {
+        if (s.tipo === 'amarilla') return '🟨 +1 amarilla';
+        const p = s.partidos || 1, resta = p - yaJugadas;
+        const base = `🔴 ${p} partido${p > 1 ? 's' : ''} de sanción`;
+        if (!yaJugadas) return base;
+        if (resta <= 0) return base + ' · ya cumplida' + (s.tipo === 'acumulacion' ? ' (amarillas a 0)' : '');
+        return base + ` · quedan ${resta}`;
+    };
     const escH = x => String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
     const nombres = [...PLANTILLA_BASE.filter(j => !j.n.startsWith('Filial')).map(j => j.n), ...STAFF_TECNICO.map(j => j.n)];
 
@@ -3150,8 +3160,13 @@ window.aplicarDiferenciasRfaf = function() {
         if (s.tipo === 'amarilla') {
             data[key].amarillas = (data[key].amarillas || 0) + 1;
         } else {
-            data[key].sancionado = s.partidos || 1;
-            if (!data[key].motivo) data[key].motivo = s.tipo === 'roja' ? 'roja' : 'acumulacion';
+            const resta = (s.partidos || 1) - (window._rfafYa || 0);
+            if (resta > 0) {
+                data[key].sancionado = resta;
+                if (!data[key].motivo) data[key].motivo = s.tipo === 'roja' ? 'roja' : 'acumulacion';
+            } else if (s.tipo === 'acumulacion') {
+                data[key].amarillas = 0;   // acumulación ya cumplida → ciclo de amarillas a cero
+            }
         }
         aplicadas++;
     });
@@ -3509,13 +3524,19 @@ window.leerPaginaRfaf = async function(input) {
     const totalRiv = jornadasRivales.reduce((a, j) => a + j.equipos.reduce((x, e) => x + e.sancionados.length, 0), 0);
     window.avisoInfo(`🔍 Rivales: ${totalRiv} sancionado${totalRiv !== 1 ? 's' : ''} guardado${totalRiv !== 1 ? 's' : ''} (jornada ${jRiv.join(', ')}).`);
     // Camino Viejo: se aplica con la pantalla de revisión de siempre (una jornada)
-    let jornadaCV = bloques[bloques.length - 1].jornada;
-    if (bloques.length > 1) {
-        const v = prompt(`El archivo tiene varias jornadas (${bloques.map(b => b.jornada).join(', ')}).\n\n¿Cuál aplicamos a ${NOMBRE_EQUIPO}?`, jornadaCV);
+    const jornadasArchivo = [...new Set(bloques.map(b => b.jornada))];
+    let jornadaCV = jornadasArchivo[jornadasArchivo.length - 1];
+    if (jornadasArchivo.length > 1) {
+        const v = prompt(`El archivo tiene varias jornadas (${jornadasArchivo.join(', ')}).\n\n¿Cuál aplicamos a ${NOMBRE_EQUIPO}?`, jornadaCV);
         if (v === null) return;
-        jornadaCV = parseInt(v) || jornadaCV;
+        jornadaCV = parseInt(v);
+        if (!jornadasArchivo.includes(jornadaCV)) {
+            alert(`⚠️ La jornada ${v} no está en este archivo (trae: ${jornadasArchivo.join(', ')}).\n\nSi es la última jugada, puede que la RFAF aún no la haya publicado.`);
+            return;
+        }
     }
-    const bloque = bloques.find(b => b.jornada === jornadaCV) || bloques[bloques.length - 1];
+    // Una jornada puede venir en varias reuniones del Comité: se juntan
+    const bloque = { jornada: jornadaCV, filas: bloques.filter(b => b.jornada === jornadaCV).flatMap(b => b.filas) };
     const mias = bloque.filas.filter(f => f.nombre && !/equipo/.test(f.seccion) && esMio(f.equipo))
         .map(f => ({ f, t: tipoSancionRfaf(f.motivo) })).filter(x => x.t)
         .map(x => ({ nombre: x.f.nombre, tipo: x.t.tipo, partidos: x.t.partidos }));
@@ -4220,8 +4241,9 @@ window.jornadaJugada = async function(sinConfirmar) {
 };
 
 window.confirmarResetSanciones = function() {
-    if(!confirm('¿Poner a cero las sanciones de toda la plantilla? Se borra también en los demás móviles.')) return;
+    if(!confirm('¿Poner a cero las sanciones de toda la plantilla? Se borra también en los demás móviles.\n\nTambién se olvidan las jornadas RFAF ya aplicadas, para poder volver a aplicarlas.')) return;
     resetearSanciones();
+    guardarLocalSync('capturas', '{}');
     if (window.fbSync) window.fbSync.resetSanciones();
     cargarPantallaSanciones();
     alert('✅ Sanciones puestas a cero.');
