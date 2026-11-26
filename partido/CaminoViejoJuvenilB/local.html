@@ -4614,19 +4614,6 @@ window.ocultarAvisoSanciones = function() {
             <button class="btn" style="background:#c0392b; padding:6px 12px; font-size:10px;" onclick="confirmarResetSanciones()">🔄 RESET</button>
         </div>
     </div>
-    <button class="btn" style="background:#27ae60; width:100%; margin-bottom:12px; font-size:14px;" onclick="jornadaJugada()">✅ JORNADA JUGADA</button>
-    <button class="btn" style="background:#6c3483; width:100%; margin-bottom:12px; font-size:14px;" onclick="document.getElementById('inputPaginaRfaf').click()">📄 SUBIR PÁGINA RFAF (.mht) → SANCIONES Y RIVALES</button>
-    <input type="file" id="inputPaginaRfaf" accept=".mht,.mhtml,.html,.htm,multipart/related,message/rfc822,text/html" style="display:none;" onchange="leerPaginaRfaf(this)">
-    <button class="btn" style="background:#8e44ad; width:100%; margin-bottom:12px; font-size:14px;" onclick="abrirOcrRfaf()">📸 SUBIR CAPTURA RFAF → EXTRAER SANCIONES</button>
-    <button class="btn" style="background:#1a3a5c; width:100%; margin-bottom:12px; font-size:14px;" onclick="abrirOcrRivales()">🔍 VER SANCIONADOS RIVALES</button>
-    <a href="https://www.rfaf.es/pnfg/NPcd/NFG_ConsultaSanciones?cod_primaria=5002420" target="_blank" style="display:block; background:#27ae60; color:white; text-align:center; padding:15px; border-radius:40px; font-weight:bold; font-size:14px; text-decoration:none; margin-bottom:12px; border:1px solid #D5DCE5;">🌐 VER SANCIONES EN RFAF.ES</a>
-
-    <div id="avisoPendiente" style="display:none; background:#EAF6EE; border:1px solid #2ecc71; border-radius:15px; padding:15px; margin-bottom:15px; text-align:center;">
-        <p style="color:#1E8E53; font-size:16px; margin:0;">📅 ¡Recuerda revisar las sanciones en rfaf.es!</p>
-        <p style="color:#5B6573; font-size:12px; margin:5px 0 0;">Suelen publicarse los jueves por la tarde</p>
-        <button class="btn btn-neutral" style="margin-top:10px; font-size:12px; padding:8px 15px;" onclick="ocultarAvisoSanciones()">Entendido</button>
-    </div>
-
     <div style="background:#FFFFFF; border-radius:15px; padding:12px; margin-bottom:15px;">
         <p style="color:#5B6573; font-size:12px; margin:0 0 8px; text-align:center;">📌 Pulsa un icono para filtrar</p>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
@@ -4650,6 +4637,22 @@ window.ocultarAvisoSanciones = function() {
     </div>
 
     <div id="listaSanciones" style="flex:1; overflow-y:auto;"></div>
+
+    <!-- Acciones de sanciones (debajo de la plantilla) -->
+    <div style="margin-top:16px;">
+    <button class="btn" style="background:#27ae60; width:100%; margin-bottom:12px; font-size:14px;" onclick="jornadaJugada()">✅ JORNADA JUGADA</button>
+    <button class="btn" style="background:#6c3483; width:100%; margin-bottom:12px; font-size:14px;" onclick="document.getElementById('inputPaginaRfaf').click()">📄 SUBIR PÁGINA RFAF (.mht) → SANCIONES Y RIVALES</button>
+    <input type="file" id="inputPaginaRfaf" accept=".mht,.mhtml,.html,.htm,multipart/related,message/rfc822,text/html" style="display:none;" onchange="leerPaginaRfaf(this)">
+    <button class="btn" style="background:#8e44ad; width:100%; margin-bottom:12px; font-size:14px;" onclick="abrirOcrRfaf()">📸 SUBIR CAPTURA RFAF → EXTRAER SANCIONES</button>
+    <button class="btn" style="background:#1a3a5c; width:100%; margin-bottom:12px; font-size:14px;" onclick="abrirOcrRivales()">🔍 VER SANCIONADOS RIVALES</button>
+    <a href="https://www.rfaf.es/pnfg/NPcd/NFG_ConsultaSanciones?cod_primaria=5002420" target="_blank" style="display:block; background:#27ae60; color:white; text-align:center; padding:15px; border-radius:40px; font-weight:bold; font-size:14px; text-decoration:none; margin-bottom:12px; border:1px solid #D5DCE5;">🌐 VER SANCIONES EN RFAF.ES</a>
+
+    <div id="avisoPendiente" style="display:none; background:#EAF6EE; border:1px solid #2ecc71; border-radius:15px; padding:15px; margin-bottom:15px; text-align:center;">
+        <p style="color:#1E8E53; font-size:16px; margin:0;">📅 ¡Recuerda revisar las sanciones en rfaf.es!</p>
+        <p style="color:#5B6573; font-size:12px; margin:5px 0 0;">Suelen publicarse los jueves por la tarde</p>
+        <button class="btn btn-neutral" style="margin-top:10px; font-size:12px; padding:8px 15px;" onclick="ocultarAvisoSanciones()">Entendido</button>
+    </div>
+    </div>
 </div>
 
 <!-- Modal Sanciones Rivales -->
