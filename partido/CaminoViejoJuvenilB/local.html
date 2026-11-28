@@ -136,7 +136,9 @@
         #pPartido .marcador-cv { background: var(--cv-azul); color: #fff; border-radius: 22px; padding: 14px 16px; margin: 40px 0 10px; border-bottom: 5px solid var(--cv-amarillo); text-align: center; }
         #pPartido .marcador-cv .fase-cv { display:inline-block; font-size: 12px; font-weight: bold; color: var(--cv-azul); background: var(--cv-amarillo); padding: 4px 12px; border-radius: 999px; margin-bottom: 8px; }
         #pPartido .fila-cv { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-        #pPartido.cv-visitante .fila-cv { flex-direction: row-reverse; }
+        /* Local a la izquierda y visitante a la derecha: si Camino Viejo es visitante, sus botones pasan a la derecha */
+        #pPartido.cv-visitante .controles-cv { direction: rtl; }
+        #pPartido.cv-visitante .controles-cv > * { direction: ltr; }
         #pPartido .nombre-cv { flex: 1; font-size: 15px; font-weight: bold; color: #fff; overflow-wrap: anywhere; }
         #pPartido .goles-cv { font-size: 46px; font-weight: 900; color: var(--cv-amarillo); min-width: 44px; }
         #pPartido .guion-cv { font-size: 34px; font-weight: 900; color: var(--cv-amarillo); }
@@ -296,7 +298,7 @@
 
     <button id="btnFase" class="btn" onclick="siguienteFase()">▶️ INICIAR 1ª PARTE</button>
 
-    <!-- Botones por equipo: Camino Viejo siempre a la izquierda -->
+    <!-- Botones por equipo: en el lado de cada equipo (local izquierda, visitante derecha) -->
     <div class="grid-controles controles-cv">
         <div class="cab" style="color:var(--cv-azul);">CAMINO VIEJO</div>
         <div class="cab" style="color:var(--cv-rival);">RIVAL</div>
@@ -1252,8 +1254,8 @@ function aplicarLadoCV() {
     if (!p) return;
     p.classList.toggle('cv-visitante', rolGelves === 'V');
     const nl = document.getElementById('nombreLocal'), nv = document.getElementById('nombreVisitante');
-    if (nl) { nl.classList.toggle('equipo-propio', rolGelves === 'L'); nl.style.textAlign = rolGelves === 'L' ? 'left' : 'right'; }
-    if (nv) { nv.classList.toggle('equipo-propio', rolGelves === 'V'); nv.style.textAlign = rolGelves === 'V' ? 'left' : 'right'; }
+    if (nl) { nl.classList.toggle('equipo-propio', rolGelves === 'L'); nl.style.textAlign = 'left'; }
+    if (nv) { nv.classList.toggle('equipo-propio', rolGelves === 'V'); nv.style.textAlign = 'right'; }
 }
 
 // Tocar un evento del timeline abre editar (dentro está borrar). En solo lectura no hace nada.
@@ -1289,13 +1291,13 @@ function actualizarTimeline() {
 
     // Marcador al descanso (goles de la 1ª parte)
     const golesDescanso = eq => eventos.filter(e => e.tipo === 'GOL' && e.equipo === eq && (e.parte || 1) <= 1).length;
-    const golesCV = golesDescanso(rolGelves), golesRiv = golesDescanso(rolRival);
+    const golesLoc = golesDescanso('L'), golesVis = golesDescanso('V');
 
     let html = '';
     let separado = false;
     lista.forEach(e => {
         if (!separado && (e.parte || 1) >= 2) {
-            html += `<div class="tl-sep">Descanso · ${golesCV} - ${golesRiv}</div>`;
+            html += `<div class="tl-sep">Descanso · ${golesLoc} - ${golesVis}</div>`;
             separado = true;
         }
         const icono = ICONOS[e.tipo] || '•';
@@ -1305,8 +1307,9 @@ function actualizarTimeline() {
         const extra = extraTxt ? `<small>${escH(extraTxt)}</small>` : '';
         const texto = `<span class="tl-txt ${esCV ? 'cv' : 'riv'}">${escH(e.jugador)}${extra}</span>`;
         const acc = '';   // se edita/borra tocando la fila
-        const izq = esCV ? `${acc}${texto}<span class="tl-ico">${icono}</span>` : '';
-        const der = esCV ? '' : `<span class="tl-ico">${icono}</span>${texto}${acc}`;
+        const esLocal = e.equipo !== 'V';   // local a la izquierda, visitante a la derecha
+        const izq = esLocal ? `${acc}${texto}<span class="tl-ico">${icono}</span>` : '';
+        const der = esLocal ? '' : `<span class="tl-ico">${icono}</span>${texto}${acc}`;
         html += `<div class="tl-fila" data-tipo="${escH(e.tipo)}" role="button" tabindex="0" aria-label="Editar o borrar evento" onclick="tocarEventoTimeline(${e.id})">
                 <div class="tl-lado izq">${izq}</div>
                 <div class="tl-min"><span>${escH(e.min)}'</span></div>
