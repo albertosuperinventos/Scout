@@ -333,6 +333,7 @@
 
     <!-- 📡 DIRECTO PARA PADRES (enlace de solo lectura) -->
     <button id="btnDirecto" class="btn" style="background:#12295E;color:#F7C81E;margin:10px 0;" onclick="window.directo && window.directo.abrir()">📡 COMPARTIR EN DIRECTO</button>
+    <button class="btn btn-neutral" style="margin:0 0 10px;font-size:13px;padding:10px;" onclick="intercambiarLocalVisitante()">⇄ CAMBIAR LOCAL / VISITANTE</button>
 
     <div class="timeline-container">
         <div class="timeline-header">
@@ -586,6 +587,25 @@ window.cambiarRol = function(rol) {
     document.getElementById('btnLocal').style.background = rol === 'L' ? '#3498db' : '#8A94A6';
     document.getElementById('btnVisitante').style.background = rol === 'V' ? '#3498db' : '#8A94A6';
     actualizarNombresEquipos();
+};
+
+// ⇄ Cambiar local/visitante con el partido ya empezado: mueve marcador y eventos al lado correcto (no borra nada)
+window.intercambiarLocalVisitante = function() {
+    if (soloLectura()) { if (typeof avisoSoloLectura === 'function') avisoSoloLectura(); return; }
+    const ahora = rolGelves === 'L' ? 'LOCAL' : 'VISITANTE';
+    const nuevo = rolGelves === 'L' ? 'VISITANTE' : 'LOCAL';
+    if (!confirm(`${NOMBRE_EQUIPO} está como ${ahora}.\n\n¿Pasarlo a ${nuevo}?\nSe mueven el marcador y todos los eventos al lado correcto; no se borra nada.`)) return;
+    eventos.forEach(e => { if (e.equipo === 'L') e.equipo = 'V'; else if (e.equipo === 'V') e.equipo = 'L'; });
+    rolGelves = rolGelves === 'L' ? 'V' : 'L';
+    rolRival = rolGelves === 'L' ? 'V' : 'L';
+    const bl = document.getElementById('btnLocal'), bv = document.getElementById('btnVisitante');
+    if (bl) bl.style.background = rolGelves === 'L' ? '#3498db' : '#8A94A6';
+    if (bv) bv.style.background = rolGelves === 'V' ? '#3498db' : '#8A94A6';
+    actualizarNombresEquipos();
+    actualizarMarcador();
+    actualizarTimeline();
+    if (typeof guardarConfigAuto === 'function') guardarConfigAuto();
+    guardarAuto();
 };
 
 // Cierra el partido terminado (ya guardado en 📂 Partidos jugados) sin tocar lo escrito en la pantalla de inicio
